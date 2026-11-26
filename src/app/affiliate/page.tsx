@@ -157,7 +157,7 @@ export default function AffiliatePage() {
   return (
     <div className="min-h-screen bg-[#FFFFFF] dark:bg-[#090D16] text-slate-900 dark:text-slate-100 flex flex-col">
       {/* Header */}
-      <header className="sticky top-0 z-30 bg-white/85 dark:bg-[#090D16]/85 backdrop-blur-md border-b border-slate-200 dark:border-slate-800">
+      <header className="animate-nav-enter sticky top-0 z-30 bg-white/85 dark:bg-[#090D16]/85 backdrop-blur-md border-b border-slate-200 dark:border-slate-800">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-4">
           <Link href="/" className="inline-flex items-center gap-3">
             <MukaroLogo size="sm" />
@@ -420,7 +420,7 @@ export default function AffiliatePage() {
                     />
                   </button>
                   {isOpen && (
-                    <div className="px-5 pb-4 pt-3 border-t border-slate-200 dark:border-slate-800 text-xs sm:text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
+                    <div className="animate-dropdown-enter px-5 pb-4 pt-3 border-t border-slate-200 dark:border-slate-800 text-xs sm:text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
                       {item.a}
                     </div>
                   )}

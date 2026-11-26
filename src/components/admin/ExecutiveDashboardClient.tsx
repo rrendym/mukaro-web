@@ -203,7 +203,7 @@ export function ExecutiveDashboardClient({
   const lowStockCount = lowStockMenus.length + lowStockIngredients.length;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 animate-stagger">
       {/* Page Title & Quick Action */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
@@ -223,7 +223,7 @@ export function ExecutiveDashboardClient({
       </div>
 
       {/* Baris 1 — 4 Kartu KPI Utama */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5">
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5 animate-stagger">
         {/* KPI 1: Total Sales Hari Ini */}
         <div className="bg-white dark:bg-[#111827] rounded-2xl border border-slate-200 dark:border-slate-800 p-5 flex items-start gap-4">
           <div className="w-11 h-11 rounded-xl bg-blue-50 dark:bg-blue-950/60 text-[#2563EB] flex items-center justify-center shrink-0">

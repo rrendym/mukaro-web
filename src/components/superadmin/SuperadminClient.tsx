@@ -476,7 +476,7 @@ export function SuperadminClient({
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] dark:bg-[#090D16] text-[#0F172A] dark:text-slate-100">
-      <header className="bg-white dark:bg-[#111827] border-b border-slate-200 dark:border-slate-800 sticky top-0 z-20">
+      <header className="animate-nav-enter bg-white dark:bg-[#111827] border-b border-slate-200 dark:border-slate-800 sticky top-0 z-20">
         <div className="max-w-6xl mx-auto px-5 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <MukaroLogo size="sm" showDomain />
@@ -553,7 +553,7 @@ export function SuperadminClient({
         </div>
 
         {/* 1. SaaS Financial KPIs (MRR & Payout) */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 animate-stagger">
           <div className="bg-white dark:bg-[#111827] rounded-2xl p-4 border border-slate-200 dark:border-slate-800 space-y-1.5">
             <div className="flex items-center justify-between text-xs font-semibold text-slate-500 dark:text-slate-400">
               <span>Estimasi MRR Bulanan</span>

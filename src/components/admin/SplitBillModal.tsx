@@ -372,13 +372,13 @@ export function SplitBillModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/55 backdrop-blur-[2px] p-3 sm:p-4"
+      className="animate-backdrop-enter fixed inset-0 z-50 flex items-center justify-center bg-black/55 backdrop-blur-[2px] p-3 sm:p-4"
       onClick={() => {
         if (!submitting && equalPaidCount === 0) onClose();
       }}
     >
       <div
-        className="w-full max-w-2xl max-h-[92vh] overflow-y-auto bg-white dark:bg-[#111827] rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xl flex flex-col"
+        className="animate-modal-enter w-full max-w-2xl max-h-[92vh] overflow-y-auto bg-white dark:bg-[#111827] rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xl flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Modal Header */}

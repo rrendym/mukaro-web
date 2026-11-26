@@ -212,7 +212,7 @@ export function PartnerDashboardClient({
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] dark:bg-[#090D16] text-slate-900 dark:text-slate-100">
-      <header className="bg-white dark:bg-[#111827] border-b border-slate-200 dark:border-slate-800 sticky top-0 z-20">
+      <header className="animate-nav-enter bg-white dark:bg-[#111827] border-b border-slate-200 dark:border-slate-800 sticky top-0 z-20">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <Link href="/">
@@ -329,7 +329,7 @@ export function PartnerDashboardClient({
 
         {activeTab === "promo" ? (
           /* Promo Materials Tab */
-          <div className="space-y-4">
+          <div key="promo" className="space-y-4 animate-page-enter">
             <div>
               <h2 className="text-base font-extrabold text-slate-900 dark:text-slate-100">
                 Materi Promosi Siap Pakai
@@ -382,7 +382,7 @@ export function PartnerDashboardClient({
         ) : (
           <>
             {/* Commission Stats */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 animate-stagger">
               <div className="bg-white dark:bg-[#111827] rounded-2xl border border-slate-200 dark:border-slate-800 p-5 flex items-start gap-4">
                 <div className="w-11 h-11 rounded-xl bg-amber-50 dark:bg-amber-950/50 text-amber-600 flex items-center justify-center shrink-0">
                   <Clock className="w-5 h-5" />

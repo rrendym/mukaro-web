@@ -182,7 +182,7 @@ export default function LandingPage() {
           />
         </button>
         {isOpen && (
-          <div className="px-5 pb-4 text-sm text-slate-600 dark:text-slate-400 leading-relaxed border-t border-slate-200 dark:border-slate-800 pt-3">
+          <div className="animate-dropdown-enter px-5 pb-4 text-sm text-slate-600 dark:text-slate-400 leading-relaxed border-t border-slate-200 dark:border-slate-800 pt-3">
             {item.a}
           </div>
         )}
@@ -193,7 +193,7 @@ export default function LandingPage() {
   return (
     <div className="min-h-screen bg-[#FFFFFF] dark:bg-[#090D16] text-slate-900 dark:text-slate-100 flex flex-col">
       {/* 1. Minimalist Sticky Navbar */}
-      <header className="sticky top-0 z-40 bg-white/85 dark:bg-[#090D16]/85 backdrop-blur-md border-b border-slate-200 dark:border-slate-800">
+      <header className="animate-nav-enter sticky top-0 z-40 bg-white/85 dark:bg-[#090D16]/85 backdrop-blur-md border-b border-slate-200 dark:border-slate-800">
         {/* Desktop: 3-column grid for perfect center alignment */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 hidden md:grid md:grid-cols-[1fr_auto_1fr] items-center gap-4">
           {/* Left: Logo */}
@@ -266,7 +266,7 @@ export default function LandingPage() {
 
         {/* Mobile Drawer */}
         {mobileMenuOpen && (
-          <div className="md:hidden border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-[#111827] px-4 py-4 space-y-3">
+          <div className="animate-dropdown-enter md:hidden border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-[#111827] px-4 py-4 space-y-3">
             <div className="flex flex-col space-y-2 text-sm font-medium text-slate-600 dark:text-slate-300">
               <a href="#fitur" onClick={() => setMobileMenuOpen(false)} className="py-1.5 hover:text-slate-900 dark:hover:text-white">Fitur</a>
               <a href="#ekosistem" onClick={() => setMobileMenuOpen(false)} className="py-1.5 hover:text-slate-900 dark:hover:text-white">Ekosistem</a>
@@ -303,7 +303,7 @@ export default function LandingPage() {
       <main className="flex-1">
         {/* 2. Centered Hero + Soft Blue Glow UI Showcase */}
         <section className="pt-8 sm:pt-12 pb-16 px-4 sm:px-6 overflow-hidden">
-          <div className="max-w-5xl mx-auto text-center space-y-6">
+          <div className="max-w-5xl mx-auto text-center space-y-6 animate-stagger">
             <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#F8FAFC] dark:bg-[#111827] border border-slate-200 dark:border-slate-800 text-xs font-semibold text-[#2563EB]">
               <span className="w-1.5 h-1.5 rounded-full bg-[#2563EB]" />
               <span>
@@ -956,11 +956,11 @@ export default function LandingPage() {
       {/* New Visitor Promo Popup */}
       {showPromo && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/55 backdrop-blur-[2px] p-4"
+          className="animate-backdrop-enter fixed inset-0 z-50 flex items-center justify-center bg-black/55 backdrop-blur-[2px] p-4"
           onClick={handleClosePromo}
         >
           <div
-            className="w-full max-w-md rounded-2xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-[#111827] shadow-2xl overflow-hidden"
+            className="animate-modal-enter w-full max-w-md rounded-2xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-[#111827] shadow-2xl overflow-hidden"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Top Banner */}

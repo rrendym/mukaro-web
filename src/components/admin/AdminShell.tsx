@@ -142,12 +142,18 @@ function SidebarContent({
                 key={item.href}
                 href={item.href}
                 onClick={onCloseMobile}
-                className={`flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm transition ${
+                className={`relative flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm transition-all duration-200 active:scale-[0.98] ${
                   active
                     ? "bg-blue-50 dark:bg-blue-950/60 text-[#2563EB] font-semibold"
-                    : "text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:bg-slate-800/60 hover:text-slate-900 dark:text-slate-100 font-medium"
+                    : "text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/60 hover:text-slate-900 dark:hover:text-slate-100 hover:translate-x-0.5 font-medium"
                 }`}
               >
+                {active && (
+                  <span
+                    className="absolute left-0 top-2 bottom-2 w-1 rounded-r-full bg-[#2563EB]"
+                    aria-hidden="true"
+                  />
+                )}
                 <Icon className="w-4 h-4 shrink-0" />
                 <span className="flex-1">{item.label}</span>
                 {item.badge && (
@@ -476,11 +482,11 @@ export function AdminShell({
       {/* Mobile & Tablet Slide-Over Drawer */}
       {mobileNavOpen && (
         <div
-          className="fixed inset-0 z-50 lg:hidden bg-slate-900/40 backdrop-blur-[1px]"
+          className="animate-backdrop-enter fixed inset-0 z-50 lg:hidden bg-slate-900/40 backdrop-blur-[1px]"
           onClick={() => setMobileNavOpen(false)}
         >
           <div
-            className="w-72 h-full bg-white dark:bg-[#111827] shadow-2xl"
+            className="animate-drawer-left w-72 h-full bg-white dark:bg-[#111827] shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
             <SidebarContent
@@ -509,7 +515,7 @@ export function AdminShell({
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Top Header Bar */}
-        <header className="sticky top-0 z-30 bg-white dark:bg-[#111827] border-b border-slate-200 dark:border-slate-800 px-4 sm:px-6 py-3.5 flex items-center justify-between gap-4 print:hidden">
+        <header className="animate-nav-enter sticky top-0 z-30 bg-white dark:bg-[#111827] border-b border-slate-200 dark:border-slate-800 px-4 sm:px-6 py-3.5 flex items-center justify-between gap-4 print:hidden">
           {/* Left: Mobile Menu Toggle + Greeting */}
           <div className="flex items-center gap-3 min-w-0">
             <button
@@ -577,11 +583,11 @@ export function AdminShell({
       {/* Add Branch Modal */}
       {showAddBranch && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-[2px] p-4"
+          className="animate-backdrop-enter fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-[2px] p-4"
           onClick={() => setShowAddBranch(false)}
         >
           <div
-            className="w-full max-w-md bg-white dark:bg-[#111827] rounded-2xl border border-slate-200 dark:border-slate-800 p-6 space-y-4 shadow-xl"
+            className="animate-modal-enter w-full max-w-md bg-white dark:bg-[#111827] rounded-2xl border border-slate-200 dark:border-slate-800 p-6 space-y-4 shadow-xl"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between">
@@ -654,11 +660,11 @@ export function AdminShell({
       {/* Ritual Buka Toko Modal */}
       {showOpenRitual && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-[2px] p-4"
+          className="animate-backdrop-enter fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-[2px] p-4"
           onClick={() => setShowOpenRitual(false)}
         >
           <div
-            className="w-full max-w-md bg-white dark:bg-[#111827] rounded-2xl border border-slate-200 dark:border-slate-800 p-6 space-y-5 shadow-xl"
+            className="animate-modal-enter w-full max-w-md bg-white dark:bg-[#111827] rounded-2xl border border-slate-200 dark:border-slate-800 p-6 space-y-5 shadow-xl"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between">
