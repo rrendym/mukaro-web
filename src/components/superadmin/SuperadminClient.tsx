@@ -548,7 +548,7 @@ export function SuperadminClient({
               }`}
             >
               <Megaphone className="w-3.5 h-3.5" />
-              <span>Promo &amp; Popup</span>
+              <span>Banner Promo</span>
             </button>
           </div>
         </div>
@@ -1065,11 +1065,11 @@ export function SuperadminClient({
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 dark:border-slate-800 pb-4">
               <div>
                 <h2 className="text-base font-bold text-slate-900 dark:text-slate-100">
-                  Kontrol Popup Promosi Landing Page
+                  Kontrol Banner Promo Landing Page
                 </h2>
                 <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                  Atur status aktif, judul, deskripsi, dan tombol CTA popup
-                  promosi di halaman utama (`app_settings`).
+                  Atur status aktif, judul, deskripsi, dan tombol CTA banner
+                  promo inline di halaman utama (`app_settings`).
                 </p>
               </div>
 

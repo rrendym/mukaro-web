@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
 import {
   ArrowRight,
@@ -102,35 +103,25 @@ export default function LandingPage() {
     "monthly"
   );
   const [openFaqIdx, setOpenFaqIdx] = useState<number | null>(0);
-  const [showPromo, setShowPromo] = useState(false);
-  const [isClosingPromo, setIsClosingPromo] = useState(false);
   const [showFloatingActions, setShowFloatingActions] = useState(false);
+  const [activeSection, setActiveSection] = useState<string>("");
   const [promoTab, setPromoTab] = useState<"owner" | "affiliate">("owner");
   const [promoConfig, setPromoConfig] = useState<LandingPromoConfig>(
     DEFAULT_LANDING_PROMO
   );
-  const promoConfigRef = useRef<LandingPromoConfig>(DEFAULT_LANDING_PROMO);
-  const promoTriggeredRef = useRef(false);
-  const closeTimerRef = useRef<number | undefined>(undefined);
+  const headerRef = useRef<HTMLElement>(null);
+  const scrollTimerRef = useRef<number | undefined>(undefined);
+  const isClient = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false
+  );
 
   useEffect(() => {
     let active = true;
 
-    const tryTriggerPromo = () => {
-      if (
-        !promoTriggeredRef.current &&
-        promoConfigRef.current.enabled &&
-        window.scrollY > 150
-      ) {
-        promoTriggeredRef.current = true;
-        setIsClosingPromo(false);
-        setShowPromo(true);
-      }
-    };
-
     const onScroll = () => {
-      setShowFloatingActions(window.scrollY > 250);
-      tryTriggerPromo();
+      setShowFloatingActions(window.scrollY > 80);
     };
 
     const loadPromo = async () => {
@@ -152,9 +143,7 @@ export default function LandingPage() {
       }
 
       if (!active) return;
-      promoConfigRef.current = config;
       setPromoConfig(config);
-      tryTriggerPromo();
     };
 
     onScroll();
@@ -164,30 +153,11 @@ export default function LandingPage() {
     return () => {
       active = false;
       window.removeEventListener("scroll", onScroll);
-      if (closeTimerRef.current !== undefined) {
-        window.clearTimeout(closeTimerRef.current);
+      if (scrollTimerRef.current !== undefined) {
+        window.clearTimeout(scrollTimerRef.current);
       }
     };
   }, []);
-
-  const handleClosePromo = () => {
-    if (isClosingPromo) return;
-    const prefersReducedMotion =
-      typeof window !== "undefined" &&
-      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-
-    if (prefersReducedMotion) {
-      setShowPromo(false);
-      setIsClosingPromo(false);
-      return;
-    }
-
-    setIsClosingPromo(true);
-    closeTimerRef.current = window.setTimeout(() => {
-      setShowPromo(false);
-      setIsClosingPromo(false);
-    }, 220);
-  };
 
   const handleNavScroll = (
     e: React.MouseEvent<HTMLAnchorElement>,
@@ -195,17 +165,33 @@ export default function LandingPage() {
   ) => {
     if (!href.startsWith("#")) return;
     e.preventDefault();
+    const wasMobileOpen = mobileMenuOpen;
     setMobileMenuOpen(false);
-    const target = document.querySelector(href);
-    if (target) {
-      const reduced = window.matchMedia(
-        "(prefers-reduced-motion: reduce)"
-      ).matches;
-      target.scrollIntoView({
-        behavior: reduced ? "auto" : "smooth",
-        block: "start",
-      });
+    setActiveSection(href);
+
+    if (scrollTimerRef.current !== undefined) {
+      window.clearTimeout(scrollTimerRef.current);
     }
+
+    scrollTimerRef.current = window.setTimeout(
+      () => {
+        const target = document.querySelector(href);
+        if (!target) return;
+        const navHeight = headerRef.current?.offsetHeight || 64;
+        const targetY = Math.max(
+          0,
+          target.getBoundingClientRect().top + window.scrollY - navHeight - 4
+        );
+        const reduced = window.matchMedia(
+          "(prefers-reduced-motion: reduce)"
+        ).matches;
+        window.scrollTo({
+          top: targetY,
+          behavior: reduced ? "auto" : "smooth",
+        });
+      },
+      wasMobileOpen ? 60 : 0
+    );
   };
 
   const pricing = {
@@ -250,7 +236,10 @@ export default function LandingPage() {
   return (
     <div className="min-h-screen bg-[#FFFFFF] dark:bg-[#090D16] text-slate-900 dark:text-slate-100 flex flex-col">
       {/* 1. Minimalist Sticky Navbar */}
-      <header className="animate-nav-enter sticky top-0 z-40 bg-white/85 dark:bg-[#090D16]/85 backdrop-blur-md border-b border-slate-200 dark:border-slate-800">
+      <header
+        ref={headerRef}
+        className="animate-nav-enter sticky top-0 z-40 bg-white/85 dark:bg-[#090D16]/85 backdrop-blur-md border-b border-slate-200 dark:border-slate-800"
+      >
         {/* Desktop: 3-column grid for perfect center alignment */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 hidden md:grid md:grid-cols-[1fr_auto_1fr] items-center gap-4">
           {/* Left: Logo */}
@@ -260,11 +249,26 @@ export default function LandingPage() {
 
           {/* Center: Nav links — perfectly centered */}
           <nav className="justify-self-center flex items-center gap-6 text-sm font-medium text-slate-600 dark:text-slate-400">
-            <a href="#fitur" onClick={(e) => handleNavScroll(e, "#fitur")} className="hover:text-slate-900 dark:hover:text-white transition">Fitur</a>
-            <a href="#ekosistem" onClick={(e) => handleNavScroll(e, "#ekosistem")} className="hover:text-slate-900 dark:hover:text-white transition">Ekosistem</a>
-            <a href="#cara-kerja" onClick={(e) => handleNavScroll(e, "#cara-kerja")} className="hover:text-slate-900 dark:hover:text-white transition">Cara Kerja</a>
-            <a href="#harga" onClick={(e) => handleNavScroll(e, "#harga")} className="hover:text-slate-900 dark:hover:text-white transition">Harga</a>
-            <a href="#faq" onClick={(e) => handleNavScroll(e, "#faq")} className="hover:text-slate-900 dark:hover:text-white transition">FAQ</a>
+            {[
+              { href: "#fitur", label: "Fitur" },
+              { href: "#ekosistem", label: "Ekosistem" },
+              { href: "#cara-kerja", label: "Cara Kerja" },
+              { href: "#harga", label: "Harga" },
+              { href: "#faq", label: "FAQ" },
+            ].map((item) => (
+              <a
+                key={item.href}
+                href={item.href}
+                onClick={(e) => handleNavScroll(e, item.href)}
+                className={`transition active:scale-95 ${
+                  activeSection === item.href
+                    ? "text-[#2563EB] font-semibold"
+                    : "hover:text-slate-900 dark:hover:text-white"
+                }`}
+              >
+                {item.label}
+              </a>
+            ))}
             <Link
               href="/affiliate"
               className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-400 text-xs font-bold hover:bg-emerald-100 dark:hover:bg-emerald-900/60 transition"
@@ -358,6 +362,79 @@ export default function LandingPage() {
       </header>
 
       <main className="flex-1">
+        {/* Inline Promo Banner (dikontrol dari /superadmin app_settings) */}
+        {promoConfig.enabled && (
+          <div className="max-w-5xl mx-auto px-4 sm:px-6 pt-5">
+            <div className="rounded-2xl border border-blue-200/80 dark:border-blue-900/70 bg-gradient-to-r from-blue-50 via-white to-emerald-50/70 dark:from-[#0F172A] dark:via-[#111827] dark:to-[#0B1D1B] p-4 sm:p-5 shadow-xs">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div className="space-y-2 min-w-0">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#2563EB] text-white text-[10px] font-bold uppercase tracking-wider">
+                      <Sparkles className="w-3 h-3" />
+                      <span>Promo Aktif</span>
+                    </span>
+                    <div className="inline-flex p-0.5 rounded-lg bg-slate-200/70 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+                      <button
+                        type="button"
+                        onClick={() => setPromoTab("owner")}
+                        className={`px-2.5 py-1 rounded-md text-[11px] font-semibold flex items-center gap-1 transition cursor-pointer ${
+                          promoTab === "owner"
+                            ? "bg-white dark:bg-[#111827] text-[#2563EB] shadow-xs"
+                            : "text-slate-600 dark:text-slate-400"
+                        }`}
+                      >
+                        <StoreIcon className="w-3 h-3" />
+                        <span>Pemilik Usaha</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setPromoTab("affiliate")}
+                        className={`px-2.5 py-1 rounded-md text-[11px] font-semibold flex items-center gap-1 transition cursor-pointer ${
+                          promoTab === "affiliate"
+                            ? "bg-white dark:bg-[#111827] text-emerald-600 dark:text-emerald-400 shadow-xs"
+                            : "text-slate-600 dark:text-slate-400"
+                        }`}
+                      >
+                        <Handshake className="w-3 h-3" />
+                        <span>Partner Affiliate</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  <div>
+                    <p className="text-sm font-extrabold text-slate-900 dark:text-slate-100 leading-snug">
+                      {promoTab === "owner"
+                        ? promoConfig.ownerTitle
+                        : promoConfig.affiliateTitle}
+                    </p>
+                    <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5 leading-relaxed">
+                      {promoTab === "owner"
+                        ? promoConfig.ownerDesc
+                        : promoConfig.affiliateDesc}
+                    </p>
+                  </div>
+                </div>
+
+                <Link
+                  href={promoTab === "owner" ? "/login" : "/affiliate"}
+                  className={`px-4 py-2.5 rounded-xl text-white text-xs font-bold inline-flex items-center justify-center gap-1.5 transition shadow-xs shrink-0 active:scale-95 ${
+                    promoTab === "owner"
+                      ? "bg-[#2563EB] hover:bg-[#1D4ED8]"
+                      : "bg-emerald-600 hover:bg-emerald-700"
+                  }`}
+                >
+                  <span>
+                    {promoTab === "owner"
+                      ? promoConfig.ownerCta
+                      : promoConfig.affiliateCta}
+                  </span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </Link>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* 2. Centered Hero + Soft Blue Glow UI Showcase */}
         <section className="pt-8 sm:pt-12 pb-16 px-4 sm:px-6 overflow-hidden">
           <div className="max-w-5xl mx-auto text-center space-y-6 animate-stagger">
@@ -1039,150 +1116,32 @@ export default function LandingPage() {
         </div>
       </footer>
 
-      {/* Scroll to Top Shortcut (hidden at top or when modal/drawer open) */}
+      {/* Scroll to Top Shortcut (rendered via portal to document.body) */}
       <ScrollToTopButton
-        threshold={250}
-        hiddenWhenModalOpen={showPromo || mobileMenuOpen}
+        threshold={80}
+        hiddenWhenModalOpen={mobileMenuOpen}
         positionClassName="bottom-[72px] right-5"
       />
 
-      {/* Floating WhatsApp CTA (hidden at top or when modal/drawer open) */}
-      <a
-        href={ADMIN_WA_URL}
-        target="_blank"
-        rel="noopener noreferrer"
-        aria-label="Chat Admin Mukaro via WhatsApp"
-        className={`fixed bottom-5 right-5 z-40 inline-flex items-center gap-2 px-4 py-3 rounded-full bg-[#10B981] hover:bg-[#059669] text-white text-xs sm:text-sm font-bold shadow-lg transition-all duration-200 hover:scale-[1.03] active:scale-95 ${
-          showFloatingActions && !showPromo && !mobileMenuOpen
-            ? "opacity-100 translate-y-0 pointer-events-auto"
-            : "opacity-0 translate-y-3 pointer-events-none"
-        }`}
-      >
-        <MessageCircle className="w-4 h-4 shrink-0" />
-        <span>Chat Admin</span>
-      </a>
-
-      {/* New Visitor Promo Popup */}
-      {showPromo && (
-        <div
-          className={`${
-            isClosingPromo ? "animate-backdrop-exit" : "animate-backdrop-enter"
-          } fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-[3px] p-4 overflow-y-auto`}
-          onClick={handleClosePromo}
-        >
-          <div
-            role="dialog"
-            aria-modal="true"
-            aria-label="Penawaran Spesial Mukaro"
-            className={`${
-              isClosingPromo ? "animate-modal-exit" : "animate-modal-enter"
-            } relative z-10 w-full max-w-md my-auto rounded-2xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-[#111827] shadow-2xl overflow-hidden`}
-            onClick={(e) => e.stopPropagation()}
+      {/* Floating WhatsApp CTA (rendered via portal to document.body so it stays viewport-fixed) */}
+      {isClient &&
+        createPortal(
+          <a
+            href={ADMIN_WA_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="Chat Admin Mukaro via WhatsApp"
+            className={`fixed bottom-5 right-5 z-40 inline-flex items-center gap-2 px-4 py-3 rounded-full bg-[#10B981] hover:bg-[#059669] text-white text-xs sm:text-sm font-bold shadow-lg transition-all duration-200 hover:scale-[1.03] active:scale-95 ${
+              showFloatingActions && !mobileMenuOpen
+                ? "opacity-100 translate-y-0 pointer-events-auto"
+                : "opacity-0 translate-y-2 pointer-events-none"
+            }`}
           >
-            {/* Top Banner */}
-            <div className="relative bg-gradient-to-r from-[#2563EB] to-[#1D4ED8] px-5 py-4 text-white">
-              <div className="flex items-center justify-between gap-3">
-                <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/15 text-[11px] font-bold">
-                  <Sparkles className="w-3.5 h-3.5" />
-                  <span>Penawaran Spesial Mukaro</span>
-                </div>
-                <button
-                  type="button"
-                  onClick={handleClosePromo}
-                  aria-label="Tutup popup promosi"
-                  className="w-7 h-7 rounded-full bg-white/15 hover:bg-white/25 flex items-center justify-center transition cursor-pointer"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-              <h3 className="text-lg font-extrabold tracking-tight mt-2.5">
-                Pilih Jalur Anda Bersama Mukaro
-              </h3>
-              <p className="text-xs text-blue-100 mt-0.5">
-                Mulai digitalisasi usaha kuliner atau raih penghasilan tambahan.
-              </p>
-            </div>
-
-            <div className="p-5 space-y-4">
-              {/* 2 Quick Tabs */}
-              <div className="grid grid-cols-2 gap-1.5 p-1 rounded-xl bg-slate-100 dark:bg-[#090D16] border border-slate-200 dark:border-slate-800">
-                <button
-                  type="button"
-                  onClick={() => setPromoTab("owner")}
-                  className={`py-2 px-3 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition cursor-pointer ${
-                    promoTab === "owner"
-                      ? "bg-white dark:bg-[#111827] text-[#2563EB] shadow-xs border border-slate-200/80 dark:border-slate-700"
-                      : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100"
-                  }`}
-                >
-                  <StoreIcon className="w-3.5 h-3.5" />
-                  <span>Pemilik Usaha</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setPromoTab("affiliate")}
-                  className={`py-2 px-3 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition cursor-pointer ${
-                    promoTab === "affiliate"
-                      ? "bg-white dark:bg-[#111827] text-emerald-600 dark:text-emerald-400 shadow-xs border border-slate-200/80 dark:border-slate-700"
-                      : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100"
-                  }`}
-                >
-                  <Handshake className="w-3.5 h-3.5" />
-                  <span>Partner Affiliate</span>
-                </button>
-              </div>
-
-              {promoTab === "owner" ? (
-                <div className="space-y-4">
-                  <div className="p-4 rounded-xl bg-blue-50/70 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800/70 space-y-2">
-                    <p className="text-sm font-extrabold text-slate-900 dark:text-slate-100 leading-snug">
-                      {promoConfig.ownerTitle}
-                    </p>
-                    <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
-                      {promoConfig.ownerDesc}
-                    </p>
-                  </div>
-                  <Link
-                    href="/login"
-                    onClick={handleClosePromo}
-                    className="w-full py-3 rounded-xl bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-sm font-bold flex items-center justify-center gap-2 transition shadow-sm"
-                  >
-                    <span>{promoConfig.ownerCta}</span>
-                    <ArrowRight className="w-4 h-4" />
-                  </Link>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  <div className="p-4 rounded-xl bg-emerald-50/70 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/70 space-y-2">
-                    <p className="text-sm font-extrabold text-slate-900 dark:text-slate-100 leading-snug">
-                      {promoConfig.affiliateTitle}
-                    </p>
-                    <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
-                      {promoConfig.affiliateDesc}
-                    </p>
-                  </div>
-                  <Link
-                    href="/affiliate"
-                    onClick={handleClosePromo}
-                    className="w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold flex items-center justify-center gap-2 transition shadow-sm"
-                  >
-                    <span>{promoConfig.affiliateCta}</span>
-                    <ArrowRight className="w-4 h-4" />
-                  </Link>
-                </div>
-              )}
-
-              <button
-                type="button"
-                onClick={handleClosePromo}
-                className="w-full py-1.5 text-center text-xs font-medium text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 transition cursor-pointer"
-              >
-                Nanti saja, lanjutkan melihat halaman
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+            <MessageCircle className="w-4 h-4 shrink-0" />
+            <span>Chat Admin</span>
+          </a>,
+          document.body
+        )}
     </div>
   );
 }
