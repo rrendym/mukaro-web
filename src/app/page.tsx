@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import {
   ArrowRight,
@@ -17,6 +17,9 @@ import {
   UtensilsCrossed,
   ShoppingBag,
   Zap,
+  Sparkles,
+  Store as StoreIcon,
+  Handshake,
 } from "lucide-react";
 import { MukaroLogo } from "@/components/MukaroLogo";
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -91,6 +94,29 @@ export default function LandingPage() {
     "monthly"
   );
   const [openFaqIdx, setOpenFaqIdx] = useState<number | null>(0);
+  const [showPromo, setShowPromo] = useState(false);
+  const [promoTab, setPromoTab] = useState<"owner" | "affiliate">("owner");
+
+  useEffect(() => {
+    try {
+      if (sessionStorage.getItem("mukaro_promo_dismissed") === "1") return;
+    } catch {
+      // Ignore storage access errors
+    }
+    const timer = window.setTimeout(() => {
+      setShowPromo(true);
+    }, 2000);
+    return () => window.clearTimeout(timer);
+  }, []);
+
+  const handleClosePromo = () => {
+    setShowPromo(false);
+    try {
+      sessionStorage.setItem("mukaro_promo_dismissed", "1");
+    } catch {
+      // Ignore storage access errors
+    }
+  };
 
   const pricing = {
     starter: billingCycle === "monthly" ? "Rp 79.000" : "Rp 63.000",
@@ -243,7 +269,7 @@ export default function LandingPage() {
 
       <main className="flex-1">
         {/* 2. Centered Hero + Soft Blue Glow UI Showcase */}
-        <section className="pt-20 pb-20 sm:pt-28 sm:pb-28 px-4 sm:px-6 overflow-hidden">
+        <section className="pt-8 sm:pt-12 pb-16 px-4 sm:px-6 overflow-hidden">
           <div className="max-w-5xl mx-auto text-center space-y-6">
             <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#F8FAFC] dark:bg-[#111827] border border-slate-200 dark:border-slate-800 text-xs font-semibold text-[#2563EB]">
               <span className="w-1.5 h-1.5 rounded-full bg-[#2563EB]" />
@@ -893,6 +919,124 @@ export default function LandingPage() {
         <MessageCircle className="w-4 h-4 shrink-0" />
         <span>Chat Admin</span>
       </a>
+
+      {/* New Visitor Promo Popup */}
+      {showPromo && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/55 backdrop-blur-[2px] p-4"
+          onClick={handleClosePromo}
+        >
+          <div
+            className="w-full max-w-md rounded-2xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-[#111827] shadow-2xl overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Top Banner */}
+            <div className="relative bg-gradient-to-r from-[#2563EB] to-[#1D4ED8] px-5 py-4 text-white">
+              <div className="flex items-center justify-between gap-3">
+                <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/15 text-[11px] font-bold">
+                  <Sparkles className="w-3.5 h-3.5" />
+                  <span>Penawaran Spesial Mukaro</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleClosePromo}
+                  aria-label="Tutup popup promosi"
+                  className="w-7 h-7 rounded-full bg-white/15 hover:bg-white/25 flex items-center justify-center transition cursor-pointer"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+              <h3 className="text-lg font-extrabold tracking-tight mt-2.5">
+                Pilih Jalur Anda Bersama Mukaro
+              </h3>
+              <p className="text-xs text-blue-100 mt-0.5">
+                Mulai digitalisasi usaha kuliner atau raih penghasilan tambahan.
+              </p>
+            </div>
+
+            <div className="p-5 space-y-4">
+              {/* 2 Quick Tabs */}
+              <div className="grid grid-cols-2 gap-1.5 p-1 rounded-xl bg-slate-100 dark:bg-[#090D16] border border-slate-200 dark:border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => setPromoTab("owner")}
+                  className={`py-2 px-3 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition cursor-pointer ${
+                    promoTab === "owner"
+                      ? "bg-white dark:bg-[#111827] text-[#2563EB] shadow-xs border border-slate-200/80 dark:border-slate-700"
+                      : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100"
+                  }`}
+                >
+                  <StoreIcon className="w-3.5 h-3.5" />
+                  <span>Pemilik Usaha</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPromoTab("affiliate")}
+                  className={`py-2 px-3 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition cursor-pointer ${
+                    promoTab === "affiliate"
+                      ? "bg-white dark:bg-[#111827] text-emerald-600 dark:text-emerald-400 shadow-xs border border-slate-200/80 dark:border-slate-700"
+                      : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100"
+                  }`}
+                >
+                  <Handshake className="w-3.5 h-3.5" />
+                  <span>Partner Affiliate</span>
+                </button>
+              </div>
+
+              {promoTab === "owner" ? (
+                <div className="space-y-4">
+                  <div className="p-4 rounded-xl bg-blue-50/70 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800/70 space-y-2">
+                    <p className="text-sm font-extrabold text-slate-900 dark:text-slate-100 leading-snug">
+                      Gratis Uji Coba 14 Hari Full Fitur + 0% Komisi Transaksi
+                    </p>
+                    <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
+                      Langsung aktifkan QR Self-Order Meja, Kasir POS &amp; Ojol,
+                      Layar Dapur Live, serta Stok Resep tanpa kartu kredit.
+                    </p>
+                  </div>
+                  <Link
+                    href="/login"
+                    onClick={handleClosePromo}
+                    className="w-full py-3 rounded-xl bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-sm font-bold flex items-center justify-center gap-2 transition shadow-sm"
+                  >
+                    <span>Mulai Gratis Sekarang</span>
+                    <ArrowRight className="w-4 h-4" />
+                  </Link>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <div className="p-4 rounded-xl bg-emerald-50/70 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/70 space-y-2">
+                    <p className="text-sm font-extrabold text-slate-900 dark:text-slate-100 leading-snug">
+                      Komisi 30% Tanpa Modal — Ajak 1 Outlet Dapat Hingga Rp
+                      90.000/bln
+                    </p>
+                    <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
+                      Bagikan link referral Anda ke pemilik kedai kopi, resto,
+                      atau warmindo dan pantau komisi secara real-time.
+                    </p>
+                  </div>
+                  <Link
+                    href="/affiliate"
+                    onClick={handleClosePromo}
+                    className="w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold flex items-center justify-center gap-2 transition shadow-sm"
+                  >
+                    <span>Gabung Affiliate Gratis</span>
+                    <ArrowRight className="w-4 h-4" />
+                  </Link>
+                </div>
+              )}
+
+              <button
+                type="button"
+                onClick={handleClosePromo}
+                className="w-full py-1.5 text-center text-xs font-medium text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 transition cursor-pointer"
+              >
+                Nanti saja, lanjutkan melihat halaman
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -12,6 +12,7 @@ import {
   ShoppingBag,
   CheckCircle2,
   Loader2,
+  Split,
 } from "lucide-react";
 import {
   CartItem,
@@ -25,6 +26,7 @@ import { formatRupiah, generateOrderNumber } from "@/lib/format";
 import { createClient } from "@/lib/supabase/client";
 import { deductOrderStock } from "@/lib/stock";
 import { MenuDetailModal } from "@/components/customer/MenuDetailModal";
+import { SplitBillModal } from "@/components/admin/SplitBillModal";
 
 const ORDER_SOURCES: { key: OrderSource; label: string }[] = [
   { key: "walk_in", label: "Walk-in" },
@@ -53,6 +55,7 @@ export function PosCashierClient({
   const [cashReceived, setCashReceived] = useState("");
   const [cart, setCart] = useState<CartItem[]>([]);
   const [variantModalMenu, setVariantModalMenu] = useState<Menu | null>(null);
+  const [splitModalOpen, setSplitModalOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [successOrder, setSuccessOrder] = useState<string | null>(null);
 
@@ -201,6 +204,33 @@ export function PosCashierClient({
   };
 
   const cartItemCount = computedCart.reduce((s, i) => s + i.qty, 0);
+  const canSplitBill =
+    computedCart.length > 0 && (cartItemCount >= 2 || grandTotal > 0);
+
+  const handleItemSplitPaid = (
+    paidQuantities: Record<string, number>,
+    orderNumber: string
+  ) => {
+    setCart((prev) =>
+      prev
+        .map((item) => {
+          const paid = paidQuantities[item.cartKey] || 0;
+          return { ...item, qty: item.qty - paid };
+        })
+        .filter((item) => item.qty > 0)
+    );
+    setSuccessOrder(orderNumber);
+    router.refresh();
+  };
+
+  const handleAllSplitCompleted = (lastOrderNumber: string) => {
+    setCart([]);
+    setCustomerName("");
+    setTableNumber("");
+    setCashReceived("");
+    setSuccessOrder(lastOrderNumber);
+    router.refresh();
+  };
 
   return (
     <div className="space-y-4">
@@ -456,18 +486,31 @@ export function PosCashierClient({
             </div>
           </div>
 
-          {/* CTA Button */}
-          <button
-            type="button"
-            disabled={computedCart.length === 0 || submitting}
-            onClick={handleSubmitOrder}
-            className="w-full py-3.5 rounded-xl bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-sm font-semibold flex items-center justify-center gap-2 disabled:opacity-50 transition active:scale-[0.99]"
-          >
-            {submitting && <Loader2 className="w-4 h-4 animate-spin" />}
-            <span className="font-mono tabular-nums">
-              Bayar {formatRupiah(grandTotal)}
-            </span>
-          </button>
+          {/* CTA Buttons */}
+          <div className="flex items-center gap-2">
+            {canSplitBill && (
+              <button
+                type="button"
+                disabled={submitting}
+                onClick={() => setSplitModalOpen(true)}
+                className="px-3.5 py-3.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-[#090D16] hover:border-[#2563EB] text-slate-900 dark:text-slate-100 text-xs sm:text-sm font-semibold inline-flex items-center justify-center gap-1.5 disabled:opacity-50 transition shrink-0"
+              >
+                <Split className="w-4 h-4 text-[#2563EB]" />
+                <span>Split Bill</span>
+              </button>
+            )}
+            <button
+              type="button"
+              disabled={computedCart.length === 0 || submitting}
+              onClick={handleSubmitOrder}
+              className="flex-1 py-3.5 rounded-xl bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-sm font-semibold flex items-center justify-center gap-2 disabled:opacity-50 transition active:scale-[0.99]"
+            >
+              {submitting && <Loader2 className="w-4 h-4 animate-spin" />}
+              <span className="font-mono tabular-nums">
+                Bayar {formatRupiah(grandTotal)}
+              </span>
+            </button>
+          </div>
         </div>
 
         {/* RIGHT: Menu Grid */}
@@ -572,6 +615,23 @@ export function PosCashierClient({
           isStoreOpen={true}
           onClose={() => setVariantModalMenu(null)}
           onAddToCart={handleAddToCart}
+        />
+      )}
+
+      {splitModalOpen && (
+        <SplitBillModal
+          store={store}
+          cart={computedCart}
+          orderSource={orderSource}
+          customerName={customerName}
+          tableNumber={tableNumber}
+          subtotal={subtotal}
+          taxAmount={taxAmount}
+          serviceAmount={serviceAmount}
+          grandTotal={grandTotal}
+          onClose={() => setSplitModalOpen(false)}
+          onItemSplitPaid={handleItemSplitPaid}
+          onAllSplitCompleted={handleAllSplitCompleted}
         />
       )}
     </div>

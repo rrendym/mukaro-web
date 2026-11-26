@@ -23,6 +23,7 @@ import {
   FileSpreadsheet,
   Plus,
   Handshake,
+  BookOpen,
 } from "lucide-react";
 import { Store } from "@/types/database";
 import { createClient } from "@/lib/supabase/client";
@@ -405,6 +406,11 @@ export function AdminShell({
       label: "QR Code",
       href: `/${initialStore.slug}/admin/qr`,
       icon: QrCode,
+    },
+    {
+      label: "Panduan & Tutorial",
+      href: `/${initialStore.slug}/admin/guide`,
+      icon: BookOpen,
     },
   ];
 
