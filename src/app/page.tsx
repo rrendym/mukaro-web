@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import {
   ArrowRight,
@@ -46,20 +46,20 @@ import {
 const ADMIN_WA_URL =
   "https://wa.me/6282118699431?text=Halo%20Admin%20Mukaro%2C%20saya%20tertarik%20pakai%20sistem%20QR%20Self-Order%20%26%20POS%20untuk%20usaha%20saya.";
 
-const ECOSYSTEM_TOP = [
-  { name: "QRIS", icon: QrCode },
+const ECOSYSTEM_ROW_1 = [
   { name: "GoFood", icon: Bike },
   { name: "GrabFood", icon: ShoppingBag },
   { name: "ShopeeFood", icon: UtensilsCrossed },
 ];
 
-const ECOSYSTEM_BOTTOM = [
+const ECOSYSTEM_ROW_2 = [
+  { name: "QRIS", icon: QrCode },
   { name: "Midtrans", icon: CreditCard },
   { name: "WhatsApp", icon: MessageCircle },
   { name: "Thermal 58mm", icon: Printer },
 ];
 
-const ECOSYSTEM_ALL = [...ECOSYSTEM_TOP, ...ECOSYSTEM_BOTTOM];
+const ECOSYSTEM_ALL = [...ECOSYSTEM_ROW_1, ...ECOSYSTEM_ROW_2];
 
 const FAQS = [
   {
@@ -103,16 +103,37 @@ export default function LandingPage() {
   );
   const [openFaqIdx, setOpenFaqIdx] = useState<number | null>(0);
   const [showPromo, setShowPromo] = useState(false);
+  const [isClosingPromo, setIsClosingPromo] = useState(false);
+  const [showFloatingActions, setShowFloatingActions] = useState(false);
   const [promoTab, setPromoTab] = useState<"owner" | "affiliate">("owner");
   const [promoConfig, setPromoConfig] = useState<LandingPromoConfig>(
     DEFAULT_LANDING_PROMO
   );
+  const promoConfigRef = useRef<LandingPromoConfig>(DEFAULT_LANDING_PROMO);
+  const promoTriggeredRef = useRef(false);
+  const closeTimerRef = useRef<number | undefined>(undefined);
 
   useEffect(() => {
     let active = true;
-    let timerId: number | undefined;
 
-    const loadPromoAndSchedule = async () => {
+    const tryTriggerPromo = () => {
+      if (
+        !promoTriggeredRef.current &&
+        promoConfigRef.current.enabled &&
+        window.scrollY > 150
+      ) {
+        promoTriggeredRef.current = true;
+        setIsClosingPromo(false);
+        setShowPromo(true);
+      }
+    };
+
+    const onScroll = () => {
+      setShowFloatingActions(window.scrollY > 250);
+      tryTriggerPromo();
+    };
+
+    const loadPromo = async () => {
       let config = DEFAULT_LANDING_PROMO;
       if (isSupabaseConfigured()) {
         try {
@@ -131,25 +152,60 @@ export default function LandingPage() {
       }
 
       if (!active) return;
+      promoConfigRef.current = config;
       setPromoConfig(config);
-
-      if (config.enabled) {
-        timerId = window.setTimeout(() => {
-          if (active) setShowPromo(true);
-        }, 1500);
-      }
+      tryTriggerPromo();
     };
 
-    void loadPromoAndSchedule();
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    void loadPromo();
 
     return () => {
       active = false;
-      if (timerId !== undefined) window.clearTimeout(timerId);
+      window.removeEventListener("scroll", onScroll);
+      if (closeTimerRef.current !== undefined) {
+        window.clearTimeout(closeTimerRef.current);
+      }
     };
   }, []);
 
   const handleClosePromo = () => {
-    setShowPromo(false);
+    if (isClosingPromo) return;
+    const prefersReducedMotion =
+      typeof window !== "undefined" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    if (prefersReducedMotion) {
+      setShowPromo(false);
+      setIsClosingPromo(false);
+      return;
+    }
+
+    setIsClosingPromo(true);
+    closeTimerRef.current = window.setTimeout(() => {
+      setShowPromo(false);
+      setIsClosingPromo(false);
+    }, 220);
+  };
+
+  const handleNavScroll = (
+    e: React.MouseEvent<HTMLAnchorElement>,
+    href: string
+  ) => {
+    if (!href.startsWith("#")) return;
+    e.preventDefault();
+    setMobileMenuOpen(false);
+    const target = document.querySelector(href);
+    if (target) {
+      const reduced = window.matchMedia(
+        "(prefers-reduced-motion: reduce)"
+      ).matches;
+      target.scrollIntoView({
+        behavior: reduced ? "auto" : "smooth",
+        block: "start",
+      });
+    }
   };
 
   const pricing = {
@@ -204,11 +260,11 @@ export default function LandingPage() {
 
           {/* Center: Nav links — perfectly centered */}
           <nav className="justify-self-center flex items-center gap-6 text-sm font-medium text-slate-600 dark:text-slate-400">
-            <a href="#fitur" className="hover:text-slate-900 dark:hover:text-white transition">Fitur</a>
-            <a href="#ekosistem" className="hover:text-slate-900 dark:hover:text-white transition">Ekosistem</a>
-            <a href="#cara-kerja" className="hover:text-slate-900 dark:hover:text-white transition">Cara Kerja</a>
-            <a href="#harga" className="hover:text-slate-900 dark:hover:text-white transition">Harga</a>
-            <a href="#faq" className="hover:text-slate-900 dark:hover:text-white transition">FAQ</a>
+            <a href="#fitur" onClick={(e) => handleNavScroll(e, "#fitur")} className="hover:text-slate-900 dark:hover:text-white transition">Fitur</a>
+            <a href="#ekosistem" onClick={(e) => handleNavScroll(e, "#ekosistem")} className="hover:text-slate-900 dark:hover:text-white transition">Ekosistem</a>
+            <a href="#cara-kerja" onClick={(e) => handleNavScroll(e, "#cara-kerja")} className="hover:text-slate-900 dark:hover:text-white transition">Cara Kerja</a>
+            <a href="#harga" onClick={(e) => handleNavScroll(e, "#harga")} className="hover:text-slate-900 dark:hover:text-white transition">Harga</a>
+            <a href="#faq" onClick={(e) => handleNavScroll(e, "#faq")} className="hover:text-slate-900 dark:hover:text-white transition">FAQ</a>
             <Link
               href="/affiliate"
               className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-400 text-xs font-bold hover:bg-emerald-100 dark:hover:bg-emerald-900/60 transition"
@@ -269,11 +325,11 @@ export default function LandingPage() {
         {mobileMenuOpen && (
           <div className="animate-dropdown-enter md:hidden border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-[#111827] px-4 py-4 space-y-3">
             <div className="flex flex-col space-y-2 text-sm font-medium text-slate-600 dark:text-slate-300">
-              <a href="#fitur" onClick={() => setMobileMenuOpen(false)} className="py-1.5 hover:text-slate-900 dark:hover:text-white">Fitur</a>
-              <a href="#ekosistem" onClick={() => setMobileMenuOpen(false)} className="py-1.5 hover:text-slate-900 dark:hover:text-white">Ekosistem</a>
-              <a href="#cara-kerja" onClick={() => setMobileMenuOpen(false)} className="py-1.5 hover:text-slate-900 dark:hover:text-white">Cara Kerja</a>
-              <a href="#harga" onClick={() => setMobileMenuOpen(false)} className="py-1.5 hover:text-slate-900 dark:hover:text-white">Harga</a>
-              <a href="#faq" onClick={() => setMobileMenuOpen(false)} className="py-1.5 hover:text-slate-900 dark:hover:text-white">FAQ</a>
+              <a href="#fitur" onClick={(e) => handleNavScroll(e, "#fitur")} className="py-1.5 hover:text-slate-900 dark:hover:text-white">Fitur</a>
+              <a href="#ekosistem" onClick={(e) => handleNavScroll(e, "#ekosistem")} className="py-1.5 hover:text-slate-900 dark:hover:text-white">Ekosistem</a>
+              <a href="#cara-kerja" onClick={(e) => handleNavScroll(e, "#cara-kerja")} className="py-1.5 hover:text-slate-900 dark:hover:text-white">Cara Kerja</a>
+              <a href="#harga" onClick={(e) => handleNavScroll(e, "#harga")} className="py-1.5 hover:text-slate-900 dark:hover:text-white">Harga</a>
+              <a href="#faq" onClick={(e) => handleNavScroll(e, "#faq")} className="py-1.5 hover:text-slate-900 dark:hover:text-white">FAQ</a>
               <Link
                 href="/affiliate"
                 onClick={() => setMobileMenuOpen(false)}
@@ -388,7 +444,7 @@ export default function LandingPage() {
         {/* 3. Bento Feature Grid */}
         <section
           id="fitur"
-          className="py-20 sm:py-24 px-4 sm:px-6 border-t border-slate-200 dark:border-slate-800"
+          className="scroll-mt-20 py-20 sm:py-24 px-4 sm:px-6 border-t border-slate-200 dark:border-slate-800"
         >
           <div className="max-w-6xl mx-auto space-y-12">
             <div className="text-center max-w-2xl mx-auto space-y-3">
@@ -482,10 +538,10 @@ export default function LandingPage() {
           </div>
         </section>
 
-        {/* 4. Symmetrical App Ecosystem (Mobile 4+3 Grid, Desktop 1 Centered Row) */}
+        {/* 4. Symmetrical App Ecosystem (Mobile 3+4 Grid, Desktop 1 Centered Row) */}
         <section
           id="ekosistem"
-          className="py-20 sm:py-24 px-4 sm:px-6 bg-[#F8FAFC] dark:bg-[#0B1120] border-y border-slate-200 dark:border-slate-800"
+          className="scroll-mt-20 py-20 sm:py-24 px-4 sm:px-6 bg-[#F8FAFC] dark:bg-[#0B1120] border-y border-slate-200 dark:border-slate-800"
         >
           <div className="max-w-5xl mx-auto text-center space-y-10">
             <div className="max-w-2xl mx-auto space-y-3">
@@ -502,19 +558,60 @@ export default function LandingPage() {
               </p>
             </div>
 
-            {/* All 7 icons — below description, uniform & balanced on mobile/desktop */}
-            <div className="flex flex-wrap justify-center gap-3 sm:gap-6 max-w-sm sm:max-w-3xl mx-auto px-2 sm:px-0">
+            {/* Mobile (< md): Row 1 (3 items: GoFood, GrabFood, ShopeeFood) + Row 2 (4 items) */}
+            <div className="md:hidden space-y-4 max-w-sm mx-auto px-1">
+              <div className="flex justify-center gap-4">
+                {ECOSYSTEM_ROW_1.map((item) => {
+                  const Icon = item.icon;
+                  return (
+                    <div
+                      key={item.name}
+                      className="w-[78px] flex flex-col items-center gap-2 shrink-0"
+                    >
+                      <div className="w-14 h-14 rounded-2xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 shadow-xs flex items-center justify-center shrink-0">
+                        <Icon className="w-6 h-6 max-h-7 object-contain shrink-0 text-[#2563EB]" />
+                      </div>
+                      <span className="text-[11px] font-semibold text-slate-600 dark:text-slate-400 text-center leading-tight">
+                        {item.name}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div className="grid grid-cols-4 gap-2.5 justify-items-center">
+                {ECOSYSTEM_ROW_2.map((item) => {
+                  const Icon = item.icon;
+                  return (
+                    <div
+                      key={item.name}
+                      className="flex flex-col items-center gap-2 shrink-0"
+                    >
+                      <div className="w-14 h-14 rounded-2xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 shadow-xs flex items-center justify-center shrink-0">
+                        <Icon className="w-6 h-6 max-h-7 object-contain shrink-0 text-[#2563EB]" />
+                      </div>
+                      <span className="text-[11px] font-semibold text-slate-600 dark:text-slate-400 text-center leading-tight">
+                        {item.name}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Desktop (md+): 1 centered row */}
+            <div className="hidden md:flex flex-wrap justify-center gap-6 max-w-3xl mx-auto">
               {ECOSYSTEM_ALL.map((item) => {
                 const Icon = item.icon;
                 return (
                   <div
                     key={item.name}
-                    className="w-[72px] sm:w-20 flex flex-col items-center gap-2 shrink-0"
+                    className="w-20 flex flex-col items-center gap-2 shrink-0"
                   >
-                    <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 shadow-xs flex items-center justify-center hover:border-[#2563EB] transition shrink-0">
-                      <Icon className="w-6 h-6 sm:w-7 sm:h-7 max-h-7 sm:max-h-9 object-contain shrink-0 text-[#2563EB]" />
+                    <div className="w-16 h-16 rounded-2xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 shadow-xs flex items-center justify-center hover:border-[#2563EB] transition shrink-0">
+                      <Icon className="w-7 h-7 max-h-9 object-contain shrink-0 text-[#2563EB]" />
                     </div>
-                    <span className="text-[11px] sm:text-xs font-semibold text-slate-600 dark:text-slate-400 text-center leading-tight">
+                    <span className="text-xs font-semibold text-slate-600 dark:text-slate-400 text-center leading-tight">
                       {item.name}
                     </span>
                   </div>
@@ -525,7 +622,7 @@ export default function LandingPage() {
         </section>
 
         {/* 5. 3 Langkah Mudah */}
-        <section id="cara-kerja" className="py-20 sm:py-24 px-4 sm:px-6">
+        <section id="cara-kerja" className="scroll-mt-20 py-20 sm:py-24 px-4 sm:px-6">
           <div className="max-w-6xl mx-auto space-y-12">
             <div className="text-center max-w-2xl mx-auto space-y-3">
               <p className="text-xs font-bold uppercase tracking-wider text-[#2563EB]">
@@ -582,7 +679,7 @@ export default function LandingPage() {
         {/* 6. Bold & Contrasting 3-Tier Pricing Section */}
         <section
           id="harga"
-          className="py-20 sm:py-24 px-4 sm:px-6 bg-slate-950 text-white relative overflow-hidden"
+          className="scroll-mt-20 py-20 sm:py-24 px-4 sm:px-6 bg-slate-950 text-white relative overflow-hidden"
         >
           <div
             className="absolute inset-x-0 top-0 h-80 bg-[#2563EB]/25 blur-3xl pointer-events-none"
@@ -762,7 +859,7 @@ export default function LandingPage() {
         {/* 7. FAQ 2 Independent Columns */}
         <section
           id="faq"
-          className="py-20 sm:py-24 px-4 sm:px-6 bg-[#F8FAFC] dark:bg-[#0B1120] border-t border-slate-200 dark:border-slate-800"
+          className="scroll-mt-20 py-20 sm:py-24 px-4 sm:px-6 bg-[#F8FAFC] dark:bg-[#0B1120] border-t border-slate-200 dark:border-slate-800"
         >
           <div className="max-w-5xl mx-auto space-y-12">
             <div className="text-center max-w-2xl mx-auto space-y-3">
@@ -942,35 +1039,44 @@ export default function LandingPage() {
         </div>
       </footer>
 
-      {/* Floating WhatsApp CTA */}
+      {/* Scroll to Top Shortcut (hidden at top or when modal/drawer open) */}
+      <ScrollToTopButton
+        threshold={250}
+        hiddenWhenModalOpen={showPromo || mobileMenuOpen}
+        positionClassName="bottom-[72px] right-5"
+      />
+
+      {/* Floating WhatsApp CTA (hidden at top or when modal/drawer open) */}
       <a
         href={ADMIN_WA_URL}
         target="_blank"
         rel="noopener noreferrer"
         aria-label="Chat Admin Mukaro via WhatsApp"
-        className="fixed bottom-5 right-5 z-50 inline-flex items-center gap-2 px-4 py-3 rounded-full bg-[#10B981] hover:bg-[#059669] text-white text-xs sm:text-sm font-bold shadow-lg transition hover:scale-[1.03]"
+        className={`fixed bottom-5 right-5 z-40 inline-flex items-center gap-2 px-4 py-3 rounded-full bg-[#10B981] hover:bg-[#059669] text-white text-xs sm:text-sm font-bold shadow-lg transition-all duration-200 hover:scale-[1.03] active:scale-95 ${
+          showFloatingActions && !showPromo && !mobileMenuOpen
+            ? "opacity-100 translate-y-0 pointer-events-auto"
+            : "opacity-0 translate-y-3 pointer-events-none"
+        }`}
       >
         <MessageCircle className="w-4 h-4 shrink-0" />
         <span>Chat Admin</span>
       </a>
 
-      {/* Scroll to Top Shortcut */}
-      <ScrollToTopButton
-        hiddenWhenModalOpen={showPromo || mobileMenuOpen}
-        positionClassName="bottom-20 right-5"
-      />
-
       {/* New Visitor Promo Popup */}
       {showPromo && (
         <div
-          className="animate-backdrop-enter fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-[3px] p-4 overflow-y-auto"
+          className={`${
+            isClosingPromo ? "animate-backdrop-exit" : "animate-backdrop-enter"
+          } fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-[3px] p-4 overflow-y-auto`}
           onClick={handleClosePromo}
         >
           <div
             role="dialog"
             aria-modal="true"
             aria-label="Penawaran Spesial Mukaro"
-            className="animate-modal-enter relative z-10 opacity-100 visible w-full max-w-md my-auto rounded-2xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-[#111827] shadow-2xl overflow-hidden"
+            className={`${
+              isClosingPromo ? "animate-modal-exit" : "animate-modal-enter"
+            } relative z-10 w-full max-w-md my-auto rounded-2xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-[#111827] shadow-2xl overflow-hidden`}
             onClick={(e) => e.stopPropagation()}
           >
             {/* Top Banner */}

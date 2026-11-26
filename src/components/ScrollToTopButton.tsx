@@ -10,7 +10,7 @@ interface ScrollToTopButtonProps {
 }
 
 export function ScrollToTopButton({
-  threshold = 300,
+  threshold = 250,
   hiddenWhenModalOpen = false,
   positionClassName = "bottom-5 right-5",
 }: ScrollToTopButtonProps) {
