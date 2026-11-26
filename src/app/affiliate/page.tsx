@@ -7,8 +7,10 @@ import {
   ArrowLeft,
   ArrowRight,
   CheckCircle2,
+  ChevronDown,
   Coins,
   Handshake,
+  HelpCircle,
   Loader2,
   Sparkles,
 } from "lucide-react";
@@ -16,6 +18,29 @@ import { MukaroLogo } from "@/components/MukaroLogo";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
 import { formatRupiah } from "@/lib/format";
+
+const AFFILIATE_FAQS = [
+  {
+    q: "Bagaimana cara kerja komisi 30% Mukaro?",
+    a: "Komisi 30% diberikan dari setiap aktivasi dan perpanjangan paket berbayar merchant yang mendaftar lewat link referral Anda, hingga Rp 90.000/outlet/bulan (Starter Rp 24.000, Pro Rp 45.000, Enterprise Rp 90.000).",
+  },
+  {
+    q: "Apakah pendaftaran affiliate gratis dan butuh modal?",
+    a: "100% gratis tanpa syarat deposit, biaya pendaftaran, atau kewajiban membeli paket langganan terlebih dahulu.",
+  },
+  {
+    q: "Kapan dan bagaimana komisi bisa dicairkan?",
+    a: "Pencairan dapat diajukan langsung dari Dashboard Partner ke rekening bank atau e-wallet (BCA, Mandiri, BRI, BNI, GoPay, DANA, OVO) setelah memiliki minimal 2 outlet aktif berbayar dan saldo komisi minimal Rp 50.000.",
+  },
+  {
+    q: "Apakah boleh mendaftarkan toko milik sendiri (Self-Referral)?",
+    a: "Tidak diperbolehkan. Sistem otomatis mendeteksi kesamaan email atau nomor WhatsApp pemilik outlet dan mewajibkan minimal 2 outlet berbeda aktif berbayar sebelum komisi dapat dicairkan.",
+  },
+  {
+    q: "Bagaimana cara mempromosikan Mukaro jika belum punya banyak followers?",
+    a: "Anda bisa menawarkan langsung ke kedai kopi, resto, warmindo, atau tenant kuliner di sekitar Anda menggunakan materi promosi siap pakai (template WhatsApp, script video pendek, dan broadcast grup) yang sudah tersedia di Dashboard Partner.",
+  },
+];
 
 function generateReferralCode(name: string): string {
   const prefix = name
@@ -34,6 +59,7 @@ function generateReferralCode(name: string): string {
 export default function AffiliatePage() {
   const router = useRouter();
   const [simOutlets, setSimOutlets] = useState(10);
+  const [openFaqIdx, setOpenFaqIdx] = useState<number | null>(0);
   const [loggedInUserId, setLoggedInUserId] = useState<string | null>(null);
   const [alreadyPartner, setAlreadyPartner] = useState(false);
 
@@ -355,6 +381,54 @@ export default function AffiliatePage() {
             </div>
           </div>
         </div>
+
+        {/* FAQ Accordion Section */}
+        <section className="pt-8 border-t border-slate-200 dark:border-slate-800 space-y-6">
+          <div className="text-center max-w-2xl mx-auto space-y-2">
+            <div className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[#2563EB]">
+              <HelpCircle className="w-4 h-4" />
+              <span>Pertanyaan Umum Partner</span>
+            </div>
+            <h2 className="text-2xl sm:text-3xl font-extrabold tracking-[-0.03em] text-slate-900 dark:text-slate-100">
+              FAQ Program Affiliate Mukaro
+            </h2>
+            <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400">
+              Semua yang perlu Anda ketahui sebelum mulai menghasilkan komisi 30%.
+            </p>
+          </div>
+
+          <div className="max-w-3xl mx-auto space-y-3">
+            {AFFILIATE_FAQS.map((item, idx) => {
+              const isOpen = openFaqIdx === idx;
+              return (
+                <div
+                  key={item.q}
+                  className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-[#F8FAFC] dark:bg-[#111827] overflow-hidden"
+                >
+                  <button
+                    type="button"
+                    onClick={() => setOpenFaqIdx(isOpen ? null : idx)}
+                    className="w-full px-5 py-4 text-left flex items-center justify-between gap-3 cursor-pointer"
+                  >
+                    <span className="text-sm font-bold text-slate-900 dark:text-slate-100">
+                      {item.q}
+                    </span>
+                    <ChevronDown
+                      className={`w-4 h-4 text-slate-500 dark:text-slate-400 shrink-0 transition-transform ${
+                        isOpen ? "rotate-180" : ""
+                      }`}
+                    />
+                  </button>
+                  {isOpen && (
+                    <div className="px-5 pb-4 pt-3 border-t border-slate-200 dark:border-slate-800 text-xs sm:text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
+                      {item.a}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </section>
       </main>
     </div>
   );

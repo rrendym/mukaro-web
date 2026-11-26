@@ -38,6 +38,10 @@ import {
   LANDING_PROMO_KEY,
   LandingPromoConfig,
 } from "@/lib/promo-settings";
+import {
+  isSelfReferralCommission,
+  normalizeAffiliatePhone,
+} from "@/lib/affiliate";
 
 const PLAN_COMMISSION: Record<PlanTier, number> = {
   starter: 24000,
@@ -142,6 +146,14 @@ export function SuperadminClient({
     });
   }, [stores, menuCounts, orderCounts, nowMs]);
 
+  const profileMap = useMemo(() => {
+    const m = new Map<string, AffiliateProfile>();
+    for (const p of profiles) {
+      m.set(p.user_id, p);
+    }
+    return m;
+  }, [profiles]);
+
   // SaaS Financial KPIs
   const saasKpis = useMemo(() => {
     let mrr = 0;
@@ -160,11 +172,19 @@ export function SuperadminClient({
     }
 
     const pendingPayoutTotal = commissions
-      .filter((c) => c.status !== "paid")
+      .filter((c) => {
+        const partner = profileMap.get(c.referrer_user_id);
+        return c.status !== "paid" && !isSelfReferralCommission(c, partner);
+      })
       .reduce((sum, c) => sum + Number(c.commission_amount || 0), 0);
 
     const availablePayoutTotal = commissions
-      .filter((c) => c.status === "available")
+      .filter((c) => {
+        const partner = profileMap.get(c.referrer_user_id);
+        return (
+          c.status === "available" && !isSelfReferralCommission(c, partner)
+        );
+      })
       .reduce((sum, c) => sum + Number(c.commission_amount || 0), 0);
 
     return {
@@ -174,7 +194,7 @@ export function SuperadminClient({
       pendingPayoutTotal,
       availablePayoutTotal,
     };
-  }, [ownerGroups, commissions]);
+  }, [ownerGroups, commissions, profileMap]);
 
   const filterCounts = useMemo(() => {
     return {
@@ -198,14 +218,6 @@ export function SuperadminClient({
     return ownerGroups;
   }, [ownerGroups, tenantFilter]);
 
-  const profileMap = useMemo(() => {
-    const m = new Map<string, AffiliateProfile>();
-    for (const p of profiles) {
-      m.set(p.user_id, p);
-    }
-    return m;
-  }, [profiles]);
-
   const activateReferralCommissionIfNeeded = async (
     supabase: ReturnType<typeof createClient>,
     targetStores: Store[]
@@ -213,11 +225,26 @@ export function SuperadminClient({
     for (const st of targetStores) {
       const existing = commissions.find((c) => c.referred_store_id === st.id);
       if (existing && existing.status === "pending_trial") {
+        const refProfile = profileMap.get(existing.referrer_user_id);
+        const selfRef =
+          isSelfReferralCommission(existing, refProfile) ||
+          (refProfile &&
+            (refProfile.user_id === st.owner_id ||
+              (normalizeAffiliatePhone(refProfile.whatsapp) !== "" &&
+                normalizeAffiliatePhone(refProfile.whatsapp) ===
+                  normalizeAffiliatePhone(st.wa_number))));
+
         const { data: updatedComm } = await supabase
           .from("affiliate_commissions")
-          .update({ status: "available" })
+          .update(
+            selfRef
+              ? { status: "invalid_self_referral", commission_amount: 0 }
+              : { status: "available" }
+          )
           .eq("id", existing.id)
-          .select("*, stores(name, slug, subscription_status, plan_tier)")
+          .select(
+            "*, stores(id, name, slug, owner_id, wa_number, subscription_status, plan_tier, expired_at)"
+          )
           .single();
         if (updatedComm) {
           setCommissions((prev) =>
@@ -232,9 +259,14 @@ export function SuperadminClient({
             p.referral_code.toUpperCase() ===
             st.referred_by_code?.toUpperCase()
         );
-        if (refProfile && refProfile.user_id !== st.owner_id) {
+        if (refProfile) {
+          const selfRef =
+            refProfile.user_id === st.owner_id ||
+            (normalizeAffiliatePhone(refProfile.whatsapp) !== "" &&
+              normalizeAffiliatePhone(refProfile.whatsapp) ===
+                normalizeAffiliatePhone(st.wa_number));
           const plan = (st.plan_tier || "pro") as PlanTier;
-          const amt = PLAN_COMMISSION[plan] || 45000;
+          const amt = selfRef ? 0 : PLAN_COMMISSION[plan] || 45000;
           const { data: insertedComm } = await supabase
             .from("affiliate_commissions")
             .insert({
@@ -242,9 +274,11 @@ export function SuperadminClient({
               referred_store_id: st.id,
               plan_name: plan,
               commission_amount: amt,
-              status: "available",
+              status: selfRef ? "invalid_self_referral" : "available",
             })
-            .select("*, stores(name, slug, subscription_status, plan_tier)")
+            .select(
+              "*, stores(id, name, slug, owner_id, wa_number, subscription_status, plan_tier, expired_at)"
+            )
             .single();
           if (insertedComm) {
             setCommissions((prev) => [
@@ -948,6 +982,8 @@ export function SuperadminClient({
                   <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                     {commissions.map((c) => {
                       const partner = profileMap.get(c.referrer_user_id);
+                      const selfRef = isSelfReferralCommission(c, partner);
+                      const displayAmount = selfRef ? 0 : c.commission_amount;
                       return (
                         <tr key={c.id}>
                           <td className="py-3 pr-4">
@@ -980,23 +1016,25 @@ export function SuperadminClient({
                             {c.stores?.name || "-"} ({c.plan_name.toUpperCase()})
                           </td>
                           <td className="py-3 pr-4 font-mono tabular-nums font-bold">
-                            {formatRupiah(c.commission_amount)}
+                            {formatRupiah(displayAmount)}
                           </td>
                           <td className="py-3 pr-4">
                             <span
                               className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase ${
-                                c.status === "paid"
-                                  ? "bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700"
-                                  : c.status === "available"
-                                    ? "bg-blue-50 dark:bg-blue-950/60 text-[#2563EB]"
-                                    : "bg-amber-50 dark:bg-amber-950/50 text-amber-700"
+                                selfRef
+                                  ? "bg-rose-50 dark:bg-rose-950/50 text-rose-700 dark:text-rose-300"
+                                  : c.status === "paid"
+                                    ? "bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700"
+                                    : c.status === "available"
+                                      ? "bg-blue-50 dark:bg-blue-950/60 text-[#2563EB]"
+                                      : "bg-amber-50 dark:bg-amber-950/50 text-amber-700"
                               }`}
                             >
-                              {c.status}
+                              {selfRef ? "Invalid (Self-Referral)" : c.status}
                             </span>
                           </td>
                           <td className="py-3 text-right">
-                            {c.status === "available" && (
+                            {!selfRef && c.status === "available" && (
                               <button
                                 type="button"
                                 disabled={busyId === c.id}

@@ -33,7 +33,9 @@ export default async function PartnerPage() {
 
   const { data: commissions } = await supabase
     .from("affiliate_commissions")
-    .select("*, stores(name, slug, subscription_status, plan_tier)")
+    .select(
+      "*, stores(id, name, slug, owner_id, wa_number, subscription_status, plan_tier, expired_at)"
+    )
     .eq("referrer_user_id", user.id)
     .order("created_at", { ascending: false });
 

@@ -61,7 +61,9 @@ export default async function SuperadminPage() {
       .order("created_at", { ascending: false }),
     supabase
       .from("affiliate_commissions")
-      .select("*, stores(name, slug, subscription_status, plan_tier)")
+      .select(
+        "*, stores(id, name, slug, owner_id, wa_number, subscription_status, plan_tier, expired_at)"
+      )
       .order("created_at", { ascending: false }),
     supabase.from("menus").select("store_id"),
     supabase.from("orders").select("store_id"),

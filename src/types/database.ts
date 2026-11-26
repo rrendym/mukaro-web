@@ -1,7 +1,11 @@
 export type OrderMode = "table" | "counter" | "hybrid";
 export type SubscriptionStatus = "trial" | "active" | "expired";
 export type PlanTier = "starter" | "pro" | "enterprise";
-export type CommissionStatus = "pending_trial" | "available" | "paid";
+export type CommissionStatus =
+  | "pending_trial"
+  | "available"
+  | "paid"
+  | "invalid_self_referral";
 export type MenuBadge = "BESTSELLER" | "PROMO" | "BARU";
 export type StockMode = "none" | "direct" | "recipe";
 
@@ -197,9 +201,13 @@ export interface AffiliateCommission {
   created_at: string;
   paid_at: string | null;
   stores?: {
+    id?: string;
     name: string;
     slug: string;
+    owner_id?: string | null;
+    wa_number?: string | null;
     subscription_status: string;
     plan_tier?: string | null;
+    expired_at?: string;
   } | null;
 }
