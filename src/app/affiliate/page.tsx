@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { MukaroLogo } from "@/components/MukaroLogo";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { ScrollToTopButton } from "@/components/ScrollToTopButton";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
 import { formatRupiah } from "@/lib/format";
 
@@ -33,8 +34,8 @@ const AFFILIATE_FAQS = [
     a: "Pencairan dapat diajukan langsung dari Dashboard Partner ke rekening bank atau e-wallet (BCA, Mandiri, BRI, BNI, GoPay, DANA, OVO) setelah memiliki minimal 2 outlet aktif berbayar dan saldo komisi minimal Rp 50.000.",
   },
   {
-    q: "Apakah boleh mendaftarkan toko milik sendiri (Self-Referral)?",
-    a: "Tidak diperbolehkan. Sistem otomatis mendeteksi kesamaan email atau nomor WhatsApp pemilik outlet dan mewajibkan minimal 2 outlet berbeda aktif berbayar sebelum komisi dapat dicairkan.",
+    q: "Bagaimana cara mendapatkan banyak merchant aktif lebih cepat?",
+    a: "Tawarkan langsung ke kedai kopi, rumah makan, warmindo, atau UMKM kuliner di sekitar Anda dengan memanfaatkan materi promosi siap pakai di Dashboard Partner (template WhatsApp, script video pendek, dan broadcast komunitas) serta tawarkan masa uji coba gratis 14 hari tanpa risiko bagi calon merchant.",
   },
   {
     q: "Bagaimana cara mempromosikan Mukaro jika belum punya banyak followers?",
@@ -430,6 +431,7 @@ export default function AffiliatePage() {
           </div>
         </section>
       </main>
+      <ScrollToTopButton />
     </div>
   );
 }

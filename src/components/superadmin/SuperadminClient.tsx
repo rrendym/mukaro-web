@@ -31,6 +31,7 @@ import {
 } from "@/types/database";
 import { MukaroLogo } from "@/components/MukaroLogo";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { ScrollToTopButton } from "@/components/ScrollToTopButton";
 import { createClient } from "@/lib/supabase/client";
 import { formatRupiah, slugify } from "@/lib/format";
 import {
@@ -1226,6 +1227,7 @@ export function SuperadminClient({
           </form>
         )}
       </main>
+      <ScrollToTopButton />
     </div>
   );
 }

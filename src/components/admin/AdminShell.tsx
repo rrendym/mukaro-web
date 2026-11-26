@@ -31,6 +31,7 @@ import { formatRupiah, slugify } from "@/lib/format";
 import { getStorePlanTier } from "@/lib/subscription";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { MukaroLogo } from "@/components/MukaroLogo";
+import { ScrollToTopButton } from "@/components/ScrollToTopButton";
 
 interface AdminShellProps {
   store: Store;
@@ -740,6 +741,10 @@ export function AdminShell({
           </div>
         </div>
       )}
+
+      <ScrollToTopButton
+        hiddenWhenModalOpen={showAddBranch || showOpenRitual || mobileNavOpen}
+      />
     </div>
   );
 }

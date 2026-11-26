@@ -26,6 +26,7 @@ import {
 } from "@/types/database";
 import { MukaroLogo } from "@/components/MukaroLogo";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { ScrollToTopButton } from "@/components/ScrollToTopButton";
 import { formatRupiah } from "@/lib/format";
 import { createClient } from "@/lib/supabase/client";
 import { isSelfReferralCommission } from "@/lib/affiliate";
@@ -726,6 +727,7 @@ export function PartnerDashboardClient({
           </>
         )}
       </main>
+      <ScrollToTopButton />
     </div>
   );
 }

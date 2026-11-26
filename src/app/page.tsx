@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import { MukaroLogo } from "@/components/MukaroLogo";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { ScrollToTopButton } from "@/components/ScrollToTopButton";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
 import {
   DEFAULT_LANDING_PROMO,
@@ -501,19 +502,19 @@ export default function LandingPage() {
               </p>
             </div>
 
-            {/* All 7 icons — below description, unified flex-wrap */}
-            <div className="flex flex-wrap justify-center gap-3 sm:gap-5 max-w-md sm:max-w-3xl mx-auto">
+            {/* All 7 icons — below description, uniform & balanced on mobile/desktop */}
+            <div className="flex flex-wrap justify-center gap-3 sm:gap-6 max-w-sm sm:max-w-3xl mx-auto px-2 sm:px-0">
               {ECOSYSTEM_ALL.map((item) => {
                 const Icon = item.icon;
                 return (
                   <div
                     key={item.name}
-                    className="flex flex-col items-center gap-2"
+                    className="w-[72px] sm:w-20 flex flex-col items-center gap-2 shrink-0"
                   >
-                    <div className="w-16 h-16 rounded-2xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 shadow-xs flex items-center justify-center hover:border-[#2563EB] transition">
-                      <Icon className="w-6 h-6 text-[#2563EB]" />
+                    <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 shadow-xs flex items-center justify-center hover:border-[#2563EB] transition shrink-0">
+                      <Icon className="w-6 h-6 sm:w-7 sm:h-7 max-h-7 sm:max-h-9 object-contain shrink-0 text-[#2563EB]" />
                     </div>
-                    <span className="text-xs font-semibold text-slate-600 dark:text-slate-400">
+                    <span className="text-[11px] sm:text-xs font-semibold text-slate-600 dark:text-slate-400 text-center leading-tight">
                       {item.name}
                     </span>
                   </div>
@@ -773,7 +774,7 @@ export default function LandingPage() {
               </h2>
             </div>
 
-            <div className="min-h-[690px] md:min-h-[430px] flex flex-col justify-start">
+            <div className="md:min-h-[430px] flex flex-col justify-start">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
                 <div className="flex flex-col gap-4">
                   {leftFaqs.map((item, idx) => renderFaqCard(item, idx))}
@@ -953,14 +954,23 @@ export default function LandingPage() {
         <span>Chat Admin</span>
       </a>
 
+      {/* Scroll to Top Shortcut */}
+      <ScrollToTopButton
+        hiddenWhenModalOpen={showPromo || mobileMenuOpen}
+        positionClassName="bottom-20 right-5"
+      />
+
       {/* New Visitor Promo Popup */}
       {showPromo && (
         <div
-          className="animate-backdrop-enter fixed inset-0 z-50 flex items-center justify-center bg-black/55 backdrop-blur-[2px] p-4"
+          className="animate-backdrop-enter fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-[3px] p-4 overflow-y-auto"
           onClick={handleClosePromo}
         >
           <div
-            className="animate-modal-enter w-full max-w-md rounded-2xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-[#111827] shadow-2xl overflow-hidden"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Penawaran Spesial Mukaro"
+            className="animate-modal-enter relative z-10 opacity-100 visible w-full max-w-md my-auto rounded-2xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-[#111827] shadow-2xl overflow-hidden"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Top Banner */}
