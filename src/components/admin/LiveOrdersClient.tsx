@@ -305,11 +305,11 @@ export function LiveOrdersClient({
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-extrabold tracking-[-0.03em] text-slate-900 flex items-center gap-2">
+          <h1 className="text-2xl font-extrabold tracking-[-0.03em] text-slate-900 dark:text-slate-100 flex items-center gap-2">
             <BellRing className="w-6 h-6 text-[#2563EB]" />
             <span>Pesanan Live &amp; Dapur</span>
           </h1>
-          <p className="text-xs text-slate-500 mt-0.5">
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
             Pantau pesanan masuk secara real-time, proses dapur, dan cetak struk 58mm.
           </p>
         </div>
@@ -323,8 +323,8 @@ export function LiveOrdersClient({
             }}
             className={`px-3.5 py-2 rounded-xl text-xs font-semibold border flex items-center gap-1.5 transition ${
               soundEnabled
-                ? "bg-emerald-50 border-emerald-200 text-emerald-700"
-                : "bg-white border-slate-200 text-slate-500"
+                ? "bg-emerald-50 dark:bg-emerald-950/50 border-emerald-200 text-emerald-700"
+                : "bg-white dark:bg-[#111827] border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400"
             }`}
           >
             <Volume2 className="w-3.5 h-3.5" />
@@ -337,7 +337,7 @@ export function LiveOrdersClient({
             className={`px-3.5 py-2 rounded-xl text-xs font-semibold border flex items-center gap-1.5 transition ${
               wakeLockActive
                 ? "bg-[#2563EB] border-[#2563EB] text-white"
-                : "bg-white border-slate-200 text-slate-700"
+                : "bg-white dark:bg-[#111827] border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300"
             }`}
           >
             <Monitor className="w-3.5 h-3.5" />
@@ -375,7 +375,7 @@ export function LiveOrdersClient({
             className={`px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition ${
               activeTab === tab.key
                 ? "bg-[#2563EB] text-white"
-                : "bg-white border border-slate-200 text-slate-600 hover:text-slate-900"
+                : "bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:text-slate-100"
             }`}
           >
             {tab.label}
@@ -385,7 +385,7 @@ export function LiveOrdersClient({
 
       {/* Orders Grid */}
       {currentList.length === 0 ? (
-        <div className="bg-white rounded-2xl p-12 text-center border border-slate-200 text-sm text-slate-500">
+        <div className="bg-white dark:bg-[#111827] rounded-2xl p-12 text-center border border-slate-200 dark:border-slate-800 text-sm text-slate-500 dark:text-slate-400">
           Tidak ada pesanan pada tab ini.
         </div>
       ) : (
@@ -403,7 +403,7 @@ export function LiveOrdersClient({
             return (
               <div
                 key={order.id}
-                className="bg-white rounded-2xl border border-slate-200 flex flex-col justify-between overflow-hidden"
+                className="bg-white dark:bg-[#111827] rounded-2xl border border-slate-200 dark:border-slate-800 flex flex-col justify-between overflow-hidden"
               >
                 {/* Card header strip */}
                 <div className="bg-[#0F172A] text-white px-4 py-2.5 flex items-center justify-between gap-2">
@@ -423,9 +423,9 @@ export function LiveOrdersClient({
                   <span
                     className={`px-2.5 py-1 rounded-full text-[10px] font-bold shrink-0 ${
                       order.payment_status === "paid"
-                        ? "bg-emerald-50 text-emerald-700"
+                        ? "bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700"
                         : order.payment_status === "pending"
-                          ? "bg-rose-50 text-rose-700"
+                          ? "bg-rose-50 dark:bg-rose-950/50 text-rose-700"
                           : "bg-white/10 text-white/80"
                     }`}
                   >
@@ -438,7 +438,7 @@ export function LiveOrdersClient({
                 </div>
 
                 <div className="p-4 space-y-3 flex-1">
-                  <p className="text-xs text-slate-500">
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
                     {order.customer_name || "Pelanggan"} •{" "}
                     {new Date(order.created_at).toLocaleTimeString("id-ID", {
                       hour: "2-digit",
@@ -447,19 +447,19 @@ export function LiveOrdersClient({
                   </p>
 
                   {/* Items */}
-                  <div className="border-t border-b border-slate-200 py-3 space-y-2">
+                  <div className="border-t border-b border-slate-200 dark:border-slate-800 py-3 space-y-2">
                     {(order.order_items || []).map((item) => (
                       <div
                         key={item.id}
                         className="flex justify-between gap-2 text-xs"
                       >
                         <div>
-                          <span className="font-bold text-slate-900">
+                          <span className="font-bold text-slate-900 dark:text-slate-100">
                             {item.qty}x {item.menu_name}
                           </span>
                           {item.selected_variants &&
                             item.selected_variants.length > 0 && (
-                              <p className="text-slate-500 text-[11px]">
+                              <p className="text-slate-500 dark:text-slate-400 text-[11px]">
                                 {item.selected_variants
                                   .map((v) => v.optionName)
                                   .join(", ")}
@@ -471,7 +471,7 @@ export function LiveOrdersClient({
                             </p>
                           )}
                         </div>
-                        <span className="font-semibold text-slate-700 shrink-0 font-mono tabular-nums">
+                        <span className="font-semibold text-slate-700 dark:text-slate-300 shrink-0 font-mono tabular-nums">
                           {formatRupiah(Number(item.subtotal))}
                         </span>
                       </div>
@@ -479,19 +479,19 @@ export function LiveOrdersClient({
                   </div>
 
                   {order.notes && (
-                    <p className="text-xs bg-[#F8FAFC] border border-slate-100 p-2.5 rounded-xl text-slate-700">
+                    <p className="text-xs bg-[#F8FAFC] dark:bg-[#090D16] border border-slate-100 dark:border-slate-800/80 p-2.5 rounded-xl text-slate-700 dark:text-slate-300">
                       <span className="font-bold">Catatan:</span> {order.notes}
                     </p>
                   )}
 
                   {order.void_reason && (
-                    <p className="text-xs bg-rose-50 p-2.5 rounded-xl text-rose-700">
+                    <p className="text-xs bg-rose-50 dark:bg-rose-950/50 p-2.5 rounded-xl text-rose-700">
                       <span className="font-bold">Alasan Batal:</span>{" "}
                       {order.void_reason}
                     </p>
                   )}
 
-                  <div className="flex items-center justify-between text-sm font-bold text-slate-900">
+                  <div className="flex items-center justify-between text-sm font-bold text-slate-900 dark:text-slate-100">
                     <span>Total ({order.payment_method || "-"})</span>
                     <span className="font-mono tabular-nums">{formatRupiah(Number(order.total_amount))}</span>
                   </div>
@@ -525,7 +525,7 @@ export function LiveOrdersClient({
                   <button
                     type="button"
                     onClick={() => setPrintOrder(order)}
-                    className="py-2.5 px-3.5 rounded-xl border border-slate-200 text-xs font-semibold text-slate-700 hover:bg-[#F8FAFC] flex items-center gap-1.5 transition"
+                    className="py-2.5 px-3.5 rounded-xl border border-slate-200 dark:border-slate-800 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-[#F8FAFC] dark:bg-[#090D16] flex items-center gap-1.5 transition"
                   >
                     <Printer className="w-3.5 h-3.5" />
                     <span>Cetak</span>
@@ -540,7 +540,7 @@ export function LiveOrdersClient({
                         setVoidReason("");
                         setVoidError(null);
                       }}
-                      className="py-2.5 px-3.5 rounded-xl border border-rose-200 text-xs font-semibold text-rose-700 hover:bg-rose-50 flex items-center gap-1 transition"
+                      className="py-2.5 px-3.5 rounded-xl border border-rose-200 text-xs font-semibold text-rose-700 hover:bg-rose-50 dark:bg-rose-950/50 flex items-center gap-1 transition"
                     >
                       <XCircle className="w-3.5 h-3.5" />
                       <span>Void</span>
@@ -560,7 +560,7 @@ export function LiveOrdersClient({
           onClick={() => setVoidOrder(null)}
         >
           <div
-            className="w-full max-w-sm bg-white rounded-2xl border border-[#E6E4DF] p-6 space-y-4 shadow-2xl"
+            className="w-full max-w-sm bg-white dark:bg-[#111827] rounded-2xl border border-[#E6E4DF] p-6 space-y-4 shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between">
@@ -631,7 +631,7 @@ export function LiveOrdersClient({
           onClick={() => setPrintOrder(null)}
         >
           <div
-            className="w-full max-w-xs bg-white rounded-2xl border border-[#E6E4DF] p-5 space-y-4 shadow-2xl"
+            className="w-full max-w-xs bg-white dark:bg-[#111827] rounded-2xl border border-[#E6E4DF] p-5 space-y-4 shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between">
@@ -649,7 +649,7 @@ export function LiveOrdersClient({
 
             <div
               id="thermal-receipt"
-              className="p-3 border border-dashed border-neutral-300 rounded-xl font-mono text-[11px] leading-snug text-black bg-white space-y-2"
+              className="p-3 border border-dashed border-neutral-300 rounded-xl font-mono text-[11px] leading-snug text-black bg-white dark:bg-[#111827] space-y-2"
             >
               <div className="text-center border-b border-dashed border-neutral-400 pb-2">
                 <p className="font-bold text-xs uppercase">{store.name}</p>

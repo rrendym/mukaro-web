@@ -59,8 +59,23 @@ export default async function AdminLayout({
     );
   }
 
+  const { data: ownerStoresData } = await supabase
+    .from("stores")
+    .select("*")
+    .eq("owner_id", user.id)
+    .order("created_at", { ascending: true });
+
+  const ownerStores =
+    ownerStoresData && ownerStoresData.length > 0
+      ? (ownerStoresData as Store[])
+      : [store];
+
   return (
-    <AdminShell store={store} userEmail={user.email || ""}>
+    <AdminShell
+      store={store}
+      ownerStores={ownerStores}
+      userEmail={user.email || ""}
+    >
       {children}
     </AdminShell>
   );

@@ -261,7 +261,7 @@ export function InventoryManagerClient({
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-extrabold tracking-tight text-slate-900">
+        <h1 className="text-2xl font-extrabold tracking-tight text-slate-900 dark:text-slate-100">
           Manajemen Stok, Resep &amp; Opname
         </h1>
         <p className="text-xs text-neutral-500 mt-0.5">
@@ -270,14 +270,14 @@ export function InventoryManagerClient({
       </div>
 
       {/* Tabs */}
-      <div className="inline-flex p-1 bg-white border border-slate-200 rounded-2xl">
+      <div className="inline-flex p-1 bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 rounded-2xl">
         <button
           type="button"
           onClick={() => setActiveTab("ingredients")}
           className={`px-5 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition ${
             activeTab === "ingredients"
               ? "bg-[#2563EB] text-white"
-              : "text-neutral-600 hover:text-slate-900"
+              : "text-neutral-600 hover:text-slate-900 dark:text-slate-100"
           }`}
         >
           <Boxes className="w-3.5 h-3.5" />
@@ -289,7 +289,7 @@ export function InventoryManagerClient({
           className={`px-5 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition ${
             activeTab === "opname"
               ? "bg-[#2563EB] text-white"
-              : "text-neutral-600 hover:text-slate-900"
+              : "text-neutral-600 hover:text-slate-900 dark:text-slate-100"
           }`}
         >
           <ClipboardCheck className="w-3.5 h-3.5" />
@@ -300,8 +300,8 @@ export function InventoryManagerClient({
       {activeTab === "ingredients" && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Bahan Baku CRUD */}
-          <div className="bg-white rounded-2xl p-5 border border-slate-200 space-y-4">
-            <h2 className="text-sm font-extrabold tracking-tight text-slate-900">
+          <div className="bg-white dark:bg-[#111827] rounded-2xl p-5 border border-slate-200 dark:border-slate-800 space-y-4">
+            <h2 className="text-sm font-extrabold tracking-tight text-slate-900 dark:text-slate-100">
               Daftar Bahan Baku
             </h2>
 
@@ -315,12 +315,12 @@ export function InventoryManagerClient({
                 value={ingName}
                 onChange={(e) => setIngName(e.target.value)}
                 placeholder="Nama bahan (mis: Susu UHT)"
-                className="col-span-5 px-3 py-2 rounded-xl border border-slate-200 text-xs focus:outline-none focus:border-[#2563EB]"
+                className="col-span-5 px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 text-xs focus:outline-none focus:border-[#2563EB]"
               />
               <select
                 value={ingUnit}
                 onChange={(e) => setIngUnit(e.target.value)}
-                className="col-span-2 px-2 py-2 rounded-xl border border-slate-200 text-xs bg-white focus:outline-none focus:border-[#2563EB]"
+                className="col-span-2 px-2 py-2 rounded-xl border border-slate-200 dark:border-slate-800 text-xs bg-white dark:bg-[#111827] focus:outline-none focus:border-[#2563EB]"
               >
                 <option value="gr">gr</option>
                 <option value="ml">ml</option>
@@ -331,14 +331,14 @@ export function InventoryManagerClient({
                 value={ingQty}
                 onChange={(e) => setIngQty(e.target.value)}
                 placeholder="Stok"
-                className="col-span-2 px-2.5 py-2 rounded-xl border border-slate-200 text-xs font-mono tabular-nums focus:outline-none focus:border-[#2563EB]"
+                className="col-span-2 px-2.5 py-2 rounded-xl border border-slate-200 dark:border-slate-800 text-xs font-mono tabular-nums focus:outline-none focus:border-[#2563EB]"
               />
               <input
                 type="number"
                 value={ingMin}
                 onChange={(e) => setIngMin(e.target.value)}
                 placeholder="Min"
-                className="col-span-2 px-2.5 py-2 rounded-xl border border-slate-200 text-xs font-mono tabular-nums focus:outline-none focus:border-[#2563EB]"
+                className="col-span-2 px-2.5 py-2 rounded-xl border border-slate-200 dark:border-slate-800 text-xs font-mono tabular-nums focus:outline-none focus:border-[#2563EB]"
               />
               <button
                 type="submit"
@@ -358,10 +358,10 @@ export function InventoryManagerClient({
                 ingredients.map((ing) => (
                   <div
                     key={ing.id}
-                    className="flex items-center justify-between p-3 rounded-xl bg-[#F8FAFC]"
+                    className="flex items-center justify-between p-3 rounded-xl bg-[#F8FAFC] dark:bg-[#090D16]"
                   >
                     <div>
-                      <p className="text-xs font-bold text-slate-900">
+                      <p className="text-xs font-bold text-slate-900 dark:text-slate-100">
                         {ing.name}
                       </p>
                       <p className="text-[11px] text-neutral-500 font-mono tabular-nums">
@@ -383,9 +383,9 @@ export function InventoryManagerClient({
           </div>
 
           {/* Menu Recipe Builder */}
-          <div className="bg-white rounded-2xl p-5 border border-slate-200 space-y-4">
+          <div className="bg-white dark:bg-[#111827] rounded-2xl p-5 border border-slate-200 dark:border-slate-800 space-y-4">
             <div>
-              <h2 className="text-sm font-extrabold tracking-tight text-slate-900">
+              <h2 className="text-sm font-extrabold tracking-tight text-slate-900 dark:text-slate-100">
                 Komposisi Resep per Menu
               </h2>
               <p className="text-[11px] text-neutral-500">
@@ -397,7 +397,7 @@ export function InventoryManagerClient({
             <select
               value={selectedMenuId}
               onChange={(e) => setSelectedMenuId(e.target.value)}
-              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-bold bg-white focus:outline-none focus:border-[#2563EB]"
+              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 text-xs font-bold bg-white dark:bg-[#111827] focus:outline-none focus:border-[#2563EB]"
             >
               {menus.map((m) => (
                 <option key={m.id} value={m.id}>
@@ -414,7 +414,7 @@ export function InventoryManagerClient({
                 <select
                   value={recipeIngId}
                   onChange={(e) => setRecipeIngId(e.target.value)}
-                  className="flex-1 px-3 py-2 rounded-xl border border-slate-200 text-xs bg-white focus:outline-none focus:border-[#2563EB]"
+                  className="flex-1 px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 text-xs bg-white dark:bg-[#111827] focus:outline-none focus:border-[#2563EB]"
                 >
                   {ingredients.map((i) => (
                     <option key={i.id} value={i.id}>
@@ -429,7 +429,7 @@ export function InventoryManagerClient({
                   value={recipeQty}
                   onChange={(e) => setRecipeQty(e.target.value)}
                   placeholder="Takaran"
-                  className="w-24 px-3 py-2 rounded-xl border border-slate-200 text-xs font-mono tabular-nums focus:outline-none focus:border-[#2563EB]"
+                  className="w-24 px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 text-xs font-mono tabular-nums focus:outline-none focus:border-[#2563EB]"
                 />
                 <button
                   type="submit"
@@ -452,9 +452,9 @@ export function InventoryManagerClient({
                   return (
                     <div
                       key={r.id}
-                      className="flex items-center justify-between p-3 rounded-xl bg-[#F8FAFC]"
+                      className="flex items-center justify-between p-3 rounded-xl bg-[#F8FAFC] dark:bg-[#090D16]"
                     >
-                      <span className="text-xs font-bold text-slate-900 font-mono tabular-nums">
+                      <span className="text-xs font-bold text-slate-900 dark:text-slate-100 font-mono tabular-nums">
                         {ing?.name || "Bahan"} — {r.qty_needed} {ing?.unit}
                       </span>
                       <button
@@ -476,17 +476,17 @@ export function InventoryManagerClient({
       {activeTab === "opname" && (
         <div className="space-y-6">
           {opnameSavedToast && (
-            <div className="p-3.5 rounded-2xl bg-emerald-50 border border-emerald-200/30 text-xs text-emerald-700 font-bold flex items-center gap-2">
+            <div className="p-3.5 rounded-2xl bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200/30 text-xs text-emerald-700 font-bold flex items-center gap-2">
               <CheckCircle2 className="w-4 h-4" />
               <span>Stock opname berhasil disimpan dan saldo diperbarui!</span>
             </div>
           )}
 
-          <div className="bg-white rounded-2xl p-5 border border-slate-200 space-y-4">
+          <div className="bg-white dark:bg-[#111827] rounded-2xl p-5 border border-slate-200 dark:border-slate-800 space-y-4">
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs">
                 <thead>
-                  <tr className="border-b border-slate-200 text-neutral-500">
+                  <tr className="border-b border-slate-200 dark:border-slate-800 text-neutral-500">
                     <th className="py-2.5 pr-4 font-bold">Nama Item</th>
                     <th className="py-2.5 pr-4 font-bold">Tipe</th>
                     <th className="py-2.5 pr-4 font-bold">Stok Sistem</th>
@@ -494,7 +494,7 @@ export function InventoryManagerClient({
                     <th className="py-2.5 font-bold">Selisih</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-200">
+                <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
                   {directStockMenus.map((m) => {
                     const key = `menu:${m.id}`;
                     const val = opnameInputs[key];
@@ -502,7 +502,7 @@ export function InventoryManagerClient({
                     const diff = hasVal ? Number(val) - Number(m.stock_qty) : 0;
                     return (
                       <tr key={key}>
-                        <td className="py-3 pr-4 font-bold text-slate-900">
+                        <td className="py-3 pr-4 font-bold text-slate-900 dark:text-slate-100">
                           {m.name}
                         </td>
                         <td className="py-3 pr-4 text-neutral-500">
@@ -522,7 +522,7 @@ export function InventoryManagerClient({
                               }))
                             }
                             placeholder={String(m.stock_qty)}
-                            className="w-24 px-2.5 py-1.5 rounded-lg border border-slate-200 text-xs font-bold font-mono tabular-nums focus:outline-none focus:border-[#2563EB]"
+                            className="w-24 px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-800 text-xs font-bold font-mono tabular-nums focus:outline-none focus:border-[#2563EB]"
                           />
                         </td>
                         <td className="py-3 font-extrabold font-mono tabular-nums">
@@ -533,7 +533,7 @@ export function InventoryManagerClient({
                                   ? "text-emerald-700"
                                   : diff < 0
                                     ? "text-rose-700"
-                                    : "text-slate-900"
+                                    : "text-slate-900 dark:text-slate-100"
                               }
                             >
                               {diff > 0 ? `+${diff}` : diff}
@@ -555,7 +555,7 @@ export function InventoryManagerClient({
                       : 0;
                     return (
                       <tr key={key}>
-                        <td className="py-3 pr-4 font-bold text-slate-900">
+                        <td className="py-3 pr-4 font-bold text-slate-900 dark:text-slate-100">
                           {ing.name} ({ing.unit})
                         </td>
                         <td className="py-3 pr-4 text-neutral-500">
@@ -575,7 +575,7 @@ export function InventoryManagerClient({
                               }))
                             }
                             placeholder={String(ing.stock_qty)}
-                            className="w-24 px-2.5 py-1.5 rounded-lg border border-slate-200 text-xs font-bold font-mono tabular-nums focus:outline-none focus:border-[#2563EB]"
+                            className="w-24 px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-800 text-xs font-bold font-mono tabular-nums focus:outline-none focus:border-[#2563EB]"
                           />
                         </td>
                         <td className="py-3 font-extrabold font-mono tabular-nums">
@@ -586,7 +586,7 @@ export function InventoryManagerClient({
                                   ? "text-emerald-700"
                                   : diff < 0
                                     ? "text-rose-700"
-                                    : "text-slate-900"
+                                    : "text-slate-900 dark:text-slate-100"
                               }
                             >
                               {diff > 0 ? `+${diff}` : diff}
@@ -608,7 +608,7 @@ export function InventoryManagerClient({
                 value={opnameNotes}
                 onChange={(e) => setOpnameNotes(e.target.value)}
                 placeholder="Catatan opname (opsional)..."
-                className="flex-1 px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:outline-none focus:border-[#2563EB]"
+                className="flex-1 px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 text-xs focus:outline-none focus:border-[#2563EB]"
               />
               <button
                 type="button"
@@ -623,8 +623,8 @@ export function InventoryManagerClient({
           </div>
 
           {/* Logs */}
-          <div className="bg-white rounded-2xl p-5 border border-slate-200 space-y-3">
-            <h3 className="text-sm font-extrabold tracking-tight text-slate-900">
+          <div className="bg-white dark:bg-[#111827] rounded-2xl p-5 border border-slate-200 dark:border-slate-800 space-y-3">
+            <h3 className="text-sm font-extrabold tracking-tight text-slate-900 dark:text-slate-100">
               Riwayat Stock Opname Terbaru
             </h3>
             {logs.length === 0 ? (
@@ -634,10 +634,10 @@ export function InventoryManagerClient({
                 {logs.map((l) => (
                   <div
                     key={l.id}
-                    className="flex items-center justify-between p-3 rounded-xl bg-[#F8FAFC] text-xs"
+                    className="flex items-center justify-between p-3 rounded-xl bg-[#F8FAFC] dark:bg-[#090D16] text-xs"
                   >
                     <div>
-                      <p className="font-bold text-slate-900">{l.item_name}</p>
+                      <p className="font-bold text-slate-900 dark:text-slate-100">{l.item_name}</p>
                       <p className="text-[11px] text-neutral-500 font-mono tabular-nums">
                         Sistem: {l.system_qty} → Fisik: {l.actual_qty}{" "}
                         {l.notes ? `• ${l.notes}` : ""}
@@ -649,7 +649,7 @@ export function InventoryManagerClient({
                           ? "text-emerald-700"
                           : l.difference < 0
                             ? "text-rose-700"
-                            : "text-slate-900"
+                            : "text-slate-900 dark:text-slate-100"
                       }`}
                     >
                       {l.difference > 0 ? `+${l.difference}` : l.difference}

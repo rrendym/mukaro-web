@@ -1,6 +1,7 @@
 export type OrderMode = "table" | "counter" | "hybrid";
 export type SubscriptionStatus = "trial" | "active" | "expired";
 export type PlanTier = "starter" | "pro" | "enterprise";
+export type CommissionStatus = "pending_trial" | "available" | "paid";
 export type MenuBadge = "BESTSELLER" | "PROMO" | "BARU";
 export type StockMode = "none" | "direct" | "recipe";
 
@@ -54,6 +55,8 @@ export interface Store {
   static_qris_url: string | null;
   subscription_status: SubscriptionStatus;
   plan_tier?: PlanTier | null;
+  max_outlets?: number | null;
+  referred_by_code?: string | null;
   expired_at: string;
   created_at: string;
 }
@@ -171,4 +174,32 @@ export interface OrderItem {
   selected_variants: SelectedVariant[];
   item_notes: string | null;
   subtotal: number;
+}
+
+export interface AffiliateProfile {
+  user_id: string;
+  full_name: string;
+  whatsapp: string;
+  referral_code: string;
+  bank_name: string | null;
+  account_number: string | null;
+  account_holder: string | null;
+  created_at: string;
+}
+
+export interface AffiliateCommission {
+  id: string;
+  referrer_user_id: string;
+  referred_store_id: string;
+  plan_name: PlanTier | string;
+  commission_amount: number;
+  status: CommissionStatus | string;
+  created_at: string;
+  paid_at: string | null;
+  stores?: {
+    name: string;
+    slug: string;
+    subscription_status: string;
+    plan_tier?: string | null;
+  } | null;
 }

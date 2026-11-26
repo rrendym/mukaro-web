@@ -271,17 +271,17 @@ export function MenuFormModal({
       onClick={onClose}
     >
       <div
-        className="w-full max-w-2xl bg-white rounded-2xl border border-slate-200 max-h-[90vh] flex flex-col overflow-hidden shadow-2xl"
+        className="w-full max-w-2xl bg-white dark:bg-[#111827] rounded-2xl border border-slate-200 dark:border-slate-800 max-h-[90vh] flex flex-col overflow-hidden shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between">
-          <h2 className="text-lg font-extrabold tracking-tight text-slate-900">
+        <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
+          <h2 className="text-lg font-extrabold tracking-tight text-slate-900 dark:text-slate-100">
             {initialMenu ? "Edit Menu" : "Tambah Menu Baru"}
           </h2>
           <button
             type="button"
             onClick={onClose}
-            className="w-8 h-8 rounded-full bg-[#F8FAFC] flex items-center justify-center hover:bg-slate-200 transition"
+            className="w-8 h-8 rounded-full bg-[#F8FAFC] dark:bg-[#090D16] flex items-center justify-center hover:bg-slate-200 transition"
           >
             <X className="w-4 h-4" />
           </button>
@@ -289,14 +289,14 @@ export function MenuFormModal({
 
         <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-5">
           {error && (
-            <div className="p-3 rounded-xl bg-rose-50 border border-rose-200/20 text-xs text-rose-700 font-medium">
+            <div className="p-3 rounded-xl bg-rose-50 dark:bg-rose-950/50 border border-rose-200/20 text-xs text-rose-700 font-medium">
               {error}
             </div>
           )}
 
           {/* Photo Upload with Client-Side Compression */}
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-            <div className="w-24 h-24 rounded-2xl bg-[#F8FAFC] border border-slate-200 overflow-hidden shrink-0 flex items-center justify-center">
+            <div className="w-24 h-24 rounded-2xl bg-[#F8FAFC] dark:bg-[#090D16] border border-slate-200 dark:border-slate-800 overflow-hidden shrink-0 flex items-center justify-center">
               {imageUrl ? (
                 <img
                   src={imageUrl}
@@ -341,7 +341,7 @@ export function MenuFormModal({
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-bold text-slate-900 mb-1.5">
+              <label className="block text-xs font-bold text-slate-900 dark:text-slate-100 mb-1.5">
                 Nama Menu *
               </label>
               <input
@@ -350,18 +350,18 @@ export function MenuFormModal({
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="Contoh: Es Kopi Susu Senja"
-                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-[#2563EB] transition"
+                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 text-sm focus:outline-none focus:border-[#2563EB] transition"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-slate-900 mb-1.5">
+              <label className="block text-xs font-bold text-slate-900 dark:text-slate-100 mb-1.5">
                 Kategori
               </label>
               <select
                 value={categoryId}
                 onChange={(e) => setCategoryId(e.target.value)}
-                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm bg-white focus:outline-none focus:border-[#2563EB] transition"
+                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 text-sm bg-white dark:bg-[#111827] focus:outline-none focus:border-[#2563EB] transition"
               >
                 <option value="">Tanpa Kategori</option>
                 {categories.map((c) => (
@@ -374,7 +374,7 @@ export function MenuFormModal({
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-slate-900 mb-1.5">
+            <label className="block text-xs font-bold text-slate-900 dark:text-slate-100 mb-1.5">
               Deskripsi
             </label>
             <textarea
@@ -382,13 +382,13 @@ export function MenuFormModal({
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Deskripsi singkat cita rasa atau komposisi menu..."
-              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-[#2563EB] transition"
+              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 text-sm focus:outline-none focus:border-[#2563EB] transition"
             />
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
-              <label className="block text-xs font-bold text-slate-900 mb-1.5">
+              <label className="block text-xs font-bold text-slate-900 dark:text-slate-100 mb-1.5">
                 Harga Reguler (Rp) *
               </label>
               <input
@@ -398,12 +398,12 @@ export function MenuFormModal({
                 value={price}
                 onChange={(e) => setPrice(e.target.value)}
                 placeholder="24000"
-                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm font-mono tabular-nums focus:outline-none focus:border-[#2563EB] transition"
+                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 text-sm font-mono tabular-nums focus:outline-none focus:border-[#2563EB] transition"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-slate-900 mb-1.5">
+              <label className="block text-xs font-bold text-slate-900 dark:text-slate-100 mb-1.5">
                 Harga Khusus Ojol (Opsional)
               </label>
               <input
@@ -412,18 +412,18 @@ export function MenuFormModal({
                 value={ojolPrice}
                 onChange={(e) => setOjolPrice(e.target.value)}
                 placeholder="29000"
-                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm font-mono tabular-nums focus:outline-none focus:border-[#2563EB] transition"
+                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 text-sm font-mono tabular-nums focus:outline-none focus:border-[#2563EB] transition"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-slate-900 mb-1.5">
+              <label className="block text-xs font-bold text-slate-900 dark:text-slate-100 mb-1.5">
                 Badge Menu
               </label>
               <select
                 value={badge}
                 onChange={(e) => setBadge(e.target.value as MenuBadge | "")}
-                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm bg-white focus:outline-none focus:border-[#2563EB] transition"
+                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 text-sm bg-white dark:bg-[#111827] focus:outline-none focus:border-[#2563EB] transition"
               >
                 <option value="">None</option>
                 <option value="BESTSELLER">BESTSELLER</option>
@@ -434,9 +434,9 @@ export function MenuFormModal({
           </div>
 
           {/* Stock Settings */}
-          <div className="p-4 rounded-2xl bg-[#F8FAFC] border border-slate-200 space-y-3">
+          <div className="p-4 rounded-2xl bg-[#F8FAFC] dark:bg-[#090D16] border border-slate-200 dark:border-slate-800 space-y-3">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-              <span className="text-xs font-bold text-slate-900">
+              <span className="text-xs font-bold text-slate-900 dark:text-slate-100">
                 Pengaturan Stok
               </span>
               <div className="flex items-center gap-2">
@@ -446,7 +446,7 @@ export function MenuFormModal({
                   className={`px-3 py-1.5 rounded-full text-xs font-bold transition ${
                     stockMode === "none"
                       ? "bg-[#2563EB] text-white"
-                      : "bg-white text-neutral-600 border border-slate-200"
+                      : "bg-white dark:bg-[#111827] text-neutral-600 border border-slate-200 dark:border-slate-800"
                   }`}
                 >
                   Tidak Dilacak
@@ -457,7 +457,7 @@ export function MenuFormModal({
                   className={`px-3 py-1.5 rounded-full text-xs font-bold transition ${
                     stockMode === "direct"
                       ? "bg-[#2563EB] text-white"
-                      : "bg-white text-neutral-600 border border-slate-200"
+                      : "bg-white dark:bg-[#111827] text-neutral-600 border border-slate-200 dark:border-slate-800"
                   }`}
                 >
                   Stok Langsung
@@ -476,7 +476,7 @@ export function MenuFormModal({
                     min={0}
                     value={stockQty}
                     onChange={(e) => setStockQty(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl bg-white border border-slate-200 text-sm font-mono tabular-nums focus:outline-none focus:border-[#2563EB]"
+                    className="w-full px-3 py-2 rounded-xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 text-sm font-mono tabular-nums focus:outline-none focus:border-[#2563EB]"
                   />
                 </div>
                 <div>
@@ -488,7 +488,7 @@ export function MenuFormModal({
                     min={0}
                     value={minStock}
                     onChange={(e) => setMinStock(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl bg-white border border-slate-200 text-sm font-mono tabular-nums focus:outline-none focus:border-[#2563EB]"
+                    className="w-full px-3 py-2 rounded-xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 text-sm font-mono tabular-nums focus:outline-none focus:border-[#2563EB]"
                   />
                 </div>
               </div>
@@ -499,7 +499,7 @@ export function MenuFormModal({
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="text-xs font-bold text-slate-900">
+                <h3 className="text-xs font-bold text-slate-900 dark:text-slate-100">
                   Varian &amp; Add-On
                 </h3>
                 <p className="text-[11px] text-neutral-500">
@@ -509,7 +509,7 @@ export function MenuFormModal({
               <button
                 type="button"
                 onClick={addVariantGroup}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#F8FAFC] border border-slate-200 hover:border-[#2563EB] text-xs font-bold text-slate-900 transition"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#F8FAFC] dark:bg-[#090D16] border border-slate-200 dark:border-slate-800 hover:border-[#2563EB] text-xs font-bold text-slate-900 dark:text-slate-100 transition"
               >
                 <Plus className="w-3.5 h-3.5" />
                 <span>Tambah Grup</span>
@@ -519,7 +519,7 @@ export function MenuFormModal({
             {variants.map((group, gIdx) => (
               <div
                 key={gIdx}
-                className="p-4 rounded-2xl border border-slate-200 bg-white space-y-3"
+                className="p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#111827] space-y-3"
               >
                 <div className="flex items-center gap-2">
                   <GripVertical className="w-4 h-4 text-neutral-300 shrink-0" />
@@ -530,7 +530,7 @@ export function MenuFormModal({
                       updateGroupField(gIdx, "group", e.target.value)
                     }
                     placeholder="Nama Grup (misal: Suhu, Add-on)"
-                    className="flex-1 px-3 py-2 rounded-xl border border-slate-200 text-xs font-semibold focus:outline-none focus:border-[#2563EB]"
+                    className="flex-1 px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 text-xs font-semibold focus:outline-none focus:border-[#2563EB]"
                   />
                   <label className="inline-flex items-center gap-1.5 text-xs font-semibold text-neutral-600 cursor-pointer shrink-0">
                     <input
@@ -546,7 +546,7 @@ export function MenuFormModal({
                   <button
                     type="button"
                     onClick={() => removeVariantGroup(gIdx)}
-                    className="p-1.5 rounded-lg text-neutral-400 hover:text-rose-700 hover:bg-rose-50"
+                    className="p-1.5 rounded-lg text-neutral-400 hover:text-rose-700 hover:bg-rose-50 dark:bg-rose-950/50"
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>
@@ -562,7 +562,7 @@ export function MenuFormModal({
                           updateOptionField(gIdx, oIdx, "name", e.target.value)
                         }
                         placeholder="Nama opsi (misal: Ice / Extra Shot)"
-                        className="flex-1 px-3 py-1.5 rounded-lg border border-slate-200 text-xs focus:outline-none focus:border-[#2563EB]"
+                        className="flex-1 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-800 text-xs focus:outline-none focus:border-[#2563EB]"
                       />
                       <input
                         type="number"
@@ -572,7 +572,7 @@ export function MenuFormModal({
                           updateOptionField(gIdx, oIdx, "price", e.target.value)
                         }
                         placeholder="+Harga"
-                        className="w-28 px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-mono tabular-nums focus:outline-none focus:border-[#2563EB]"
+                        className="w-28 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-800 text-xs font-mono tabular-nums focus:outline-none focus:border-[#2563EB]"
                       />
                       <button
                         type="button"
@@ -586,7 +586,7 @@ export function MenuFormModal({
                   <button
                     type="button"
                     onClick={() => addOptionToGroup(gIdx)}
-                    className="text-[11px] font-bold text-slate-900 underline"
+                    className="text-[11px] font-bold text-slate-900 dark:text-slate-100 underline"
                   >
                     + Tambah Opsi
                   </button>
@@ -595,11 +595,11 @@ export function MenuFormModal({
             ))}
           </div>
 
-          <div className="pt-3 border-t border-slate-200 flex items-center justify-end gap-2.5">
+          <div className="pt-3 border-t border-slate-200 dark:border-slate-800 flex items-center justify-end gap-2.5">
             <button
               type="button"
               onClick={onClose}
-              className="px-5 py-2.5 rounded-xl border border-slate-200 text-xs font-bold text-neutral-600 hover:border-[#2563EB] transition"
+              className="px-5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 text-xs font-bold text-neutral-600 hover:border-[#2563EB] transition"
             >
               Batal
             </button>

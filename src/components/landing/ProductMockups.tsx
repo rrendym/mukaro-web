@@ -23,20 +23,20 @@ export function HeroDashboardMockup() {
   ];
 
   return (
-    <div className="rounded-2xl border border-[#E2E8F0] bg-white shadow-xl overflow-hidden text-left">
+    <div className="rounded-2xl border border-[#E2E8F0] dark:border-slate-800 bg-white dark:bg-[#111827] shadow-xl overflow-hidden text-left">
       {/* Browser Top Chrome */}
-      <div className="h-10 bg-[#F8FAFC] border-b border-[#E2E8F0] px-4 flex items-center justify-between">
+      <div className="h-10 bg-[#F8FAFC] dark:bg-[#090D16] border-b border-[#E2E8F0] dark:border-slate-800 px-4 flex items-center justify-between">
         <div className="flex items-center gap-1.5">
           <span className="w-2.5 h-2.5 rounded-full bg-slate-300" />
           <span className="w-2.5 h-2.5 rounded-full bg-slate-300" />
           <span className="w-2.5 h-2.5 rounded-full bg-slate-300" />
         </div>
-        <div className="px-3 py-1 rounded-md bg-white border border-[#E2E8F0] text-[11px] font-mono text-[#475569]">
+        <div className="px-3 py-1 rounded-md bg-white dark:bg-[#111827] border border-[#E2E8F0] dark:border-slate-800 text-[11px] font-mono text-[#475569] dark:text-slate-400">
           mukaro.id/kopi-senja/admin
         </div>
         <div className="flex items-center gap-1.5">
-          <span className="w-2 h-2 rounded-full bg-emerald-500" />
-          <span className="text-[11px] font-semibold text-[#475569]">
+          <span className="w-2 h-2 rounded-full bg-emerald-50 dark:bg-emerald-950/500" />
+          <span className="text-[11px] font-semibold text-[#475569] dark:text-slate-400">
             Live Sync
           </span>
         </div>
@@ -89,7 +89,7 @@ export function HeroDashboardMockup() {
         </div>
 
         {/* Main Workspace */}
-        <div className="col-span-12 md:col-span-9 bg-[#F8FAFC] p-4 sm:p-5 space-y-4">
+        <div className="col-span-12 md:col-span-9 bg-[#F8FAFC] dark:bg-[#090D16] p-4 sm:p-5 space-y-4">
           {/* 4 KPI Strip */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
             {[
@@ -100,12 +100,12 @@ export function HeroDashboardMockup() {
             ].map((kpi) => (
               <div
                 key={kpi.label}
-                className="bg-white rounded-xl border border-[#E2E8F0] p-3"
+                className="bg-white dark:bg-[#111827] rounded-xl border border-[#E2E8F0] dark:border-slate-800 p-3"
               >
-                <p className="text-[11px] font-medium text-[#475569]">
+                <p className="text-[11px] font-medium text-[#475569] dark:text-slate-400">
                   {kpi.label}
                 </p>
-                <p className="text-sm font-bold text-[#0F172A] font-mono tabular-nums mt-1">
+                <p className="text-sm font-bold text-[#0F172A] dark:text-slate-100 font-mono tabular-nums mt-1">
                   {kpi.val}
                 </p>
                 <p className="text-[10px] font-semibold text-emerald-600 font-mono tabular-nums mt-0.5">
@@ -118,16 +118,16 @@ export function HeroDashboardMockup() {
           {/* Chart + Live Order Queue */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-3">
             {/* Bar Chart */}
-            <div className="lg:col-span-7 bg-white rounded-xl border border-[#E2E8F0] p-4 space-y-3">
+            <div className="lg:col-span-7 bg-white dark:bg-[#111827] rounded-xl border border-[#E2E8F0] dark:border-slate-800 p-4 space-y-3">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-[#0F172A]">
+                <span className="text-xs font-bold text-[#0F172A] dark:text-slate-100">
                   Penjualan per Jam
                 </span>
                 <span className="text-[11px] font-mono tabular-nums text-[#2563EB] font-semibold">
                   Peak 17:00
                 </span>
               </div>
-              <div className="h-32 flex items-end justify-between gap-2 pt-3 border-b border-[#E2E8F0] pb-2">
+              <div className="h-32 flex items-end justify-between gap-2 pt-3 border-b border-[#E2E8F0] dark:border-slate-800 pb-2">
                 {bars.map((b) => (
                   <div
                     key={b.label}
@@ -142,7 +142,7 @@ export function HeroDashboardMockup() {
                   </div>
                 ))}
               </div>
-              <div className="flex justify-between text-[10px] font-mono text-[#475569]">
+              <div className="flex justify-between text-[10px] font-mono text-[#475569] dark:text-slate-400">
                 {bars.map((b) => (
                   <span key={b.label}>{b.label}</span>
                 ))}
@@ -150,12 +150,12 @@ export function HeroDashboardMockup() {
             </div>
 
             {/* Live Tickets */}
-            <div className="lg:col-span-5 bg-white rounded-xl border border-[#E2E8F0] p-4 space-y-2.5">
+            <div className="lg:col-span-5 bg-white dark:bg-[#111827] rounded-xl border border-[#E2E8F0] dark:border-slate-800 p-4 space-y-2.5">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-[#0F172A]">
+                <span className="text-xs font-bold text-[#0F172A] dark:text-slate-100">
                   Antrean Masuk
                 </span>
-                <span className="px-2 py-0.5 rounded-full bg-blue-50 text-[#2563EB] text-[10px] font-semibold">
+                <span className="px-2 py-0.5 rounded-full bg-blue-50 dark:bg-blue-950/60 text-[#2563EB] text-[10px] font-semibold">
                   Real-time
                 </span>
               </div>
@@ -184,23 +184,23 @@ export function HeroDashboardMockup() {
               ].map((o) => (
                 <div
                   key={o.id}
-                  className="p-2.5 rounded-lg bg-[#F8FAFC] border border-[#E2E8F0] flex items-center justify-between gap-2"
+                  className="p-2.5 rounded-lg bg-[#F8FAFC] dark:bg-[#090D16] border border-[#E2E8F0] dark:border-slate-800 flex items-center justify-between gap-2"
                 >
                   <div className="min-w-0">
                     <div className="flex items-center gap-1.5">
-                      <span className="text-[11px] font-mono font-bold text-[#0F172A]">
+                      <span className="text-[11px] font-mono font-bold text-[#0F172A] dark:text-slate-100">
                         {o.id}
                       </span>
-                      <span className="text-[10px] font-semibold text-[#475569]">
+                      <span className="text-[10px] font-semibold text-[#475569] dark:text-slate-400">
                         • {o.table}
                       </span>
                     </div>
-                    <p className="text-[10px] text-[#475569] truncate">
+                    <p className="text-[10px] text-[#475569] dark:text-slate-400 truncate">
                       {o.items}
                     </p>
                   </div>
                   <div className="text-right shrink-0">
-                    <p className="text-[11px] font-mono font-bold tabular-nums text-[#0F172A]">
+                    <p className="text-[11px] font-mono font-bold tabular-nums text-[#0F172A] dark:text-slate-100">
                       {o.total}
                     </p>
                     <span className="text-[9px] font-bold text-[#2563EB]">
@@ -219,29 +219,29 @@ export function HeroDashboardMockup() {
 
 export function QrMenuMockup() {
   return (
-    <div className="rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] p-4 space-y-3">
-      <div className="bg-white rounded-xl border border-[#E2E8F0] p-3.5 space-y-3">
+    <div className="rounded-xl border border-[#E2E8F0] dark:border-slate-800 bg-[#F8FAFC] dark:bg-[#090D16] p-4 space-y-3">
+      <div className="bg-white dark:bg-[#111827] rounded-xl border border-[#E2E8F0] dark:border-slate-800 p-3.5 space-y-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <span className="px-2.5 py-0.5 rounded-full bg-[#2563EB] text-white text-[10px] font-bold">
               Meja 04
             </span>
-            <span className="text-xs font-bold text-[#0F172A]">Kopi Senja</span>
+            <span className="text-xs font-bold text-[#0F172A] dark:text-slate-100">Kopi Senja</span>
           </div>
-          <QrCode className="w-4 h-4 text-[#475569]" />
+          <QrCode className="w-4 h-4 text-[#475569] dark:text-slate-400" />
         </div>
 
-        <div className="p-3 rounded-lg bg-[#F8FAFC] border border-[#E2E8F0] space-y-2.5">
+        <div className="p-3 rounded-lg bg-[#F8FAFC] dark:bg-[#090D16] border border-[#E2E8F0] dark:border-slate-800 space-y-2.5">
           <div className="flex items-start justify-between gap-2">
             <div>
-              <p className="text-xs font-bold text-[#0F172A]">
+              <p className="text-xs font-bold text-[#0F172A] dark:text-slate-100">
                 Es Kopi Susu Senja
               </p>
-              <p className="text-[10px] text-[#475569]">
+              <p className="text-[10px] text-[#475569] dark:text-slate-400">
                 Arabika house blend &amp; gula aren
               </p>
             </div>
-            <span className="text-xs font-mono font-bold tabular-nums text-[#0F172A]">
+            <span className="text-xs font-mono font-bold tabular-nums text-[#0F172A] dark:text-slate-100">
               Rp 24.000
             </span>
           </div>
@@ -249,20 +249,20 @@ export function QrMenuMockup() {
             <span className="px-2 py-0.5 rounded-md bg-[#0F172A] text-white text-[10px] font-semibold">
               Ice
             </span>
-            <span className="px-2 py-0.5 rounded-md bg-white border border-[#E2E8F0] text-[#475569] text-[10px]">
+            <span className="px-2 py-0.5 rounded-md bg-white dark:bg-[#111827] border border-[#E2E8F0] dark:border-slate-800 text-[#475569] dark:text-slate-400 text-[10px]">
               Hot
             </span>
             <span className="px-2 py-0.5 rounded-md bg-[#2563EB]/10 border border-[#2563EB]/30 text-[#2563EB] text-[10px] font-semibold">
               Less Sugar
             </span>
-            <span className="px-2 py-0.5 rounded-md bg-white border border-[#E2E8F0] text-[#475569] text-[10px]">
+            <span className="px-2 py-0.5 rounded-md bg-white dark:bg-[#111827] border border-[#E2E8F0] dark:border-slate-800 text-[#475569] dark:text-slate-400 text-[10px]">
               +Oat Milk
             </span>
           </div>
         </div>
 
         <div className="flex items-center justify-between pt-1">
-          <span className="text-[11px] font-mono font-semibold text-[#475569]">
+          <span className="text-[11px] font-mono font-semibold text-[#475569] dark:text-slate-400">
             2 item di keranjang
           </span>
           <span className="px-3 py-1.5 rounded-lg bg-[#2563EB] text-white text-[11px] font-bold font-mono tabular-nums">
@@ -276,8 +276,8 @@ export function QrMenuMockup() {
 
 export function PosCashierMockup() {
   return (
-    <div className="rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] p-4">
-      <div className="bg-white rounded-xl border border-[#E2E8F0] p-3.5 space-y-3">
+    <div className="rounded-xl border border-[#E2E8F0] dark:border-slate-800 bg-[#F8FAFC] dark:bg-[#090D16] p-4">
+      <div className="bg-white dark:bg-[#111827] rounded-xl border border-[#E2E8F0] dark:border-slate-800 p-3.5 space-y-3">
         <div className="flex items-center gap-1.5">
           {["Walk-in", "GoFood", "GrabFood", "ShopeeFood"].map((ch, idx) => (
             <span
@@ -285,7 +285,7 @@ export function PosCashierMockup() {
               className={`px-2.5 py-1 rounded-md text-[10px] font-bold ${
                 idx === 0
                   ? "bg-[#0F172A] text-white"
-                  : "bg-[#F8FAFC] border border-[#E2E8F0] text-[#475569]"
+                  : "bg-[#F8FAFC] dark:bg-[#090D16] border border-[#E2E8F0] dark:border-slate-800 text-[#475569] dark:text-slate-400"
               }`}
             >
               {ch}
@@ -303,13 +303,13 @@ export function PosCashierMockup() {
             ].map((m) => (
               <div
                 key={m.n}
-                className="p-2 rounded-lg border border-[#E2E8F0] bg-[#F8FAFC] flex flex-col justify-between gap-1.5"
+                className="p-2 rounded-lg border border-[#E2E8F0] dark:border-slate-800 bg-[#F8FAFC] dark:bg-[#090D16] flex flex-col justify-between gap-1.5"
               >
-                <span className="text-[10px] font-bold text-[#0F172A] truncate">
+                <span className="text-[10px] font-bold text-[#0F172A] dark:text-slate-100 truncate">
                   {m.n}
                 </span>
                 <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-mono tabular-nums text-[#475569]">
+                  <span className="text-[10px] font-mono tabular-nums text-[#475569] dark:text-slate-400">
                     {m.p}
                   </span>
                   <span className="w-4 h-4 rounded-full bg-[#2563EB] text-white flex items-center justify-center">
@@ -320,23 +320,23 @@ export function PosCashierMockup() {
             ))}
           </div>
 
-          <div className="col-span-5 rounded-lg border border-[#E2E8F0] p-2.5 flex flex-col justify-between bg-white">
+          <div className="col-span-5 rounded-lg border border-[#E2E8F0] dark:border-slate-800 p-2.5 flex flex-col justify-between bg-white dark:bg-[#111827]">
             <div className="space-y-1.5">
-              <div className="flex items-center gap-1 text-[10px] font-bold text-[#0F172A]">
+              <div className="flex items-center gap-1 text-[10px] font-bold text-[#0F172A] dark:text-slate-100">
                 <ShoppingBag className="w-3 h-3 text-[#2563EB]" />
                 <span>Struk Kasir</span>
               </div>
-              <div className="text-[10px] text-[#475569] flex justify-between font-mono tabular-nums">
+              <div className="text-[10px] text-[#475569] dark:text-slate-400 flex justify-between font-mono tabular-nums">
                 <span>1x Kopi Susu</span>
                 <span>24.000</span>
               </div>
-              <div className="text-[10px] text-[#475569] flex justify-between font-mono tabular-nums">
+              <div className="text-[10px] text-[#475569] dark:text-slate-400 flex justify-between font-mono tabular-nums">
                 <span>1x Croissant</span>
                 <span>22.000</span>
               </div>
             </div>
-            <div className="pt-2 border-t border-[#E2E8F0] space-y-1.5">
-              <div className="flex justify-between text-[10px] font-bold font-mono tabular-nums text-[#0F172A]">
+            <div className="pt-2 border-t border-[#E2E8F0] dark:border-slate-800 space-y-1.5">
+              <div className="flex justify-between text-[10px] font-bold font-mono tabular-nums text-[#0F172A] dark:text-slate-100">
                 <span>Total</span>
                 <span>Rp 46.000</span>
               </div>
@@ -353,8 +353,8 @@ export function PosCashierMockup() {
 
 export function LiveKitchenMockup() {
   return (
-    <div className="rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] p-4">
-      <div className="bg-white rounded-xl border border-[#E2E8F0] overflow-hidden">
+    <div className="rounded-xl border border-[#E2E8F0] dark:border-slate-800 bg-[#F8FAFC] dark:bg-[#090D16] p-4">
+      <div className="bg-white dark:bg-[#111827] rounded-xl border border-[#E2E8F0] dark:border-slate-800 overflow-hidden">
         <div className="bg-[#0F172A] text-white px-3.5 py-2 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <BellRing className="w-3.5 h-3.5 text-[#60A5FA]" />
@@ -365,7 +365,7 @@ export function LiveKitchenMockup() {
               Meja 04
             </span>
           </div>
-          <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 text-[10px] font-bold">
+          <span className="px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/500/20 text-emerald-300 text-[10px] font-bold">
             LUNAS • QRIS
           </span>
         </div>
@@ -373,31 +373,31 @@ export function LiveKitchenMockup() {
         <div className="p-3.5 space-y-2.5">
           <div className="space-y-1.5 text-[11px]">
             <div className="flex justify-between">
-              <span className="font-semibold text-[#0F172A]">
+              <span className="font-semibold text-[#0F172A] dark:text-slate-100">
                 2x Es Kopi Susu Senja
               </span>
-              <span className="font-mono tabular-nums text-[#475569]">
+              <span className="font-mono tabular-nums text-[#475569] dark:text-slate-400">
                 Rp 48.000
               </span>
             </div>
-            <p className="text-[10px] text-[#475569] pl-3">
+            <p className="text-[10px] text-[#475569] dark:text-slate-400 pl-3">
               Ice, Less Sugar, +Oat Milk
             </p>
             <div className="flex justify-between">
-              <span className="font-semibold text-[#0F172A]">
+              <span className="font-semibold text-[#0F172A] dark:text-slate-100">
                 1x French Butter Croissant
               </span>
-              <span className="font-mono tabular-nums text-[#475569]">
+              <span className="font-mono tabular-nums text-[#475569] dark:text-slate-400">
                 Rp 22.000
               </span>
             </div>
           </div>
 
-          <div className="flex items-center gap-2 pt-2 border-t border-[#E2E8F0]">
+          <div className="flex items-center gap-2 pt-2 border-t border-[#E2E8F0] dark:border-slate-800">
             <span className="flex-1 py-1.5 rounded-lg bg-[#2563EB] text-white text-[11px] font-bold text-center">
               Mulai Buat
             </span>
-            <span className="px-2.5 py-1.5 rounded-lg border border-[#E2E8F0] text-[11px] font-semibold text-[#0F172A] inline-flex items-center gap-1">
+            <span className="px-2.5 py-1.5 rounded-lg border border-[#E2E8F0] dark:border-slate-800 text-[11px] font-semibold text-[#0F172A] dark:text-slate-100 inline-flex items-center gap-1">
               <Printer className="w-3 h-3" />
               58mm
             </span>
@@ -416,14 +416,14 @@ export function RecipeStockMockup() {
   ];
 
   return (
-    <div className="rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] p-4">
-      <div className="bg-white rounded-xl border border-[#E2E8F0] p-3.5 space-y-2.5">
+    <div className="rounded-xl border border-[#E2E8F0] dark:border-slate-800 bg-[#F8FAFC] dark:bg-[#090D16] p-4">
+      <div className="bg-white dark:bg-[#111827] rounded-xl border border-[#E2E8F0] dark:border-slate-800 p-3.5 space-y-2.5">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-1.5 text-xs font-bold text-[#0F172A]">
+          <div className="flex items-center gap-1.5 text-xs font-bold text-[#0F172A] dark:text-slate-100">
             <Package className="w-3.5 h-3.5 text-[#2563EB]" />
             <span>Stok Bahan Baku &amp; Resep</span>
           </div>
-          <span className="text-[10px] font-mono text-[#475569]">
+          <span className="text-[10px] font-mono text-[#475569] dark:text-slate-400">
             Auto-deduct
           </span>
         </div>
@@ -432,10 +432,10 @@ export function RecipeStockMockup() {
           {items.map((item) => (
             <div
               key={item.name}
-              className="p-2.5 rounded-lg bg-[#F8FAFC] border border-[#E2E8F0] space-y-1.5"
+              className="p-2.5 rounded-lg bg-[#F8FAFC] dark:bg-[#090D16] border border-[#E2E8F0] dark:border-slate-800 space-y-1.5"
             >
               <div className="flex items-center justify-between text-[11px]">
-                <span className="font-semibold text-[#0F172A]">
+                <span className="font-semibold text-[#0F172A] dark:text-slate-100">
                   {item.name}
                 </span>
                 <span
@@ -449,7 +449,7 @@ export function RecipeStockMockup() {
               <div className="h-1.5 w-full rounded-full bg-slate-200 overflow-hidden">
                 <div
                   className={`h-full rounded-full ${
-                    item.ok ? "bg-[#2563EB]" : "bg-rose-500"
+                    item.ok ? "bg-[#2563EB]" : "bg-rose-50 dark:bg-rose-950/500"
                   }`}
                   style={{ width: item.pct }}
                 />
@@ -474,27 +474,27 @@ export function RevenueChartMockup() {
   ];
 
   return (
-    <div className="rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] p-4 sm:p-5 grid grid-cols-1 lg:grid-cols-12 gap-4 items-center">
-      <div className="lg:col-span-8 bg-white rounded-xl border border-[#E2E8F0] p-4 space-y-3">
+    <div className="rounded-xl border border-[#E2E8F0] dark:border-slate-800 bg-[#F8FAFC] dark:bg-[#090D16] p-4 sm:p-5 grid grid-cols-1 lg:grid-cols-12 gap-4 items-center">
+      <div className="lg:col-span-8 bg-white dark:bg-[#111827] rounded-xl border border-[#E2E8F0] dark:border-slate-800 p-4 space-y-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <TrendingUp className="w-4 h-4 text-[#2563EB]" />
-            <span className="text-xs font-bold text-[#0F172A]">
+            <span className="text-xs font-bold text-[#0F172A] dark:text-slate-100">
               Grafik Omzet Mingguan
             </span>
           </div>
-          <span className="text-xs font-mono font-bold tabular-nums text-[#0F172A]">
+          <span className="text-xs font-mono font-bold tabular-nums text-[#0F172A] dark:text-slate-100">
             Rp 34.500.000
           </span>
         </div>
 
-        <div className="h-28 flex items-end justify-between gap-3 pt-2 border-b border-[#E2E8F0] pb-2">
+        <div className="h-28 flex items-end justify-between gap-3 pt-2 border-b border-[#E2E8F0] dark:border-slate-800 pb-2">
           {days.map((item) => (
             <div
               key={item.d}
               className="flex-1 flex flex-col items-center gap-1 h-full justify-end"
             >
-              <span className="text-[9px] font-mono tabular-nums text-[#475569]">
+              <span className="text-[9px] font-mono tabular-nums text-[#475569] dark:text-slate-400">
                 {item.v}
               </span>
               <div
@@ -506,7 +506,7 @@ export function RevenueChartMockup() {
             </div>
           ))}
         </div>
-        <div className="flex justify-between text-[10px] font-mono text-[#475569]">
+        <div className="flex justify-between text-[10px] font-mono text-[#475569] dark:text-slate-400">
           {days.map((item) => (
             <span key={item.d} className="flex-1 text-center">
               {item.d}
@@ -523,15 +523,15 @@ export function RevenueChartMockup() {
         ].map((row) => (
           <div
             key={row.ch}
-            className="bg-white rounded-xl border border-[#E2E8F0] p-3 flex items-center justify-between"
+            className="bg-white dark:bg-[#111827] rounded-xl border border-[#E2E8F0] dark:border-slate-800 p-3 flex items-center justify-between"
           >
             <div>
-              <p className="text-xs font-bold text-[#0F172A]">{row.ch}</p>
-              <p className="text-[11px] font-mono tabular-nums text-[#475569]">
+              <p className="text-xs font-bold text-[#0F172A] dark:text-slate-100">{row.ch}</p>
+              <p className="text-[11px] font-mono tabular-nums text-[#475569] dark:text-slate-400">
                 {row.amt}
               </p>
             </div>
-            <span className="px-2 py-0.5 rounded-md bg-blue-50 text-[#2563EB] text-[11px] font-mono font-bold tabular-nums">
+            <span className="px-2 py-0.5 rounded-md bg-blue-50 dark:bg-blue-950/60 text-[#2563EB] text-[11px] font-mono font-bold tabular-nums">
               {row.pct}
             </span>
           </div>
@@ -543,30 +543,30 @@ export function RevenueChartMockup() {
 
 export function StepInputMenuMini() {
   return (
-    <div className="rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] p-3.5 space-y-2">
-      <div className="bg-white rounded-lg border border-[#E2E8F0] p-2.5 flex items-center justify-between">
+    <div className="rounded-xl border border-[#E2E8F0] dark:border-slate-800 bg-[#F8FAFC] dark:bg-[#090D16] p-3.5 space-y-2">
+      <div className="bg-white dark:bg-[#111827] rounded-lg border border-[#E2E8F0] dark:border-slate-800 p-2.5 flex items-center justify-between">
         <div>
-          <p className="text-[11px] font-bold text-[#0F172A]">
+          <p className="text-[11px] font-bold text-[#0F172A] dark:text-slate-100">
             Es Kopi Susu Senja
           </p>
-          <p className="text-[10px] font-mono tabular-nums text-[#475569]">
+          <p className="text-[10px] font-mono tabular-nums text-[#475569] dark:text-slate-400">
             Reg: Rp 24.000 • Ojol: Rp 29.000
           </p>
         </div>
-        <span className="px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 text-[9px] font-bold">
+        <span className="px-2 py-0.5 rounded bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 text-[9px] font-bold">
           Aktif
         </span>
       </div>
-      <div className="bg-white rounded-lg border border-[#E2E8F0] p-2.5 flex items-center justify-between">
+      <div className="bg-white dark:bg-[#111827] rounded-lg border border-[#E2E8F0] dark:border-slate-800 p-2.5 flex items-center justify-between">
         <div>
-          <p className="text-[11px] font-bold text-[#0F172A]">
+          <p className="text-[11px] font-bold text-[#0F172A] dark:text-slate-100">
             Uji Matcha Latte
           </p>
-          <p className="text-[10px] font-mono tabular-nums text-[#475569]">
+          <p className="text-[10px] font-mono tabular-nums text-[#475569] dark:text-slate-400">
             3 Grup Varian • Resep 12gr
           </p>
         </div>
-        <span className="px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 text-[9px] font-bold">
+        <span className="px-2 py-0.5 rounded bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 text-[9px] font-bold">
           Aktif
         </span>
       </div>
@@ -576,19 +576,19 @@ export function StepInputMenuMini() {
 
 export function StepPrintQrMini() {
   return (
-    <div className="rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] p-3.5 flex items-center gap-3">
-      <div className="w-16 h-16 rounded-lg bg-white border border-[#E2E8F0] flex items-center justify-center shrink-0">
-        <QrCode className="w-10 h-10 text-[#0F172A]" />
+    <div className="rounded-xl border border-[#E2E8F0] dark:border-slate-800 bg-[#F8FAFC] dark:bg-[#090D16] p-3.5 flex items-center gap-3">
+      <div className="w-16 h-16 rounded-lg bg-white dark:bg-[#111827] border border-[#E2E8F0] dark:border-slate-800 flex items-center justify-center shrink-0">
+        <QrCode className="w-10 h-10 text-[#0F172A] dark:text-slate-100" />
       </div>
       <div className="space-y-1 min-w-0">
-        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-blue-50 text-[#2563EB] text-[10px] font-bold">
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-blue-50 dark:bg-blue-950/60 text-[#2563EB] text-[10px] font-bold">
           <Store className="w-3 h-3" />
           Meja 01 – Meja 20
         </span>
-        <p className="text-[11px] font-bold text-[#0F172A] truncate">
+        <p className="text-[11px] font-bold text-[#0F172A] dark:text-slate-100 truncate">
           qr-kopi-senja-meja-04.png
         </p>
-        <p className="text-[10px] text-[#475569]">
+        <p className="text-[10px] text-[#475569] dark:text-slate-400">
           Siap cetak PNG resolusi tinggi
         </p>
       </div>
@@ -598,15 +598,15 @@ export function StepPrintQrMini() {
 
 export function StepMonitorSalesMini() {
   return (
-    <div className="rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] p-3.5 space-y-2">
-      <div className="bg-white rounded-lg border border-[#E2E8F0] p-2.5 flex items-center justify-between">
+    <div className="rounded-xl border border-[#E2E8F0] dark:border-slate-800 bg-[#F8FAFC] dark:bg-[#090D16] p-3.5 space-y-2">
+      <div className="bg-white dark:bg-[#111827] rounded-lg border border-[#E2E8F0] dark:border-slate-800 p-2.5 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
           <div>
-            <p className="text-[11px] font-bold text-[#0F172A]">
+            <p className="text-[11px] font-bold text-[#0F172A] dark:text-slate-100">
               QRIS Otomatis Lunas
             </p>
-            <p className="text-[10px] font-mono text-[#475569]">
+            <p className="text-[10px] font-mono text-[#475569] dark:text-slate-400">
               #MKR-1042 • Meja 04
             </p>
           </div>
@@ -615,9 +615,9 @@ export function StepMonitorSalesMini() {
           +Rp 70.000
         </span>
       </div>
-      <div className="bg-white rounded-lg border border-[#E2E8F0] px-2.5 py-2 flex items-center justify-between text-[10px] text-[#475569]">
+      <div className="bg-white dark:bg-[#111827] rounded-lg border border-[#E2E8F0] dark:border-slate-800 px-2.5 py-2 flex items-center justify-between text-[10px] text-[#475569] dark:text-slate-400">
         <span>Stok bahan terpotong otomatis</span>
-        <span className="font-mono font-semibold text-[#0F172A]">
+        <span className="font-mono font-semibold text-[#0F172A] dark:text-slate-100">
           Real-time
         </span>
       </div>

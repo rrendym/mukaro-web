@@ -448,29 +448,29 @@ export function ReportsClient({
     return (
       <div className="space-y-6">
         <div>
-          <h1 className="text-2xl font-extrabold tracking-[-0.03em] text-slate-900">
+          <h1 className="text-2xl font-extrabold tracking-[-0.03em] text-slate-900 dark:text-slate-100">
             Rekap &amp; Export Penjualan
           </h1>
-          <p className="text-xs text-slate-500 mt-0.5">
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
             Laporan perkembangan penjualan dalam format Google Sheets (.xlsx) 3
             tab &amp; PDF.
           </p>
         </div>
 
-        <div className="bg-white rounded-2xl border border-slate-200 p-8 sm:p-10 text-center max-w-2xl mx-auto space-y-5">
-          <div className="w-14 h-14 rounded-2xl bg-blue-50 text-[#2563EB] flex items-center justify-center mx-auto">
+        <div className="bg-white dark:bg-[#111827] rounded-2xl border border-slate-200 dark:border-slate-800 p-8 sm:p-10 text-center max-w-2xl mx-auto space-y-5">
+          <div className="w-14 h-14 rounded-2xl bg-blue-50 dark:bg-blue-950/60 text-[#2563EB] flex items-center justify-center mx-auto">
             <Lock className="w-7 h-7" />
           </div>
           <div className="space-y-2">
-            <span className="inline-block px-3 py-1 rounded-full bg-blue-50 text-[#2563EB] text-[11px] font-bold uppercase tracking-wider">
+            <span className="inline-block px-3 py-1 rounded-full bg-blue-50 dark:bg-blue-950/60 text-[#2563EB] text-[11px] font-bold uppercase tracking-wider">
               Fitur Paket Pro &amp; Enterprise
             </span>
-            <h2 className="text-xl font-extrabold tracking-tight text-slate-900">
+            <h2 className="text-xl font-extrabold tracking-tight text-slate-900 dark:text-slate-100">
               Buka Laporan Keuangan Lengkap &amp; Export Google Sheets
             </h2>
-            <p className="text-sm text-slate-500 leading-relaxed max-w-lg mx-auto">
+            <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed max-w-lg mx-auto">
               Outlet Anda saat ini menggunakan paket{" "}
-              <strong className="text-slate-900">Starter</strong>. Upgrade ke
+              <strong className="text-slate-900 dark:text-slate-100">Starter</strong>. Upgrade ke
               paket <strong className="text-[#2563EB]">Pro</strong> untuk
               mengakses rekap profit kotor, rincian transaksi per channel, dan
               export spreadsheet 3 tab + PDF.
@@ -496,10 +496,10 @@ export function ReportsClient({
       {/* Header & Actions (Hidden on Print) */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 no-print">
         <div>
-          <h1 className="text-2xl font-extrabold tracking-[-0.03em] text-slate-900">
+          <h1 className="text-2xl font-extrabold tracking-[-0.03em] text-slate-900 dark:text-slate-100">
             Rekap &amp; Export Penjualan
           </h1>
-          <p className="text-xs text-slate-500 mt-0.5">
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
             Analisa perkembangan usaha dan download laporan 3 tab siap import ke
             Google Sheets atau PDF.
           </p>
@@ -520,7 +520,7 @@ export function ReportsClient({
             type="button"
             disabled={loading}
             onClick={() => window.print()}
-            className="px-4 py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-900 text-xs font-semibold inline-flex items-center gap-2 transition disabled:opacity-60 cursor-pointer"
+            className="px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#111827] hover:bg-slate-50 dark:bg-slate-800/60 text-slate-900 dark:text-slate-100 text-xs font-semibold inline-flex items-center gap-2 transition disabled:opacity-60 cursor-pointer"
           >
             <FileText className="w-4 h-4 text-[#2563EB]" />
             <span>Download Ringkasan PDF</span>
@@ -529,7 +529,7 @@ export function ReportsClient({
       </div>
 
       {/* Filter Bar (Hidden on Print) */}
-      <div className="bg-white rounded-2xl border border-slate-200 p-4 space-y-4 no-print">
+      <div className="bg-white dark:bg-[#111827] rounded-2xl border border-slate-200 dark:border-slate-800 p-4 space-y-4 no-print">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
           {/* Quick Presets */}
           <div className="flex flex-wrap items-center gap-2">
@@ -546,7 +546,7 @@ export function ReportsClient({
                 className={`px-3.5 py-2 rounded-xl text-xs font-semibold transition ${
                   activePreset === p.key
                     ? "bg-[#2563EB] text-white"
-                    : "bg-[#F8FAFC] border border-slate-200 text-slate-700 hover:border-slate-300"
+                    : "bg-[#F8FAFC] dark:bg-[#090D16] border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:border-slate-300"
                 }`}
               >
                 {p.label}
@@ -557,11 +557,11 @@ export function ReportsClient({
           {/* Multi-Outlet Switcher */}
           {ownerStores.length > 1 && (
             <div className="flex items-center gap-2">
-              <StoreIcon className="w-4 h-4 text-slate-500" />
+              <StoreIcon className="w-4 h-4 text-slate-500 dark:text-slate-400" />
               <select
                 value={activeStoreId}
                 onChange={(e) => setActiveStoreId(e.target.value)}
-                className="px-3 py-2 rounded-xl border border-slate-200 text-xs font-semibold bg-white focus:outline-none focus:border-[#2563EB]"
+                className="px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 text-xs font-semibold bg-white dark:bg-[#111827] focus:outline-none focus:border-[#2563EB]"
               >
                 {ownerStores.map((s) => (
                   <option key={s.id} value={s.id}>
@@ -574,9 +574,9 @@ export function ReportsClient({
         </div>
 
         {/* Custom Date Inputs */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 pt-2 border-t border-slate-100">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 pt-2 border-t border-slate-100 dark:border-slate-800/80">
           <div>
-            <label className="block text-[11px] font-semibold text-slate-500 mb-1">
+            <label className="block text-[11px] font-semibold text-slate-500 dark:text-slate-400 mb-1">
               Dari Tanggal
             </label>
             <input
@@ -586,11 +586,11 @@ export function ReportsClient({
                 setStartDate(e.target.value);
                 setActivePreset("custom");
               }}
-              className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-mono focus:outline-none focus:border-[#2563EB]"
+              className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 text-xs font-mono focus:outline-none focus:border-[#2563EB]"
             />
           </div>
           <div>
-            <label className="block text-[11px] font-semibold text-slate-500 mb-1">
+            <label className="block text-[11px] font-semibold text-slate-500 dark:text-slate-400 mb-1">
               Sampai Tanggal
             </label>
             <input
@@ -600,11 +600,11 @@ export function ReportsClient({
                 setEndDate(e.target.value);
                 setActivePreset("custom");
               }}
-              className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-mono focus:outline-none focus:border-[#2563EB]"
+              className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 text-xs font-mono focus:outline-none focus:border-[#2563EB]"
             />
           </div>
           <div className="sm:col-span-2 flex items-end">
-            <div className="w-full px-3.5 py-2 rounded-xl bg-[#F8FAFC] border border-slate-200 text-[11px] text-slate-600 flex items-center gap-2">
+            <div className="w-full px-3.5 py-2 rounded-xl bg-[#F8FAFC] dark:bg-[#090D16] border border-slate-200 dark:border-slate-800 text-[11px] text-slate-600 dark:text-slate-400 flex items-center gap-2">
               <Info className="w-4 h-4 text-[#2563EB] shrink-0" />
               <span>
                 Buka <strong>sheets.google.com</strong> &rarr; File &rarr;
@@ -620,16 +620,16 @@ export function ReportsClient({
       <div id="reports-print-area" className="space-y-6">
         {/* Print-only / Header Summary */}
         <div className="hidden print:block border-b border-slate-300 pb-4 mb-4">
-          <h1 className="text-xl font-extrabold text-slate-900">
+          <h1 className="text-xl font-extrabold text-slate-900 dark:text-slate-100">
             Laporan Perkembangan Penjualan — {activeStore.name}
           </h1>
-          <p className="text-xs text-slate-600 font-mono mt-1">
+          <p className="text-xs text-slate-600 dark:text-slate-400 font-mono mt-1">
             Periode: {startDate} s/d {endDate} • Dicetak via Mukaro POS
           </p>
         </div>
 
         {loading ? (
-          <div className="bg-white rounded-2xl border border-slate-200 p-12 flex items-center justify-center gap-2 text-sm text-slate-500">
+          <div className="bg-white dark:bg-[#111827] rounded-2xl border border-slate-200 dark:border-slate-800 p-12 flex items-center justify-center gap-2 text-sm text-slate-500 dark:text-slate-400">
             <Loader2 className="w-4 h-4 animate-spin text-[#2563EB]" />
             <span>Memuat data laporan...</span>
           </div>
@@ -637,32 +637,32 @@ export function ReportsClient({
           <>
             {/* 4 KPI Cards */}
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5">
-              <div className="bg-white rounded-2xl border border-slate-200 p-5 flex items-start gap-4">
-                <div className="w-11 h-11 rounded-xl bg-blue-50 text-[#2563EB] flex items-center justify-center shrink-0">
+              <div className="bg-white dark:bg-[#111827] rounded-2xl border border-slate-200 dark:border-slate-800 p-5 flex items-start gap-4">
+                <div className="w-11 h-11 rounded-xl bg-blue-50 dark:bg-blue-950/60 text-[#2563EB] flex items-center justify-center shrink-0">
                   <TrendingUp className="w-5 h-5" />
                 </div>
                 <div className="min-w-0 flex-1 space-y-1">
-                  <p className="text-xs font-medium text-slate-500">
+                  <p className="text-xs font-medium text-slate-500 dark:text-slate-400">
                     Total Omzet Bersih
                   </p>
-                  <p className="text-2xl font-bold tracking-tight font-mono tabular-nums text-slate-900 truncate">
+                  <p className="text-2xl font-bold tracking-tight font-mono tabular-nums text-slate-900 dark:text-slate-100 truncate">
                     {formatRupiah(report.totalNet)}
                   </p>
-                  <p className="text-[11px] text-slate-500 font-mono tabular-nums">
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400 font-mono tabular-nums">
                     Kotor: {formatRupiah(report.totalGross)}
                   </p>
                 </div>
               </div>
 
-              <div className="bg-white rounded-2xl border border-slate-200 p-5 flex items-start gap-4">
-                <div className="w-11 h-11 rounded-xl bg-blue-50 text-[#2563EB] flex items-center justify-center shrink-0">
+              <div className="bg-white dark:bg-[#111827] rounded-2xl border border-slate-200 dark:border-slate-800 p-5 flex items-start gap-4">
+                <div className="w-11 h-11 rounded-xl bg-blue-50 dark:bg-blue-950/60 text-[#2563EB] flex items-center justify-center shrink-0">
                   <ShoppingBag className="w-5 h-5" />
                 </div>
                 <div className="min-w-0 flex-1 space-y-1">
-                  <p className="text-xs font-medium text-slate-500">
+                  <p className="text-xs font-medium text-slate-500 dark:text-slate-400">
                     Total Transaksi Sukses
                   </p>
-                  <p className="text-2xl font-bold tracking-tight font-mono tabular-nums text-slate-900">
+                  <p className="text-2xl font-bold tracking-tight font-mono tabular-nums text-slate-900 dark:text-slate-100">
                     {report.totalOrders}
                   </p>
                   <p className="text-[11px] font-semibold text-emerald-700">
@@ -671,35 +671,35 @@ export function ReportsClient({
                 </div>
               </div>
 
-              <div className="bg-white rounded-2xl border border-slate-200 p-5 flex items-start gap-4">
-                <div className="w-11 h-11 rounded-xl bg-blue-50 text-[#2563EB] flex items-center justify-center shrink-0">
+              <div className="bg-white dark:bg-[#111827] rounded-2xl border border-slate-200 dark:border-slate-800 p-5 flex items-start gap-4">
+                <div className="w-11 h-11 rounded-xl bg-blue-50 dark:bg-blue-950/60 text-[#2563EB] flex items-center justify-center shrink-0">
                   <Receipt className="w-5 h-5" />
                 </div>
                 <div className="min-w-0 flex-1 space-y-1">
-                  <p className="text-xs font-medium text-slate-500">
+                  <p className="text-xs font-medium text-slate-500 dark:text-slate-400">
                     Rata-rata Nilai Order
                   </p>
-                  <p className="text-2xl font-bold tracking-tight font-mono tabular-nums text-slate-900 truncate">
+                  <p className="text-2xl font-bold tracking-tight font-mono tabular-nums text-slate-900 dark:text-slate-100 truncate">
                     {formatRupiah(report.aov)}
                   </p>
-                  <p className="text-[11px] text-slate-500">
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400">
                     Average Order Value (AOV)
                   </p>
                 </div>
               </div>
 
-              <div className="bg-white rounded-2xl border border-slate-200 p-5 flex items-start gap-4">
-                <div className="w-11 h-11 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center shrink-0">
+              <div className="bg-white dark:bg-[#111827] rounded-2xl border border-slate-200 dark:border-slate-800 p-5 flex items-start gap-4">
+                <div className="w-11 h-11 rounded-xl bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 flex items-center justify-center shrink-0">
                   <Coins className="w-5 h-5" />
                 </div>
                 <div className="min-w-0 flex-1 space-y-1">
-                  <p className="text-xs font-medium text-slate-500">
+                  <p className="text-xs font-medium text-slate-500 dark:text-slate-400">
                     Estimasi Profit Kotor
                   </p>
                   <p className="text-2xl font-bold tracking-tight font-mono tabular-nums text-emerald-700 truncate">
                     {formatRupiah(report.totalProfit)}
                   </p>
-                  <p className="text-[11px] text-slate-500 font-mono tabular-nums">
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400 font-mono tabular-nums">
                     Est. HPP: {formatRupiah(report.totalHpp)}
                   </p>
                 </div>
@@ -708,25 +708,25 @@ export function ReportsClient({
 
             {/* Channel & Payment Breakdown */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <div className="bg-white rounded-2xl border border-slate-200 p-5 space-y-4">
-                <h2 className="text-sm font-bold tracking-tight text-slate-900">
+              <div className="bg-white dark:bg-[#111827] rounded-2xl border border-slate-200 dark:border-slate-800 p-5 space-y-4">
+                <h2 className="text-sm font-bold tracking-tight text-slate-900 dark:text-slate-100">
                   Breakdown per Channel Penjualan
                 </h2>
                 <div className="space-y-2.5 text-xs">
                   {Object.values(report.channels).map((ch) => (
                     <div
                       key={ch.label}
-                      className="flex items-center justify-between p-3 rounded-xl bg-[#F8FAFC] border border-slate-100"
+                      className="flex items-center justify-between p-3 rounded-xl bg-[#F8FAFC] dark:bg-[#090D16] border border-slate-100 dark:border-slate-800/80"
                     >
                       <div>
-                        <span className="font-bold text-slate-900">
+                        <span className="font-bold text-slate-900 dark:text-slate-100">
                           {ch.label}
                         </span>
-                        <span className="ml-2 text-[11px] font-mono tabular-nums text-slate-500">
+                        <span className="ml-2 text-[11px] font-mono tabular-nums text-slate-500 dark:text-slate-400">
                           ({ch.count} order)
                         </span>
                       </div>
-                      <span className="font-bold font-mono tabular-nums text-slate-900">
+                      <span className="font-bold font-mono tabular-nums text-slate-900 dark:text-slate-100">
                         {formatRupiah(ch.omzet)}
                       </span>
                     </div>
@@ -734,8 +734,8 @@ export function ReportsClient({
                 </div>
               </div>
 
-              <div className="bg-white rounded-2xl border border-slate-200 p-5 space-y-4">
-                <h2 className="text-sm font-bold tracking-tight text-slate-900">
+              <div className="bg-white dark:bg-[#111827] rounded-2xl border border-slate-200 dark:border-slate-800 p-5 space-y-4">
+                <h2 className="text-sm font-bold tracking-tight text-slate-900 dark:text-slate-100">
                   Perbandingan Metode Pembayaran
                 </h2>
                 <div className="space-y-2.5 text-xs">
@@ -747,18 +747,18 @@ export function ReportsClient({
                     return (
                       <div
                         key={pm.label}
-                        className="p-3 rounded-xl bg-[#F8FAFC] border border-slate-100 space-y-1.5"
+                        className="p-3 rounded-xl bg-[#F8FAFC] dark:bg-[#090D16] border border-slate-100 dark:border-slate-800/80 space-y-1.5"
                       >
                         <div className="flex items-center justify-between">
                           <div>
-                            <span className="font-bold text-slate-900">
+                            <span className="font-bold text-slate-900 dark:text-slate-100">
                               {pm.label}
                             </span>
-                            <span className="ml-2 text-[11px] font-mono tabular-nums text-slate-500">
+                            <span className="ml-2 text-[11px] font-mono tabular-nums text-slate-500 dark:text-slate-400">
                               ({pm.count} trx • {pct}%)
                             </span>
                           </div>
-                          <span className="font-bold font-mono tabular-nums text-slate-900">
+                          <span className="font-bold font-mono tabular-nums text-slate-900 dark:text-slate-100">
                             {formatRupiah(pm.omzet)}
                           </span>
                         </div>
@@ -776,16 +776,16 @@ export function ReportsClient({
             </div>
 
             {/* Top 5 Menu Terlaris */}
-            <div className="bg-white rounded-2xl border border-slate-200 p-5 space-y-4">
+            <div className="bg-white dark:bg-[#111827] rounded-2xl border border-slate-200 dark:border-slate-800 p-5 space-y-4">
               <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-xl bg-blue-50 text-[#2563EB] flex items-center justify-center">
+                <div className="w-9 h-9 rounded-xl bg-blue-50 dark:bg-blue-950/60 text-[#2563EB] flex items-center justify-center">
                   <Award className="w-4 h-4" />
                 </div>
                 <div>
-                  <h2 className="text-sm font-bold tracking-tight text-slate-900">
+                  <h2 className="text-sm font-bold tracking-tight text-slate-900 dark:text-slate-100">
                     Top 5 Menu Terlaris
                   </h2>
-                  <p className="text-[11px] text-slate-500">
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400">
                     Berdasarkan kuantitas terjual pada rentang {startDate} s/d{" "}
                     {endDate}.
                   </p>
@@ -793,14 +793,14 @@ export function ReportsClient({
               </div>
 
               {report.top5Menus.length === 0 ? (
-                <p className="text-xs text-slate-500 py-4">
+                <p className="text-xs text-slate-500 dark:text-slate-400 py-4">
                   Belum ada penjualan menu pada rentang tanggal ini.
                 </p>
               ) : (
                 <div className="overflow-x-auto">
                   <table className="w-full text-left text-xs">
                     <thead>
-                      <tr className="border-b border-slate-200 text-slate-500">
+                      <tr className="border-b border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400">
                         <th className="py-2.5 pr-4 font-semibold">#</th>
                         <th className="py-2.5 pr-4 font-semibold">Nama Menu</th>
                         <th className="py-2.5 pr-4 font-semibold">Kategori</th>
@@ -815,22 +815,22 @@ export function ReportsClient({
                         </th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-100">
+                    <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                       {report.top5Menus.map((m) => (
                         <tr key={m.name}>
                           <td className="py-3 pr-4 font-mono font-bold text-[#2563EB]">
                             #{m.rank}
                           </td>
-                          <td className="py-3 pr-4 font-bold text-slate-900">
+                          <td className="py-3 pr-4 font-bold text-slate-900 dark:text-slate-100">
                             {m.name}
                           </td>
-                          <td className="py-3 pr-4 text-slate-500">
+                          <td className="py-3 pr-4 text-slate-500 dark:text-slate-400">
                             {m.category}
                           </td>
-                          <td className="py-3 pr-4 text-right font-mono tabular-nums font-semibold text-slate-900">
+                          <td className="py-3 pr-4 text-right font-mono tabular-nums font-semibold text-slate-900 dark:text-slate-100">
                             {m.qty}
                           </td>
-                          <td className="py-3 pr-4 text-right font-mono tabular-nums font-bold text-slate-900">
+                          <td className="py-3 pr-4 text-right font-mono tabular-nums font-bold text-slate-900 dark:text-slate-100">
                             {formatRupiah(m.omzet)}
                           </td>
                           <td className="py-3 text-right font-mono tabular-nums font-bold text-emerald-700">

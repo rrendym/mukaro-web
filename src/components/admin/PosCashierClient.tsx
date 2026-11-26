@@ -207,23 +207,23 @@ export function PosCashierClient({
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-extrabold tracking-[-0.03em] text-slate-900">
+          <h1 className="text-2xl font-extrabold tracking-[-0.03em] text-slate-900 dark:text-slate-100">
             Kasir POS &amp; Channel Ojol
           </h1>
-          <p className="text-xs text-slate-500 mt-0.5">
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
             Input pesanan walk-in atau GoFood/GrabFood/ShopeeFood dengan harga otomatis.
           </p>
         </div>
 
         {/* Mobile pane switcher */}
-        <div className="lg:hidden grid grid-cols-2 gap-1 p-1 bg-white border border-slate-200 rounded-2xl">
+        <div className="lg:hidden grid grid-cols-2 gap-1 p-1 bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 rounded-2xl">
           <button
             type="button"
             onClick={() => setMobilePane("menu")}
             className={`py-2 px-4 rounded-xl text-xs font-semibold transition ${
               mobilePane === "menu"
                 ? "bg-[#2563EB] text-white"
-                : "text-slate-600 hover:text-slate-900"
+                : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:text-slate-100"
             }`}
           >
             Pilih Menu
@@ -234,7 +234,7 @@ export function PosCashierClient({
             className={`py-2 px-4 rounded-xl text-xs font-semibold transition ${
               mobilePane === "cart"
                 ? "bg-[#2563EB] text-white"
-                : "text-slate-600 hover:text-slate-900"
+                : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:text-slate-100"
             }`}
           >
             Struk ({cartItemCount})
@@ -244,7 +244,7 @@ export function PosCashierClient({
 
       {/* Success Banner */}
       {successOrder && (
-        <div className="p-3.5 rounded-2xl bg-emerald-50 border border-emerald-200 text-xs text-emerald-700 font-semibold flex items-center gap-2">
+        <div className="p-3.5 rounded-2xl bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 text-xs text-emerald-700 font-semibold flex items-center gap-2">
           <CheckCircle2 className="w-4 h-4" />
           <span>Order {successOrder} berhasil dicatat &amp; masuk antrean dapur!</span>
         </div>
@@ -253,15 +253,15 @@ export function PosCashierClient({
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
         {/* LEFT: Receipt Cart & Payment */}
         <div
-          className={`lg:col-span-5 bg-white rounded-2xl border border-slate-200 flex flex-col gap-4 p-5 h-fit sticky top-6 ${
+          className={`lg:col-span-5 bg-white dark:bg-[#111827] rounded-2xl border border-slate-200 dark:border-slate-800 flex flex-col gap-4 p-5 h-fit sticky top-6 ${
             mobilePane === "cart" ? "block" : "hidden lg:flex"
           }`}
         >
           {/* Cart Header */}
-          <div className="flex items-center justify-between border-b border-slate-200 pb-3">
+          <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
             <div className="flex items-center gap-2">
               <ShoppingBag className="w-4 h-4 text-[#2563EB]" />
-              <h2 className="text-sm font-bold tracking-tight text-slate-900">
+              <h2 className="text-sm font-bold tracking-tight text-slate-900 dark:text-slate-100">
                 Struk ({orderSource.toUpperCase()})
               </h2>
             </div>
@@ -287,18 +287,18 @@ export function PosCashierClient({
                 {computedCart.map((item) => (
                   <div
                     key={item.cartKey}
-                    className="flex items-center justify-between gap-2 p-2.5 rounded-xl bg-[#F8FAFC] border border-slate-100"
+                    className="flex items-center justify-between gap-2 p-2.5 rounded-xl bg-[#F8FAFC] dark:bg-[#090D16] border border-slate-100 dark:border-slate-800/80"
                   >
                     <div className="min-w-0 flex-1">
-                      <p className="text-xs font-bold text-slate-900 truncate">
+                      <p className="text-xs font-bold text-slate-900 dark:text-slate-100 truncate">
                         {item.menu.name}
                       </p>
                       {item.selectedVariants.length > 0 && (
-                        <p className="text-[10px] text-slate-500 truncate">
+                        <p className="text-[10px] text-slate-500 dark:text-slate-400 truncate">
                           {item.selectedVariants.map((v) => v.optionName).join(", ")}
                         </p>
                       )}
-                      <p className="text-xs font-bold font-mono tabular-nums text-slate-900 mt-0.5">
+                      <p className="text-xs font-bold font-mono tabular-nums text-slate-900 dark:text-slate-100 mt-0.5">
                         {formatRupiah(item.unitPrice * item.qty)}
                       </p>
                     </div>
@@ -306,7 +306,7 @@ export function PosCashierClient({
                       <button
                         type="button"
                         onClick={() => updateQty(item.cartKey, -1)}
-                        className="w-6 h-6 rounded-full bg-white border border-slate-200 flex items-center justify-center hover:border-[#2563EB] transition"
+                        className="w-6 h-6 rounded-full bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 flex items-center justify-center hover:border-[#2563EB] transition"
                       >
                         <Minus className="w-3 h-3" />
                       </button>
@@ -316,7 +316,7 @@ export function PosCashierClient({
                       <button
                         type="button"
                         onClick={() => updateQty(item.cartKey, 1)}
-                        className="w-6 h-6 rounded-full bg-white border border-slate-200 flex items-center justify-center hover:border-[#2563EB] transition"
+                        className="w-6 h-6 rounded-full bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 flex items-center justify-center hover:border-[#2563EB] transition"
                       >
                         <Plus className="w-3 h-3" />
                       </button>
@@ -344,14 +344,14 @@ export function PosCashierClient({
                 value={customerName}
                 onChange={(e) => setCustomerName(e.target.value)}
                 placeholder={isOjol ? "Kode Driver/Order" : "Nama Pelanggan"}
-                className="px-3 py-2 rounded-xl border border-slate-200 text-xs focus:outline-none focus:border-[#2563EB] focus:ring-2 focus:ring-blue-500/15 transition"
+                className="px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 text-xs focus:outline-none focus:border-[#2563EB] focus:ring-2 focus:ring-blue-500/15 transition"
               />
               <input
                 type="text"
                 value={tableNumber}
                 onChange={(e) => setTableNumber(e.target.value)}
                 placeholder="No. Meja (opsional)"
-                className="px-3 py-2 rounded-xl border border-slate-200 text-xs focus:outline-none focus:border-[#2563EB] focus:ring-2 focus:ring-blue-500/15 transition"
+                className="px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 text-xs focus:outline-none focus:border-[#2563EB] focus:ring-2 focus:ring-blue-500/15 transition"
               />
             </div>
 
@@ -365,7 +365,7 @@ export function PosCashierClient({
                     className={`py-2 px-3 rounded-xl border text-xs font-semibold flex items-center justify-center gap-1.5 transition ${
                       walkInPayment === "cash"
                         ? "bg-[#2563EB] text-white border-[#2563EB]"
-                        : "border-slate-200 text-slate-700 hover:border-slate-300"
+                        : "border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:border-slate-300"
                     }`}
                   >
                     <Banknote className="w-3.5 h-3.5" />
@@ -377,7 +377,7 @@ export function PosCashierClient({
                     className={`py-2 px-3 rounded-xl border text-xs font-semibold flex items-center justify-center gap-1.5 transition ${
                       walkInPayment === "qris"
                         ? "bg-[#2563EB] text-white border-[#2563EB]"
-                        : "border-slate-200 text-slate-700 hover:border-slate-300"
+                        : "border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:border-slate-300"
                     }`}
                   >
                     <QrCode className="w-3.5 h-3.5" />
@@ -386,8 +386,8 @@ export function PosCashierClient({
                 </div>
 
                 {walkInPayment === "cash" && (
-                  <div className="p-3 rounded-2xl bg-[#F8FAFC] border border-slate-200 space-y-2">
-                    <label className="block text-[11px] font-semibold text-slate-900">
+                  <div className="p-3 rounded-2xl bg-[#F8FAFC] dark:bg-[#090D16] border border-slate-200 dark:border-slate-800 space-y-2">
+                    <label className="block text-[11px] font-semibold text-slate-900 dark:text-slate-100">
                       Uang Diterima (Rp)
                     </label>
                     <input
@@ -396,7 +396,7 @@ export function PosCashierClient({
                       value={cashReceived}
                       onChange={(e) => setCashReceived(e.target.value)}
                       placeholder="0"
-                      className="w-full px-3 py-2 rounded-xl bg-white border border-slate-200 text-sm font-mono font-bold tabular-nums focus:outline-none focus:border-[#2563EB]"
+                      className="w-full px-3 py-2 rounded-xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 text-sm font-mono font-bold tabular-nums focus:outline-none focus:border-[#2563EB]"
                     />
                     <div className="flex flex-wrap gap-1.5">
                       {[
@@ -409,14 +409,14 @@ export function PosCashierClient({
                           key={q.label}
                           type="button"
                           onClick={() => setCashReceived(String(q.val))}
-                          className="px-2.5 py-1 rounded-lg bg-white border border-slate-200 text-[11px] font-semibold hover:border-[#2563EB] transition"
+                          className="px-2.5 py-1 rounded-lg bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 text-[11px] font-semibold hover:border-[#2563EB] transition"
                         >
                           {q.label}
                         </button>
                       ))}
                     </div>
                     <div className="flex justify-between text-xs font-bold pt-1">
-                      <span className="text-slate-600">Kembalian:</span>
+                      <span className="text-slate-600 dark:text-slate-400">Kembalian:</span>
                       <span className="text-[#059669] font-mono tabular-nums">
                         {formatRupiah(cashChange)}
                       </span>
@@ -425,31 +425,31 @@ export function PosCashierClient({
                 )}
               </div>
             ) : (
-              <div className="p-3 rounded-2xl bg-emerald-50 border border-emerald-200 text-[11px] text-emerald-700 font-semibold">
+              <div className="p-3 rounded-2xl bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 text-[11px] text-emerald-700 font-semibold">
                 Tercatat sebagai <strong>ojol_platform</strong> (Lunas) —
                 terpisah dari uang tunai laci kasir.
               </div>
             )}
 
             {/* Totals */}
-            <div className="border-t border-slate-200 pt-3 space-y-1 text-xs">
-              <div className="flex justify-between text-slate-600">
+            <div className="border-t border-slate-200 dark:border-slate-800 pt-3 space-y-1 text-xs">
+              <div className="flex justify-between text-slate-600 dark:text-slate-400">
                 <span>Subtotal</span>
                 <span className="font-mono tabular-nums">{formatRupiah(subtotal)}</span>
               </div>
               {taxAmount > 0 && (
-                <div className="flex justify-between text-slate-600">
+                <div className="flex justify-between text-slate-600 dark:text-slate-400">
                   <span>Pajak ({store.tax_percent}%)</span>
                   <span className="font-mono tabular-nums">{formatRupiah(taxAmount)}</span>
                 </div>
               )}
               {serviceAmount > 0 && (
-                <div className="flex justify-between text-slate-600">
+                <div className="flex justify-between text-slate-600 dark:text-slate-400">
                   <span>Service ({store.service_percent}%)</span>
                   <span className="font-mono tabular-nums">{formatRupiah(serviceAmount)}</span>
                 </div>
               )}
-              <div className="flex justify-between font-bold text-base text-slate-900 pt-1 border-t border-slate-200">
+              <div className="flex justify-between font-bold text-base text-slate-900 dark:text-slate-100 pt-1 border-t border-slate-200 dark:border-slate-800">
                 <span>Total</span>
                 <span className="font-mono tabular-nums">{formatRupiah(grandTotal)}</span>
               </div>
@@ -486,7 +486,7 @@ export function PosCashierClient({
                 className={`py-2.5 px-3 rounded-xl border text-xs font-semibold transition ${
                   orderSource === src.key
                     ? "bg-[#2563EB] text-white border-[#2563EB]"
-                    : "bg-white border-slate-200 text-slate-700 hover:border-slate-300"
+                    : "bg-white dark:bg-[#111827] border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:border-slate-300"
                 }`}
               >
                 {src.label}
@@ -503,13 +503,13 @@ export function PosCashierClient({
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Cari menu..."
-                className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-white border border-slate-200 text-sm focus:outline-none focus:border-[#2563EB] focus:ring-2 focus:ring-blue-500/15 transition"
+                className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 text-sm focus:outline-none focus:border-[#2563EB] focus:ring-2 focus:ring-blue-500/15 transition"
               />
             </div>
             <select
               value={catFilter}
               onChange={(e) => setCatFilter(e.target.value)}
-              className="px-4 py-2.5 rounded-xl bg-white border border-slate-200 text-xs font-semibold focus:outline-none focus:border-[#2563EB]"
+              className="px-4 py-2.5 rounded-xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 text-xs font-semibold focus:outline-none focus:border-[#2563EB]"
             >
               <option value="all">Semua Kategori</option>
               {categories.map((c) => (
@@ -531,24 +531,24 @@ export function PosCashierClient({
                   type="button"
                   disabled={disabled}
                   onClick={() => handleMenuClick(menu)}
-                  className={`bg-white rounded-2xl p-3.5 border border-slate-200 text-left flex flex-col justify-between gap-2 transition ${
+                  className={`bg-white dark:bg-[#111827] rounded-2xl p-3.5 border border-slate-200 dark:border-slate-800 text-left flex flex-col justify-between gap-2 transition ${
                     disabled
                       ? "opacity-50 cursor-not-allowed"
                       : "hover:border-[#2563EB] active:scale-[0.98]"
                   }`}
                 >
                   <div>
-                    <p className="text-xs font-bold text-slate-900 line-clamp-2">
+                    <p className="text-xs font-bold text-slate-900 dark:text-slate-100 line-clamp-2">
                       {menu.name}
                     </p>
                     {isOjol && menu.ojol_price != null && (
-                      <span className="inline-block mt-1 px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 text-[10px] font-semibold">
+                      <span className="inline-block mt-1 px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 text-[10px] font-semibold">
                         Harga Ojol
                       </span>
                     )}
                   </div>
                   <div className="flex items-center justify-between pt-1">
-                    <span className="text-xs font-bold font-mono tabular-nums text-slate-900">
+                    <span className="text-xs font-bold font-mono tabular-nums text-slate-900 dark:text-slate-100">
                       {formatRupiah(displayPrice)}
                     </span>
                     <span className="w-7 h-7 rounded-full bg-[#2563EB] hover:bg-[#1D4ED8] text-white flex items-center justify-center transition">

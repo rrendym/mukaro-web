@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -11,10 +11,17 @@ import {
   Store as StoreIcon,
   Eye,
   EyeOff,
+  Gift,
 } from "lucide-react";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
 import { slugify } from "@/lib/format";
 import { MukaroLogo } from "@/components/MukaroLogo";
+import { ThemeToggle } from "@/components/ThemeToggle";
+import { getStoredReferralCode } from "@/components/ReferralTracker";
+
+function subscribeNoop() {
+  return () => {};
+}
 
 export default function LoginPage() {
   const router = useRouter();
@@ -24,6 +31,14 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [storeName, setStoreName] = useState("");
   const [storeSlug, setStoreSlug] = useState("");
+  const storedRefCode = useSyncExternalStore(
+    subscribeNoop,
+    getStoredReferralCode,
+    () => ""
+  );
+  const [referralInput, setReferralInput] = useState<string | null>(null);
+  const referralCode =
+    referralInput !== null ? referralInput : storedRefCode;
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
@@ -95,6 +110,19 @@ export default function LoginPage() {
             router.refresh();
             return;
           }
+
+          const { data: partnerProfile } = await supabase
+            .from("affiliate_profiles")
+            .select("user_id")
+            .eq("user_id", authData.user.id)
+            .maybeSingle();
+
+          if (partnerProfile) {
+            router.push("/partner");
+            router.refresh();
+            return;
+          }
+
           throw new Error(
             "Akun ini belum memiliki toko terdaftar. Silakan daftar toko baru."
           );
@@ -121,14 +149,52 @@ export default function LoginPage() {
         }
 
         if (authData.session) {
-          const { error: insertError } = await supabase.from("stores").insert({
-            owner_id: authData.user.id,
-            name: storeName.trim(),
-            slug: cleanSlug,
-            tagline: "Selamat datang di toko kami",
-          });
+          const cleanRef = referralCode.trim().toUpperCase();
+          let validReferrerId: string | null = null;
+          let validRefCode: string | null = null;
+
+          if (cleanRef) {
+            const { data: refProfile } = await supabase
+              .from("affiliate_profiles")
+              .select("user_id, referral_code")
+              .eq("referral_code", cleanRef)
+              .maybeSingle();
+
+            if (refProfile && refProfile.user_id !== authData.user.id) {
+              validReferrerId = refProfile.user_id;
+              validRefCode = refProfile.referral_code;
+            }
+          }
+
+          const trialDays = validReferrerId ? 21 : 14;
+          const expiredAt = new Date(
+            Date.now() + trialDays * 24 * 60 * 60 * 1000
+          ).toISOString();
+
+          const { data: insertedStore, error: insertError } = await supabase
+            .from("stores")
+            .insert({
+              owner_id: authData.user.id,
+              name: storeName.trim(),
+              slug: cleanSlug,
+              tagline: "Selamat datang di toko kami",
+              referred_by_code: validRefCode,
+              expired_at: expiredAt,
+            })
+            .select("id")
+            .single();
 
           if (insertError) throw insertError;
+
+          if (validReferrerId && insertedStore) {
+            await supabase.from("affiliate_commissions").insert({
+              referrer_user_id: validReferrerId,
+              referred_store_id: insertedStore.id,
+              plan_name: "pro",
+              commission_amount: 45000,
+              status: "pending_trial",
+            });
+          }
 
           router.push(`/${cleanSlug}/admin/menu`);
           router.refresh();
@@ -149,35 +215,38 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] text-[#0F172A] flex flex-col justify-center items-center p-4">
+    <div className="min-h-screen bg-[#F8FAFC] dark:bg-[#090D16] text-[#0F172A] dark:text-slate-100 flex flex-col justify-center items-center p-4">
       <div className="w-full max-w-md space-y-5">
         <div className="flex items-center justify-between">
           <Link
             href="/"
-            className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#475569] hover:text-[#0F172A] transition"
+            className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#475569] dark:text-slate-400 hover:text-[#0F172A] dark:text-slate-100 transition"
           >
             <ArrowLeft className="w-4 h-4" />
             <span>Kembali ke Beranda</span>
           </Link>
-          <Link
-            href="/kopi-senja"
-            className="text-xs font-semibold text-[#2563EB] hover:text-[#1D4ED8] transition"
-          >
-            Lihat Demo Menu &rarr;
-          </Link>
+          <div className="flex items-center gap-2.5">
+            <Link
+              href="/kopi-senja"
+              className="text-xs font-semibold text-[#2563EB] hover:text-[#1D4ED8] transition"
+            >
+              Lihat Demo Menu &rarr;
+            </Link>
+            <ThemeToggle />
+          </div>
         </div>
 
-        <div className="bg-white border border-[#E2E8F0] rounded-2xl shadow-sm p-7 sm:p-8 space-y-6">
+        <div className="bg-white dark:bg-[#111827] border border-[#E2E8F0] dark:border-slate-800 rounded-2xl shadow-sm p-7 sm:p-8 space-y-6">
           <div className="space-y-2">
             <MukaroLogo size="sm" showDomain />
-            <h1 className="text-2xl font-extrabold tracking-[-0.03em] text-[#0F172A] pt-2">
+            <h1 className="text-2xl font-extrabold tracking-[-0.03em] text-[#0F172A] dark:text-slate-100 pt-2">
               {mode === "login"
                 ? "Masuk Dashboard Owner"
                 : mode === "register"
                   ? "Daftarkan Toko Baru"
                   : "Reset Password"}
             </h1>
-            <p className="text-xs text-[#475569] leading-relaxed">
+            <p className="text-xs text-[#475569] dark:text-slate-400 leading-relaxed">
               {mode === "login"
                 ? "Kelola menu, kasir POS, stok bahan baku, dan QR outlet Anda."
                 : mode === "register"
@@ -187,7 +256,7 @@ export default function LoginPage() {
           </div>
 
           {mode !== "forgot" && (
-            <div className="grid grid-cols-2 gap-1.5 p-1 bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl">
+            <div className="grid grid-cols-2 gap-1.5 p-1 bg-[#F8FAFC] dark:bg-[#090D16] border border-[#E2E8F0] dark:border-slate-800 rounded-xl">
               <button
                 type="button"
                 onClick={() => {
@@ -197,8 +266,8 @@ export default function LoginPage() {
                 }}
                 className={`py-2 rounded-lg text-xs font-bold transition ${
                   mode === "login"
-                    ? "bg-white text-[#0F172A] shadow-xs border border-[#E2E8F0]"
-                    : "text-[#475569] hover:text-[#0F172A]"
+                    ? "bg-white dark:bg-[#111827] text-[#0F172A] dark:text-slate-100 shadow-xs border border-[#E2E8F0] dark:border-slate-800"
+                    : "text-[#475569] dark:text-slate-400 hover:text-[#0F172A] dark:text-slate-100"
                 }`}
               >
                 Masuk
@@ -212,8 +281,8 @@ export default function LoginPage() {
                 }}
                 className={`py-2 rounded-lg text-xs font-bold transition ${
                   mode === "register"
-                    ? "bg-white text-[#0F172A] shadow-xs border border-[#E2E8F0]"
-                    : "text-[#475569] hover:text-[#0F172A]"
+                    ? "bg-white dark:bg-[#111827] text-[#0F172A] dark:text-slate-100 shadow-xs border border-[#E2E8F0] dark:border-slate-800"
+                    : "text-[#475569] dark:text-slate-400 hover:text-[#0F172A] dark:text-slate-100"
                 }`}
               >
                 Daftar Toko
@@ -222,13 +291,13 @@ export default function LoginPage() {
           )}
 
           {error && (
-            <div className="p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-xs text-rose-700 font-medium">
+            <div className="p-3.5 rounded-xl bg-rose-50 dark:bg-rose-950/50 border border-rose-200 text-xs text-rose-700 font-medium">
               {error}
             </div>
           )}
 
           {info && (
-            <div className="p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 text-xs text-emerald-700 font-medium">
+            <div className="p-3.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 text-xs text-emerald-700 font-medium">
               {info}
             </div>
           )}
@@ -237,7 +306,7 @@ export default function LoginPage() {
             {mode === "register" && (
               <>
                 <div>
-                  <label className="block text-xs font-semibold text-[#0F172A] mb-1.5">
+                  <label className="block text-xs font-semibold text-[#0F172A] dark:text-slate-100 mb-1.5">
                     Nama Kafe / Resto
                   </label>
                   <div className="relative">
@@ -248,17 +317,17 @@ export default function LoginPage() {
                       value={storeName}
                       onChange={(e) => handleStoreNameChange(e.target.value)}
                       placeholder="Contoh: Kopi Senja"
-                      className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-[#E2E8F0] text-sm focus:outline-none focus:border-[#2563EB] transition"
+                      className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-[#E2E8F0] dark:border-slate-800 text-sm focus:outline-none focus:border-[#2563EB] transition"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-[#0F172A] mb-1.5">
+                  <label className="block text-xs font-semibold text-[#0F172A] dark:text-slate-100 mb-1.5">
                     Slug URL Toko
                   </label>
-                  <div className="flex items-center rounded-xl border border-[#E2E8F0] overflow-hidden focus-within:border-[#2563EB] transition">
-                    <span className="px-3 py-2.5 bg-[#F8FAFC] text-xs font-mono font-medium text-[#475569] border-r border-[#E2E8F0]">
+                  <div className="flex items-center rounded-xl border border-[#E2E8F0] dark:border-slate-800 overflow-hidden focus-within:border-[#2563EB] transition">
+                    <span className="px-3 py-2.5 bg-[#F8FAFC] dark:bg-[#090D16] text-xs font-mono font-medium text-[#475569] dark:text-slate-400 border-r border-[#E2E8F0] dark:border-slate-800">
                       mukaro.id/
                     </span>
                     <input
@@ -271,11 +340,29 @@ export default function LoginPage() {
                     />
                   </div>
                 </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-[#0F172A] dark:text-slate-100 mb-1.5">
+                    Kode Referral Partner (Opsional • Bonus +7 Hari Trial)
+                  </label>
+                  <div className="relative">
+                    <Gift className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                    <input
+                      type="text"
+                      value={referralCode}
+                      onChange={(e) =>
+                        setReferralInput(e.target.value.toUpperCase())
+                      }
+                      placeholder="Contoh: MKR88A"
+                      className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-[#E2E8F0] dark:border-slate-800 bg-transparent text-sm font-mono uppercase focus:outline-none focus:border-[#2563EB] transition"
+                    />
+                  </div>
+                </div>
               </>
             )}
 
             <div>
-              <label className="block text-xs font-semibold text-[#0F172A] mb-1.5">
+              <label className="block text-xs font-semibold text-[#0F172A] dark:text-slate-100 mb-1.5">
                 Email
               </label>
               <div className="relative">
@@ -286,7 +373,7 @@ export default function LoginPage() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="owner@kopisenja.id"
-                  className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-[#E2E8F0] text-sm focus:outline-none focus:border-[#2563EB] transition"
+                  className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-[#E2E8F0] dark:border-slate-800 text-sm focus:outline-none focus:border-[#2563EB] transition"
                 />
               </div>
             </div>
@@ -294,7 +381,7 @@ export default function LoginPage() {
             {mode !== "forgot" && (
               <div>
                 <div className="flex items-center justify-between mb-1.5">
-                  <label className="block text-xs font-semibold text-[#0F172A]">
+                  <label className="block text-xs font-semibold text-[#0F172A] dark:text-slate-100">
                     Password
                   </label>
                   {mode === "login" && (
@@ -320,12 +407,12 @@ export default function LoginPage() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="Minimal 6 karakter"
-                    className="w-full pl-10 pr-10 py-2.5 rounded-xl border border-[#E2E8F0] text-sm focus:outline-none focus:border-[#2563EB] transition"
+                    className="w-full pl-10 pr-10 py-2.5 rounded-xl border border-[#E2E8F0] dark:border-slate-800 text-sm focus:outline-none focus:border-[#2563EB] transition"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-[#0F172A]"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-[#0F172A] dark:text-slate-100"
                     aria-label="Toggle password"
                   >
                     {showPassword ? (
@@ -361,7 +448,7 @@ export default function LoginPage() {
                   setError(null);
                   setInfo(null);
                 }}
-                className="w-full py-2 text-xs font-semibold text-[#475569] hover:text-[#0F172A] transition"
+                className="w-full py-2 text-xs font-semibold text-[#475569] dark:text-slate-400 hover:text-[#0F172A] dark:text-slate-100 transition"
               >
                 &larr; Kembali ke halaman Masuk
               </button>

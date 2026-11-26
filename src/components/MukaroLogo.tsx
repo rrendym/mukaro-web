@@ -46,12 +46,12 @@ export function MukaroLogo({
       </div>
       <div className="flex flex-col leading-none">
         <span
-          className={`${textSizes[size]} font-extrabold tracking-[-0.03em] text-[#0F172A]`}
+          className={`${textSizes[size]} font-extrabold tracking-[-0.03em] text-[#0F172A] dark:text-slate-100`}
         >
           Mukaro
         </span>
         {showDomain && (
-          <span className="text-[11px] font-medium text-[#475569] mt-0.5">
+          <span className="text-[11px] font-medium text-[#475569] dark:text-slate-400 mt-0.5">
             mukaro.id
           </span>
         )}

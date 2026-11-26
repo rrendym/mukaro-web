@@ -232,7 +232,7 @@ export function StoreSettingsClient({ store }: { store: Store }) {
     <form onSubmit={handleSave} className="space-y-6 pb-10">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-extrabold tracking-tight text-slate-900">
+          <h1 className="text-2xl font-extrabold tracking-tight text-slate-900 dark:text-slate-100">
             Pengaturan Toko &amp; Tampilan
           </h1>
           <p className="text-xs text-neutral-500 mt-0.5">
@@ -252,26 +252,26 @@ export function StoreSettingsClient({ store }: { store: Store }) {
       </div>
 
       {error && (
-        <div className="p-3.5 rounded-2xl bg-rose-50 border border-rose-200/20 text-xs text-rose-700 font-medium">
+        <div className="p-3.5 rounded-2xl bg-rose-50 dark:bg-rose-950/50 border border-rose-200/20 text-xs text-rose-700 font-medium">
           {error}
         </div>
       )}
 
       {savedToast && (
-        <div className="p-3.5 rounded-2xl bg-emerald-50 border border-emerald-200/30 text-xs text-emerald-700 font-bold flex items-center gap-2">
+        <div className="p-3.5 rounded-2xl bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200/30 text-xs text-emerald-700 font-bold flex items-center gap-2">
           <CheckCircle2 className="w-4 h-4" />
           <span>Pengaturan toko berhasil disimpan!</span>
         </div>
       )}
 
       {/* Identitas & Warna */}
-      <div className="bg-white rounded-2xl p-6 border border-slate-200 space-y-5">
-        <h2 className="text-base font-extrabold tracking-tight text-slate-900">
+      <div className="bg-white dark:bg-[#111827] rounded-2xl p-6 border border-slate-200 dark:border-slate-800 space-y-5">
+        <h2 className="text-base font-extrabold tracking-tight text-slate-900 dark:text-slate-100">
           Identitas Brand &amp; Warna Aksen
         </h2>
 
         <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-          <div className="w-20 h-20 rounded-full bg-[#F8FAFC] border border-slate-200 overflow-hidden shrink-0 flex items-center justify-center">
+          <div className="w-20 h-20 rounded-full bg-[#F8FAFC] dark:bg-[#090D16] border border-slate-200 dark:border-slate-800 overflow-hidden shrink-0 flex items-center justify-center">
             {logoUrl ? (
               <img
                 src={logoUrl}
@@ -283,7 +283,7 @@ export function StoreSettingsClient({ store }: { store: Store }) {
             )}
           </div>
           <div className="space-y-1.5">
-            <label className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#F8FAFC] border border-slate-200 text-xs font-bold cursor-pointer hover:border-[#2563EB] transition">
+            <label className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#F8FAFC] dark:bg-[#090D16] border border-slate-200 dark:border-slate-800 text-xs font-bold cursor-pointer hover:border-[#2563EB] transition">
               {uploadingLogo ? (
                 <Loader2 className="w-3.5 h-3.5 animate-spin" />
               ) : (
@@ -314,7 +314,7 @@ export function StoreSettingsClient({ store }: { store: Store }) {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
-            <label className="block text-xs font-bold text-slate-900 mb-1.5">
+            <label className="block text-xs font-bold text-slate-900 dark:text-slate-100 mb-1.5">
               Nama Resto / Kafe
             </label>
             <input
@@ -322,11 +322,11 @@ export function StoreSettingsClient({ store }: { store: Store }) {
               required
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-[#2563EB] transition"
+              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 text-sm focus:outline-none focus:border-[#2563EB] transition"
             />
           </div>
           <div>
-            <label className="block text-xs font-bold text-slate-900 mb-1.5">
+            <label className="block text-xs font-bold text-slate-900 dark:text-slate-100 mb-1.5">
               Tagline Singkat
             </label>
             <input
@@ -334,13 +334,13 @@ export function StoreSettingsClient({ store }: { store: Store }) {
               value={tagline}
               onChange={(e) => setTagline(e.target.value)}
               placeholder="Contoh: Seduh hangat setiap hari"
-              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-[#2563EB] transition"
+              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 text-sm focus:outline-none focus:border-[#2563EB] transition"
             />
           </div>
         </div>
 
         <div>
-          <label className="block text-xs font-bold text-slate-900 mb-2">
+          <label className="block text-xs font-bold text-slate-900 dark:text-slate-100 mb-2">
             Warna Aksen Utama
           </label>
           <div className="flex flex-wrap items-center gap-3">
@@ -348,7 +348,7 @@ export function StoreSettingsClient({ store }: { store: Store }) {
               type="color"
               value={accentColor}
               onChange={(e) => setAccentColor(e.target.value)}
-              className="w-10 h-10 rounded-xl border border-slate-200 cursor-pointer p-0.5 bg-white"
+              className="w-10 h-10 rounded-xl border border-slate-200 dark:border-slate-800 cursor-pointer p-0.5 bg-white dark:bg-[#111827]"
             />
             {ACCENT_PRESETS.map((preset) => (
               <button
@@ -357,8 +357,8 @@ export function StoreSettingsClient({ store }: { store: Store }) {
                 onClick={() => setAccentColor(preset.hex)}
                 className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full border text-xs font-semibold transition ${
                   accentColor.toLowerCase() === preset.hex.toLowerCase()
-                    ? "border-[#2563EB] bg-[#F8FAFC]"
-                    : "border-slate-200 hover:border-[#2563EB]/40"
+                    ? "border-[#2563EB] bg-[#F8FAFC] dark:bg-[#090D16]"
+                    : "border-slate-200 dark:border-slate-800 hover:border-[#2563EB]/40"
                 }`}
               >
                 <span
@@ -373,10 +373,10 @@ export function StoreSettingsClient({ store }: { store: Store }) {
       </div>
 
       {/* Hero Promo Banner */}
-      <div className="bg-white rounded-2xl p-6 border border-slate-200 space-y-4">
+      <div className="bg-white dark:bg-[#111827] rounded-2xl p-6 border border-slate-200 dark:border-slate-800 space-y-4">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-base font-extrabold tracking-tight text-slate-900">
+            <h2 className="text-base font-extrabold tracking-tight text-slate-900 dark:text-slate-100">
               Hero Promo Banner
             </h2>
             <p className="text-xs text-neutral-500">
@@ -391,7 +391,7 @@ export function StoreSettingsClient({ store }: { store: Store }) {
             }`}
           >
             <span
-              className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+              className={`inline-block h-4 w-4 transform rounded-full bg-white dark:bg-[#111827] transition-transform ${
                 showBanner ? "translate-x-6" : "translate-x-1"
               }`}
             />
@@ -400,7 +400,7 @@ export function StoreSettingsClient({ store }: { store: Store }) {
 
         <div className="space-y-3">
           {bannerUrl && (
-            <div className="relative w-full h-36 rounded-2xl overflow-hidden bg-[#F8FAFC]">
+            <div className="relative w-full h-36 rounded-2xl overflow-hidden bg-[#F8FAFC] dark:bg-[#090D16]">
               <img
                 src={bannerUrl}
                 alt="Banner"
@@ -408,7 +408,7 @@ export function StoreSettingsClient({ store }: { store: Store }) {
               />
             </div>
           )}
-          <label className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#F8FAFC] border border-slate-200 text-xs font-bold cursor-pointer hover:border-[#2563EB] transition">
+          <label className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#F8FAFC] dark:bg-[#090D16] border border-slate-200 dark:border-slate-800 text-xs font-bold cursor-pointer hover:border-[#2563EB] transition">
             {uploadingBanner ? (
               <Loader2 className="w-3.5 h-3.5 animate-spin" />
             ) : (
@@ -437,7 +437,7 @@ export function StoreSettingsClient({ store }: { store: Store }) {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
-            <label className="block text-xs font-bold text-slate-900 mb-1.5">
+            <label className="block text-xs font-bold text-slate-900 dark:text-slate-100 mb-1.5">
               Judul Promo
             </label>
             <input
@@ -445,11 +445,11 @@ export function StoreSettingsClient({ store }: { store: Store }) {
               value={bannerTitle}
               onChange={(e) => setBannerTitle(e.target.value)}
               placeholder="Promo Senja Hemat 20%"
-              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-[#2563EB] transition"
+              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 text-sm focus:outline-none focus:border-[#2563EB] transition"
             />
           </div>
           <div>
-            <label className="block text-xs font-bold text-slate-900 mb-1.5">
+            <label className="block text-xs font-bold text-slate-900 dark:text-slate-100 mb-1.5">
               Subjudul Promo
             </label>
             <input
@@ -457,15 +457,15 @@ export function StoreSettingsClient({ store }: { store: Store }) {
               value={bannerSubtitle}
               onChange={(e) => setBannerSubtitle(e.target.value)}
               placeholder="Berlaku setiap hari pukul 15.00 - 18.00"
-              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-[#2563EB] transition"
+              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 text-sm focus:outline-none focus:border-[#2563EB] transition"
             />
           </div>
         </div>
       </div>
 
       {/* Mode Pemesanan */}
-      <div className="bg-white rounded-2xl p-6 border border-slate-200 space-y-4">
-        <h2 className="text-base font-extrabold tracking-tight text-slate-900">
+      <div className="bg-white dark:bg-[#111827] rounded-2xl p-6 border border-slate-200 dark:border-slate-800 space-y-4">
+        <h2 className="text-base font-extrabold tracking-tight text-slate-900 dark:text-slate-100">
           Mode Pemesanan
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
@@ -492,11 +492,11 @@ export function StoreSettingsClient({ store }: { store: Store }) {
               onClick={() => setOrderMode(opt.value)}
               className={`p-4 rounded-2xl border text-left transition ${
                 orderMode === opt.value
-                  ? "border-[#2563EB] bg-[#F8FAFC]"
-                  : "border-slate-200 hover:border-[#2563EB]/40"
+                  ? "border-[#2563EB] bg-[#F8FAFC] dark:bg-[#090D16]"
+                  : "border-slate-200 dark:border-slate-800 hover:border-[#2563EB]/40"
               }`}
             >
-              <p className="text-sm font-bold text-slate-900">{opt.title}</p>
+              <p className="text-sm font-bold text-slate-900 dark:text-slate-100">{opt.title}</p>
               <p className="text-xs text-neutral-500 mt-1 leading-relaxed">
                 {opt.desc}
               </p>
@@ -506,14 +506,14 @@ export function StoreSettingsClient({ store }: { store: Store }) {
       </div>
 
       {/* WhatsApp & Pajak */}
-      <div className="bg-white rounded-2xl p-6 border border-slate-200 space-y-5">
-        <h2 className="text-base font-extrabold tracking-tight text-slate-900">
+      <div className="bg-white dark:bg-[#111827] rounded-2xl p-6 border border-slate-200 dark:border-slate-800 space-y-5">
+        <h2 className="text-base font-extrabold tracking-tight text-slate-900 dark:text-slate-100">
           WhatsApp Kasir &amp; Pajak
         </h2>
 
-        <div className="flex items-center justify-between p-4 rounded-2xl bg-[#F8FAFC]">
+        <div className="flex items-center justify-between p-4 rounded-2xl bg-[#F8FAFC] dark:bg-[#090D16]">
           <div>
-            <p className="text-xs font-bold text-slate-900">
+            <p className="text-xs font-bold text-slate-900 dark:text-slate-100">
               Aktifkan Tombol WhatsApp Kasir
             </p>
             <p className="text-[11px] text-neutral-500">
@@ -528,7 +528,7 @@ export function StoreSettingsClient({ store }: { store: Store }) {
             }`}
           >
             <span
-              className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+              className={`inline-block h-4 w-4 transform rounded-full bg-white dark:bg-[#111827] transition-transform ${
                 showWa ? "translate-x-6" : "translate-x-1"
               }`}
             />
@@ -537,7 +537,7 @@ export function StoreSettingsClient({ store }: { store: Store }) {
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div>
-            <label className="block text-xs font-bold text-slate-900 mb-1.5">
+            <label className="block text-xs font-bold text-slate-900 dark:text-slate-100 mb-1.5">
               Nomor WhatsApp Kasir
             </label>
             <input
@@ -545,11 +545,11 @@ export function StoreSettingsClient({ store }: { store: Store }) {
               value={waNumber}
               onChange={(e) => setWaNumber(e.target.value)}
               placeholder="6281234567890"
-              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm font-mono tabular-nums focus:outline-none focus:border-[#2563EB] transition"
+              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 text-sm font-mono tabular-nums focus:outline-none focus:border-[#2563EB] transition"
             />
           </div>
           <div>
-            <label className="block text-xs font-bold text-slate-900 mb-1.5">
+            <label className="block text-xs font-bold text-slate-900 dark:text-slate-100 mb-1.5">
               Pajak Resto / PB1 (%)
             </label>
             <input
@@ -559,11 +559,11 @@ export function StoreSettingsClient({ store }: { store: Store }) {
               step="0.1"
               value={taxPercent}
               onChange={(e) => setTaxPercent(e.target.value)}
-              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm font-mono tabular-nums focus:outline-none focus:border-[#2563EB] transition"
+              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 text-sm font-mono tabular-nums focus:outline-none focus:border-[#2563EB] transition"
             />
           </div>
           <div>
-            <label className="block text-xs font-bold text-slate-900 mb-1.5">
+            <label className="block text-xs font-bold text-slate-900 dark:text-slate-100 mb-1.5">
               Service Charge (%)
             </label>
             <input
@@ -573,21 +573,21 @@ export function StoreSettingsClient({ store }: { store: Store }) {
               step="0.1"
               value={servicePercent}
               onChange={(e) => setServicePercent(e.target.value)}
-              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm font-mono tabular-nums focus:outline-none focus:border-[#2563EB] transition"
+              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 text-sm font-mono tabular-nums focus:outline-none focus:border-[#2563EB] transition"
             />
           </div>
         </div>
       </div>
 
       {/* Keamanan Staf & Pembayaran QRIS / Midtrans */}
-      <div className="bg-white rounded-2xl p-6 border border-slate-200 space-y-5">
-        <h2 className="text-base font-extrabold tracking-tight text-slate-900">
+      <div className="bg-white dark:bg-[#111827] rounded-2xl p-6 border border-slate-200 dark:border-slate-800 space-y-5">
+        <h2 className="text-base font-extrabold tracking-tight text-slate-900 dark:text-slate-100">
           PIN Staf &amp; Pembayaran QRIS / Midtrans
         </h2>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div>
-            <label className="block text-xs font-bold text-slate-900 mb-1.5">
+            <label className="block text-xs font-bold text-slate-900 dark:text-slate-100 mb-1.5">
               PIN Staf (Untuk Void Order)
             </label>
             <input
@@ -596,11 +596,11 @@ export function StoreSettingsClient({ store }: { store: Store }) {
               value={staffPin}
               onChange={(e) => setStaffPin(e.target.value)}
               placeholder="1234"
-              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm font-bold font-mono tabular-nums focus:outline-none focus:border-[#2563EB] transition"
+              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 text-sm font-bold font-mono tabular-nums focus:outline-none focus:border-[#2563EB] transition"
             />
           </div>
           <div>
-            <label className="block text-xs font-bold text-slate-900 mb-1.5">
+            <label className="block text-xs font-bold text-slate-900 dark:text-slate-100 mb-1.5">
               Midtrans Server Key (Opsional)
             </label>
             <input
@@ -608,11 +608,11 @@ export function StoreSettingsClient({ store }: { store: Store }) {
               value={midtransServerKey}
               onChange={(e) => setMidtransServerKey(e.target.value)}
               placeholder="SB-Mid-server-..."
-              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-[#2563EB] transition"
+              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 text-sm focus:outline-none focus:border-[#2563EB] transition"
             />
           </div>
           <div>
-            <label className="block text-xs font-bold text-slate-900 mb-1.5">
+            <label className="block text-xs font-bold text-slate-900 dark:text-slate-100 mb-1.5">
               Midtrans Client Key (Opsional)
             </label>
             <input
@@ -620,13 +620,13 @@ export function StoreSettingsClient({ store }: { store: Store }) {
               value={midtransClientKey}
               onChange={(e) => setMidtransClientKey(e.target.value)}
               placeholder="SB-Mid-client-..."
-              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-[#2563EB] transition"
+              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 text-sm focus:outline-none focus:border-[#2563EB] transition"
             />
           </div>
         </div>
 
         <div className="pt-2 space-y-3">
-          <label className="block text-xs font-bold text-slate-900">
+          <label className="block text-xs font-bold text-slate-900 dark:text-slate-100">
             Upload QRIS Statis Toko (Digunakan jika Midtrans belum diisi)
           </label>
           <div className="flex flex-col sm:flex-row sm:items-center gap-4">
@@ -634,10 +634,10 @@ export function StoreSettingsClient({ store }: { store: Store }) {
               <img
                 src={staticQrisUrl}
                 alt="QRIS Statis"
-                className="w-24 h-24 rounded-2xl object-contain border border-slate-200 bg-white p-1"
+                className="w-24 h-24 rounded-2xl object-contain border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#111827] p-1"
               />
             )}
-            <label className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#F8FAFC] border border-slate-200 text-xs font-bold cursor-pointer hover:border-[#2563EB] transition w-fit">
+            <label className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#F8FAFC] dark:bg-[#090D16] border border-slate-200 dark:border-slate-800 text-xs font-bold cursor-pointer hover:border-[#2563EB] transition w-fit">
               {uploadingQris ? (
                 <Loader2 className="w-3.5 h-3.5 animate-spin" />
               ) : (
@@ -667,29 +667,29 @@ export function StoreSettingsClient({ store }: { store: Store }) {
       </div>
 
       {/* Keamanan Akun & Ubah Password */}
-      <div className="bg-white rounded-2xl p-6 border border-slate-200 space-y-5">
+      <div className="bg-white dark:bg-[#111827] rounded-2xl p-6 border border-slate-200 dark:border-slate-800 space-y-5">
         <div className="flex items-center justify-between gap-2 flex-wrap">
           <div className="flex items-center gap-2">
             <KeyRound className="w-4 h-4 text-[#2563EB]" />
-            <h2 className="text-base font-extrabold tracking-tight text-slate-900">
+            <h2 className="text-base font-extrabold tracking-tight text-slate-900 dark:text-slate-100">
               Keamanan Akun &amp; Ubah Password
             </h2>
           </div>
           {accountEmail && (
-            <span className="text-xs font-mono text-neutral-500 bg-[#F8FAFC] px-3 py-1 rounded-full border border-slate-200">
+            <span className="text-xs font-mono text-neutral-500 bg-[#F8FAFC] dark:bg-[#090D16] px-3 py-1 rounded-full border border-slate-200 dark:border-slate-800">
               {accountEmail}
             </span>
           )}
         </div>
 
         {passError && (
-          <div className="p-3 rounded-xl bg-rose-50 border border-rose-200/20 text-xs text-rose-700 font-medium">
+          <div className="p-3 rounded-xl bg-rose-50 dark:bg-rose-950/50 border border-rose-200/20 text-xs text-rose-700 font-medium">
             {passError}
           </div>
         )}
 
         {passSuccess && (
-          <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200/30 text-xs text-emerald-700 font-bold flex items-center gap-2">
+          <div className="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200/30 text-xs text-emerald-700 font-bold flex items-center gap-2">
             <CheckCircle2 className="w-4 h-4" />
             <span>{passSuccess}</span>
           </div>
@@ -697,7 +697,7 @@ export function StoreSettingsClient({ store }: { store: Store }) {
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div>
-            <label className="block text-xs font-bold text-slate-900 mb-1.5">
+            <label className="block text-xs font-bold text-slate-900 dark:text-slate-100 mb-1.5">
               Password Saat Ini
             </label>
             <div className="relative">
@@ -706,12 +706,12 @@ export function StoreSettingsClient({ store }: { store: Store }) {
                 value={currentPassword}
                 onChange={(e) => setCurrentPassword(e.target.value)}
                 placeholder="Password lama"
-                className="w-full pl-3.5 pr-10 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-[#2563EB] transition"
+                className="w-full pl-3.5 pr-10 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 text-sm focus:outline-none focus:border-[#2563EB] transition"
               />
               <button
                 type="button"
                 onClick={() => setShowCurPass(!showCurPass)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-slate-900"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-slate-900 dark:text-slate-100"
               >
                 {showCurPass ? (
                   <EyeOff className="w-4 h-4" />
@@ -723,7 +723,7 @@ export function StoreSettingsClient({ store }: { store: Store }) {
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-slate-900 mb-1.5">
+            <label className="block text-xs font-bold text-slate-900 dark:text-slate-100 mb-1.5">
               Password Baru
             </label>
             <div className="relative">
@@ -732,12 +732,12 @@ export function StoreSettingsClient({ store }: { store: Store }) {
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
                 placeholder="Minimal 6 karakter"
-                className="w-full pl-3.5 pr-10 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-[#2563EB] transition"
+                className="w-full pl-3.5 pr-10 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 text-sm focus:outline-none focus:border-[#2563EB] transition"
               />
               <button
                 type="button"
                 onClick={() => setShowNewPass(!showNewPass)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-slate-900"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-slate-900 dark:text-slate-100"
               >
                 {showNewPass ? (
                   <EyeOff className="w-4 h-4" />
@@ -749,7 +749,7 @@ export function StoreSettingsClient({ store }: { store: Store }) {
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-slate-900 mb-1.5">
+            <label className="block text-xs font-bold text-slate-900 dark:text-slate-100 mb-1.5">
               Konfirmasi Password Baru
             </label>
             <div className="relative">
@@ -758,12 +758,12 @@ export function StoreSettingsClient({ store }: { store: Store }) {
                 value={confirmNewPassword}
                 onChange={(e) => setConfirmNewPassword(e.target.value)}
                 placeholder="Ulangi password baru"
-                className="w-full pl-3.5 pr-10 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-[#2563EB] transition"
+                className="w-full pl-3.5 pr-10 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 text-sm focus:outline-none focus:border-[#2563EB] transition"
               />
               <button
                 type="button"
                 onClick={() => setShowConfPass(!showConfPass)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-slate-900"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-slate-900 dark:text-slate-100"
               >
                 {showConfPass ? (
                   <EyeOff className="w-4 h-4" />

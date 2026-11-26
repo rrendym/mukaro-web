@@ -72,7 +72,7 @@ export function VouchersManagerClient({
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-extrabold tracking-tight text-slate-900">
+        <h1 className="text-2xl font-extrabold tracking-tight text-slate-900 dark:text-slate-100">
           Manajemen Voucher Promo
         </h1>
         <p className="text-xs text-neutral-500 mt-0.5">
@@ -83,17 +83,17 @@ export function VouchersManagerClient({
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <form
           onSubmit={handleAdd}
-          className="bg-white rounded-2xl p-5 border border-slate-200 space-y-4 h-fit"
+          className="bg-white dark:bg-[#111827] rounded-2xl p-5 border border-slate-200 dark:border-slate-800 space-y-4 h-fit"
         >
           <div className="flex items-center gap-2">
             <TicketPercent className="w-4 h-4 text-[#2563EB]" />
-            <h2 className="text-sm font-extrabold tracking-tight text-slate-900">
+            <h2 className="text-sm font-extrabold tracking-tight text-slate-900 dark:text-slate-100">
               Buat Voucher Baru
             </h2>
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-slate-900 mb-1">
+            <label className="block text-xs font-bold text-slate-900 dark:text-slate-100 mb-1">
               Kode Voucher *
             </label>
             <input
@@ -102,39 +102,39 @@ export function VouchersManagerClient({
               value={code}
               onChange={(e) => setCode(e.target.value.toUpperCase())}
               placeholder="SENJA10"
-              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm font-bold uppercase focus:outline-none focus:border-[#2563EB] transition"
+              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 text-sm font-bold uppercase focus:outline-none focus:border-[#2563EB] transition"
             />
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-bold text-slate-900 mb-1">Tipe</label>
+              <label className="block text-xs font-bold text-slate-900 dark:text-slate-100 mb-1">Tipe</label>
               <select
                 value={discountType}
                 onChange={(e) =>
                   setDiscountType(e.target.value as "percent" | "fixed")
                 }
-                className="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-xs font-bold bg-white focus:outline-none focus:border-[#2563EB]"
+                className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 text-xs font-bold bg-white dark:bg-[#111827] focus:outline-none focus:border-[#2563EB]"
               >
                 <option value="percent">Persen (%)</option>
                 <option value="fixed">Nominal (Rp)</option>
               </select>
             </div>
             <div>
-              <label className="block text-xs font-bold text-slate-900 mb-1">Nilai</label>
+              <label className="block text-xs font-bold text-slate-900 dark:text-slate-100 mb-1">Nilai</label>
               <input
                 type="number"
                 required
                 min={1}
                 value={discountValue}
                 onChange={(e) => setDiscountValue(e.target.value)}
-                className="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm font-bold font-mono tabular-nums focus:outline-none focus:border-[#2563EB]"
+                className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 text-sm font-bold font-mono tabular-nums focus:outline-none focus:border-[#2563EB]"
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-slate-900 mb-1">
+            <label className="block text-xs font-bold text-slate-900 dark:text-slate-100 mb-1">
               Minimal Belanja (Rp)
             </label>
             <input
@@ -142,7 +142,7 @@ export function VouchersManagerClient({
               min={0}
               value={minOrder}
               onChange={(e) => setMinOrder(e.target.value)}
-              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm font-mono tabular-nums focus:outline-none focus:border-[#2563EB]"
+              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 text-sm font-mono tabular-nums focus:outline-none focus:border-[#2563EB]"
             />
           </div>
 
@@ -158,18 +158,18 @@ export function VouchersManagerClient({
 
         <div className="lg:col-span-2 space-y-3">
           {vouchers.length === 0 ? (
-            <div className="bg-white rounded-2xl p-10 text-center border border-slate-200 text-sm text-neutral-500">
+            <div className="bg-white dark:bg-[#111827] rounded-2xl p-10 text-center border border-slate-200 dark:border-slate-800 text-sm text-neutral-500">
               Belum ada voucher promo.
             </div>
           ) : (
             vouchers.map((v) => (
               <div
                 key={v.id}
-                className="bg-white rounded-2xl p-4 border border-slate-200 flex items-center justify-between gap-4 hover:border-[#2563EB] transition"
+                className="bg-white dark:bg-[#111827] rounded-2xl p-4 border border-slate-200 dark:border-slate-800 flex items-center justify-between gap-4 hover:border-[#2563EB] transition"
               >
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="px-3 py-1 rounded-full bg-[#F8FAFC] border border-slate-200 text-xs font-extrabold text-slate-900">
+                    <span className="px-3 py-1 rounded-full bg-[#F8FAFC] dark:bg-[#090D16] border border-slate-200 dark:border-slate-800 text-xs font-extrabold text-slate-900 dark:text-slate-100">
                       {v.code}
                     </span>
                     <span className="text-xs font-bold text-emerald-700 font-mono tabular-nums">
@@ -192,7 +192,7 @@ export function VouchersManagerClient({
                     }`}
                   >
                     <span
-                      className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                      className={`inline-block h-4 w-4 transform rounded-full bg-white dark:bg-[#111827] transition-transform ${
                         v.is_active ? "translate-x-6" : "translate-x-1"
                       }`}
                     />
@@ -200,7 +200,7 @@ export function VouchersManagerClient({
                   <button
                     type="button"
                     onClick={() => handleDelete(v.id)}
-                    className="p-2 rounded-xl text-neutral-400 hover:text-rose-700 hover:bg-rose-50 transition"
+                    className="p-2 rounded-xl text-neutral-400 hover:text-rose-700 hover:bg-rose-50 dark:bg-rose-950/50 transition"
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>

@@ -1,6 +1,8 @@
 import type { Metadata, Viewport } from "next";
 import { Plus_Jakarta_Sans, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
+import { ThemeProvider } from "@/components/ThemeProvider";
+import { ReferralTracker } from "@/components/ReferralTracker";
 
 const plusJakartaSans = Plus_Jakarta_Sans({
   variable: "--font-plus-jakarta",
@@ -55,8 +57,11 @@ export default function RootLayout({
       lang="id"
       className={`${plusJakartaSans.variable} ${jetbrainsMono.variable} h-full antialiased scroll-smooth`}
     >
-      <body className="min-h-full flex flex-col font-sans bg-[#FFFFFF] text-[#0F172A]">
-        {children}
+      <body className="min-h-full flex flex-col font-sans bg-[#FFFFFF] dark:bg-[#090D16] text-[#0F172A] dark:text-slate-100">
+        <ThemeProvider>
+          <ReferralTracker />
+          {children}
+        </ThemeProvider>
       </body>
     </html>
   );

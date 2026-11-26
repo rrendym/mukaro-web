@@ -126,20 +126,20 @@ export function QrGeneratorClient({
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-extrabold tracking-tight text-slate-900">
+          <h1 className="text-2xl font-extrabold tracking-tight text-slate-900 dark:text-slate-100">
             QR Code Generator
           </h1>
           <p className="text-xs text-neutral-500 mt-0.5">
             Mode aktif:{" "}
-            <span className="font-bold text-slate-900 uppercase">
+            <span className="font-bold text-slate-900 dark:text-slate-100 uppercase">
               {store.order_mode}
             </span>
           </p>
         </div>
 
         {store.order_mode === "table" && (
-          <div className="flex items-center gap-3 bg-white px-4 py-2 rounded-2xl border border-slate-200">
-            <label className="text-xs font-bold text-slate-900">
+          <div className="flex items-center gap-3 bg-white dark:bg-[#111827] px-4 py-2 rounded-2xl border border-slate-200 dark:border-slate-800">
+            <label className="text-xs font-bold text-slate-900 dark:text-slate-100">
               Jumlah Meja:
             </label>
             <input
@@ -148,7 +148,7 @@ export function QrGeneratorClient({
               max={100}
               value={tableCount}
               onChange={(e) => setTableCount(Number(e.target.value))}
-              className="w-20 px-2.5 py-1 rounded-xl border border-slate-200 text-sm font-bold text-center font-mono tabular-nums focus:outline-none focus:border-[#2563EB]"
+              className="w-20 px-2.5 py-1 rounded-xl border border-slate-200 dark:border-slate-800 text-sm font-bold text-center font-mono tabular-nums focus:outline-none focus:border-[#2563EB]"
             />
           </div>
         )}
@@ -164,9 +164,9 @@ export function QrGeneratorClient({
         {qrItems.map((item) => (
           <div
             key={item.fileName}
-            className="bg-white rounded-2xl p-5 border border-slate-200 flex flex-col items-center text-center space-y-3 hover:border-[#2563EB] transition"
+            className="bg-white dark:bg-[#111827] rounded-2xl p-5 border border-slate-200 dark:border-slate-800 flex flex-col items-center text-center space-y-3 hover:border-[#2563EB] transition"
           >
-            <div className="flex items-center gap-1.5 text-xs font-extrabold text-slate-900">
+            <div className="flex items-center gap-1.5 text-xs font-extrabold text-slate-900 dark:text-slate-100">
               <QrIcon
                 className="w-4 h-4"
                 style={{ color: store.accent_color || "#C8102E" }}
@@ -174,7 +174,7 @@ export function QrGeneratorClient({
               <span>{item.label}</span>
             </div>
 
-            <div className="p-2 rounded-2xl border border-slate-200 bg-white">
+            <div className="p-2 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#111827]">
               <img
                 src={item.dataUrl}
                 alt={item.label}

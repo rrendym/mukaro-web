@@ -189,7 +189,7 @@ export function MenuManagerClient({
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-extrabold tracking-tight text-slate-900">
+          <h1 className="text-2xl font-extrabold tracking-tight text-slate-900 dark:text-slate-100">
             Menu &amp; Kategori
           </h1>
           <p className="text-xs text-neutral-500 mt-0.5">
@@ -213,14 +213,14 @@ export function MenuManagerClient({
       </div>
 
       {/* Tabs */}
-      <div className="inline-flex p-1 bg-white border border-slate-200 rounded-2xl">
+      <div className="inline-flex p-1 bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 rounded-2xl">
         <button
           type="button"
           onClick={() => setActiveTab("menus")}
           className={`px-5 py-2 rounded-xl text-xs font-bold transition ${
             activeTab === "menus"
               ? "bg-[#2563EB] text-white"
-              : "text-neutral-600 hover:text-slate-900"
+              : "text-neutral-600 hover:text-slate-900 dark:text-slate-100"
           }`}
         >
           Daftar Menu ({menus.length})
@@ -231,7 +231,7 @@ export function MenuManagerClient({
           className={`px-5 py-2 rounded-xl text-xs font-bold transition ${
             activeTab === "categories"
               ? "bg-[#2563EB] text-white"
-              : "text-neutral-600 hover:text-slate-900"
+              : "text-neutral-600 hover:text-slate-900 dark:text-slate-100"
           }`}
         >
           Kategori ({categories.length})
@@ -248,12 +248,12 @@ export function MenuManagerClient({
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Cari nama menu..."
-              className="w-full pl-10 pr-4 py-2.5 rounded-full bg-white border border-slate-200 text-sm focus:outline-none focus:border-[#2563EB] transition"
+              className="w-full pl-10 pr-4 py-2.5 rounded-full bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 text-sm focus:outline-none focus:border-[#2563EB] transition"
             />
           </div>
 
           {filteredMenus.length === 0 ? (
-            <div className="bg-white rounded-2xl p-12 text-center border border-slate-200">
+            <div className="bg-white dark:bg-[#111827] rounded-2xl p-12 text-center border border-slate-200 dark:border-slate-800">
               <p className="text-sm font-semibold text-neutral-500">
                 Belum ada menu. Klik &ldquo;Tambah Menu&rdquo; untuk memulai.
               </p>
@@ -263,9 +263,9 @@ export function MenuManagerClient({
               {filteredMenus.map((menu) => (
                 <div
                   key={menu.id}
-                  className="bg-white rounded-2xl p-4 border border-slate-200 flex items-center gap-4 hover:border-[#2563EB] transition"
+                  className="bg-white dark:bg-[#111827] rounded-2xl p-4 border border-slate-200 dark:border-slate-800 flex items-center gap-4 hover:border-[#2563EB] transition"
                 >
-                  <div className="w-20 h-20 rounded-xl bg-[#F8FAFC] overflow-hidden shrink-0">
+                  <div className="w-20 h-20 rounded-xl bg-[#F8FAFC] dark:bg-[#090D16] overflow-hidden shrink-0">
                     {menu.image_url ? (
                       <img
                         src={menu.image_url}
@@ -281,16 +281,16 @@ export function MenuManagerClient({
 
                   <div className="flex-1 min-w-0 space-y-1">
                     <div className="flex items-center gap-2">
-                      <h3 className="text-sm font-bold text-slate-900 truncate">
+                      <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100 truncate">
                         {menu.name}
                       </h3>
                       {menu.badge && (
                         <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold shrink-0 ${
                           menu.badge === "BESTSELLER"
-                            ? "bg-[#2563EB] text-slate-900"
+                            ? "bg-[#2563EB] text-slate-900 dark:text-slate-100"
                             : menu.badge === "PROMO"
-                              ? "bg-rose-50 text-rose-700"
-                              : "bg-emerald-50 text-emerald-700"
+                              ? "bg-rose-50 dark:bg-rose-950/50 text-rose-700"
+                              : "bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700"
                         }`}>
                           {menu.badge}
                         </span>
@@ -302,7 +302,7 @@ export function MenuManagerClient({
                         ` • Stok: ${menu.stock_qty}`}
                     </p>
                     <div className="flex items-center gap-2">
-                      <span className="text-sm font-extrabold text-slate-900 font-mono tabular-nums">
+                      <span className="text-sm font-extrabold text-slate-900 dark:text-slate-100 font-mono tabular-nums">
                         {formatRupiah(Number(menu.price))}
                       </span>
                       {menu.ojol_price != null && (
@@ -324,7 +324,7 @@ export function MenuManagerClient({
                       }`}
                     >
                       <span
-                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                        className={`inline-block h-4 w-4 transform rounded-full bg-white dark:bg-[#111827] transition-transform ${
                           menu.is_available ? "translate-x-6" : "translate-x-1"
                         }`}
                       />
@@ -340,7 +340,7 @@ export function MenuManagerClient({
                           setEditingMenu(menu);
                           setIsMenuModalOpen(true);
                         }}
-                        className="p-1.5 rounded-lg text-neutral-500 hover:text-slate-900 hover:bg-[#F8FAFC] transition"
+                        className="p-1.5 rounded-lg text-neutral-500 hover:text-slate-900 dark:text-slate-100 hover:bg-[#F8FAFC] dark:bg-[#090D16] transition"
                         aria-label="Edit"
                       >
                         <Pencil className="w-3.5 h-3.5" />
@@ -348,7 +348,7 @@ export function MenuManagerClient({
                       <button
                         type="button"
                         onClick={() => handleDeleteMenu(menu.id)}
-                        className="p-1.5 rounded-lg text-neutral-400 hover:text-rose-700 hover:bg-rose-50 transition"
+                        className="p-1.5 rounded-lg text-neutral-400 hover:text-rose-700 hover:bg-rose-50 dark:bg-rose-950/50 transition"
                         aria-label="Hapus"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
@@ -368,17 +368,17 @@ export function MenuManagerClient({
           {/* Category Form */}
           <form
             onSubmit={handleSaveCategory}
-            className="bg-white rounded-2xl p-5 border border-slate-200 space-y-4 h-fit"
+            className="bg-white dark:bg-[#111827] rounded-2xl p-5 border border-slate-200 dark:border-slate-800 space-y-4 h-fit"
           >
             <div className="flex items-center gap-2">
               <FolderPlus className="w-4 h-4 text-[#2563EB]" />
-              <h2 className="text-sm font-extrabold tracking-tight text-slate-900">
+              <h2 className="text-sm font-extrabold tracking-tight text-slate-900 dark:text-slate-100">
                 {editingCatId ? "Edit Kategori" : "Tambah Kategori"}
               </h2>
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-slate-900 mb-1">
+              <label className="block text-xs font-bold text-slate-900 dark:text-slate-100 mb-1">
                 Nama Kategori *
               </label>
               <input
@@ -387,24 +387,24 @@ export function MenuManagerClient({
                 value={catName}
                 onChange={(e) => setCatName(e.target.value)}
                 placeholder="Contoh: Coffee"
-                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-[#2563EB] transition"
+                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 text-sm focus:outline-none focus:border-[#2563EB] transition"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-slate-900 mb-1">
+              <label className="block text-xs font-bold text-slate-900 dark:text-slate-100 mb-1">
                 Urutan Tampil (sort_order)
               </label>
               <input
                 type="number"
                 value={catSort}
                 onChange={(e) => setCatSort(e.target.value)}
-                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-[#2563EB] transition"
+                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 text-sm focus:outline-none focus:border-[#2563EB] transition"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-slate-900 mb-1.5">
+              <label className="block text-xs font-bold text-slate-900 dark:text-slate-100 mb-1.5">
                 Foto Kategori (Opsional)
               </label>
               <div className="flex items-center gap-3">
@@ -412,10 +412,10 @@ export function MenuManagerClient({
                   <img
                     src={catImageUrl}
                     alt="Cat"
-                    className="w-11 h-11 rounded-full object-cover border border-slate-200"
+                    className="w-11 h-11 rounded-full object-cover border border-slate-200 dark:border-slate-800"
                   />
                 )}
-                <label className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-[#F8FAFC] border border-slate-200 text-xs font-bold cursor-pointer hover:border-[#2563EB] transition">
+                <label className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-[#F8FAFC] dark:bg-[#090D16] border border-slate-200 dark:border-slate-800 text-xs font-bold cursor-pointer hover:border-[#2563EB] transition">
                   {uploadingCatImg ? (
                     <Loader2 className="w-3.5 h-3.5 animate-spin" />
                   ) : (
@@ -453,7 +453,7 @@ export function MenuManagerClient({
                     setCatSort("0");
                     setCatImageUrl("");
                   }}
-                  className="px-4 py-2.5 rounded-xl border border-slate-200 text-xs font-bold hover:border-[#2563EB] transition"
+                  className="px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 text-xs font-bold hover:border-[#2563EB] transition"
                 >
                   Batal
                 </button>
@@ -464,17 +464,17 @@ export function MenuManagerClient({
           {/* Category List */}
           <div className="lg:col-span-2 space-y-3">
             {categories.length === 0 ? (
-              <div className="bg-white rounded-2xl p-10 text-center border border-slate-200 text-sm text-neutral-500">
+              <div className="bg-white dark:bg-[#111827] rounded-2xl p-10 text-center border border-slate-200 dark:border-slate-800 text-sm text-neutral-500">
                 Belum ada kategori.
               </div>
             ) : (
               categories.map((cat) => (
                 <div
                   key={cat.id}
-                  className="bg-white rounded-2xl p-4 border border-slate-200 flex items-center justify-between gap-4 hover:border-[#2563EB] transition"
+                  className="bg-white dark:bg-[#111827] rounded-2xl p-4 border border-slate-200 dark:border-slate-800 flex items-center justify-between gap-4 hover:border-[#2563EB] transition"
                 >
                   <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 rounded-full bg-[#F8FAFC] overflow-hidden shrink-0 flex items-center justify-center">
+                    <div className="w-12 h-12 rounded-full bg-[#F8FAFC] dark:bg-[#090D16] overflow-hidden shrink-0 flex items-center justify-center">
                       {cat.image_url ? (
                         <img
                           src={cat.image_url}
@@ -488,7 +488,7 @@ export function MenuManagerClient({
                       )}
                     </div>
                     <div>
-                      <h4 className="text-sm font-bold text-slate-900">
+                      <h4 className="text-sm font-bold text-slate-900 dark:text-slate-100">
                         {cat.name}
                       </h4>
                       <p className="text-xs text-neutral-500">
@@ -506,14 +506,14 @@ export function MenuManagerClient({
                         setCatSort(String(cat.sort_order));
                         setCatImageUrl(cat.image_url || "");
                       }}
-                      className="p-2 rounded-xl text-neutral-500 hover:text-slate-900 hover:bg-[#F8FAFC] transition"
+                      className="p-2 rounded-xl text-neutral-500 hover:text-slate-900 dark:text-slate-100 hover:bg-[#F8FAFC] dark:bg-[#090D16] transition"
                     >
                       <Pencil className="w-4 h-4" />
                     </button>
                     <button
                       type="button"
                       onClick={() => handleDeleteCategory(cat.id)}
-                      className="p-2 rounded-xl text-neutral-400 hover:text-rose-700 hover:bg-rose-50 transition"
+                      className="p-2 rounded-xl text-neutral-400 hover:text-rose-700 hover:bg-rose-50 dark:bg-rose-950/50 transition"
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
