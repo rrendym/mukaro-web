@@ -1,5 +1,6 @@
 export type OrderMode = "table" | "counter" | "hybrid";
 export type SubscriptionStatus = "trial" | "active" | "expired";
+export type PlanTier = "starter" | "pro" | "enterprise";
 export type MenuBadge = "BESTSELLER" | "PROMO" | "BARU";
 export type StockMode = "none" | "direct" | "recipe";
 
@@ -52,6 +53,7 @@ export interface Store {
   midtrans_client_key: string | null;
   static_qris_url: string | null;
   subscription_status: SubscriptionStatus;
+  plan_tier?: PlanTier | null;
   expired_at: string;
   created_at: string;
 }
@@ -72,6 +74,7 @@ export interface Menu {
   description: string | null;
   price: number;
   ojol_price: number | null;
+  hpp?: number | null;
   image_url: string | null;
   badge: MenuBadge | null;
   is_available: boolean;

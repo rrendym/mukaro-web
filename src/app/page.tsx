@@ -681,6 +681,7 @@ export default function LandingPage() {
                       "Harga terpisah GoFood / Grab / Shopee",
                       "Stok Resep & Stock Opname",
                       "Voucher Promo & PIN Staf Void",
+                      "Rekap Perkembangan Penjualan & Export Google Sheets (3 Tab) / PDF",
                     ].map((f) => (
                       <li key={f} className="flex items-start gap-2.5">
                         <Check className="w-4 h-4 text-[#2563EB] shrink-0 mt-0.5" />
@@ -719,7 +720,7 @@ export default function LandingPage() {
                       "Hingga 3 Outlet / Tenant",
                       "Laporan konsolidasi lintas cabang",
                       "Dukungan multi-kasir & dapur",
-                      "Ekspor laporan Excel / CSV",
+                      "Rekap Perkembangan Penjualan & Export Google Sheets (3 Tab) / PDF",
                       "Pendampingan onboarding prioritas",
                     ].map((f) => (
                       <li key={f} className="flex items-start gap-2.5">

@@ -20,10 +20,12 @@ import {
   Loader2,
   Search,
   Bell,
+  FileSpreadsheet,
 } from "lucide-react";
 import { Store } from "@/types/database";
 import { createClient } from "@/lib/supabase/client";
 import { formatRupiah } from "@/lib/format";
+import { getStorePlanTier } from "@/lib/subscription";
 
 interface AdminShellProps {
   store: Store;
@@ -42,6 +44,7 @@ interface SidebarContentProps {
     label: string;
     href: string;
     exact?: boolean;
+    badge?: string;
     icon: React.ComponentType<{ className?: string }>;
   }[];
   onCloseMobile: () => void;
@@ -125,7 +128,12 @@ function SidebarContent({
                 }`}
               >
                 <Icon className="w-4 h-4 shrink-0" />
-                <span>{item.label}</span>
+                <span className="flex-1">{item.label}</span>
+                {item.badge && (
+                  <span className="px-1.5 py-0.5 rounded bg-[#2563EB] text-white text-[9px] font-bold tracking-wider">
+                    {item.badge}
+                  </span>
+                )}
               </Link>
             );
           })}
@@ -236,6 +244,8 @@ export function AdminShell({
     Boolean(superadminEmail) &&
     userEmail.toLowerCase() === superadminEmail.toLowerCase();
 
+  const planTier = getStorePlanTier(initialStore);
+
   const navItems = [
     {
       label: "Dashboard",
@@ -267,6 +277,12 @@ export function AdminShell({
       label: "Voucher",
       href: `/${initialStore.slug}/admin/vouchers`,
       icon: TicketPercent,
+    },
+    {
+      label: "Rekap & Export",
+      href: `/${initialStore.slug}/admin/reports`,
+      badge: planTier === "starter" ? "PRO" : undefined,
+      icon: FileSpreadsheet,
     },
     {
       label: "Pengaturan Toko",
@@ -340,7 +356,7 @@ export function AdminShell({
   return (
     <div className="min-h-screen bg-[#F8FAFC] text-[#0F172A] flex">
       {/* Desktop Sidebar */}
-      <aside className="hidden lg:block w-64 bg-white sticky top-0 h-screen shrink-0">
+      <aside className="hidden lg:block w-64 bg-white sticky top-0 h-screen shrink-0 print:hidden">
         <SidebarContent
           store={initialStore}
           userEmail={userEmail}
@@ -384,7 +400,7 @@ export function AdminShell({
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Top Header Bar */}
-        <header className="sticky top-0 z-30 bg-white border-b border-slate-200 px-4 sm:px-6 py-3.5 flex items-center justify-between gap-4">
+        <header className="sticky top-0 z-30 bg-white border-b border-slate-200 px-4 sm:px-6 py-3.5 flex items-center justify-between gap-4 print:hidden">
           {/* Left: Mobile Menu Toggle + Greeting */}
           <div className="flex items-center gap-3 min-w-0">
             <button

@@ -1,4 +1,17 @@
-import { Store } from "@/types/database";
+import { PlanTier, Store } from "@/types/database";
+
+export function getStorePlanTier(
+  store: Pick<Store, "plan_tier" | "subscription_status">
+): PlanTier {
+  if (
+    store.plan_tier === "starter" ||
+    store.plan_tier === "pro" ||
+    store.plan_tier === "enterprise"
+  ) {
+    return store.plan_tier;
+  }
+  return "pro";
+}
 
 export interface SubscriptionCheckResult {
   isExpired: boolean;
