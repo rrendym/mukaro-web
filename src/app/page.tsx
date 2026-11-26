@@ -266,7 +266,7 @@ export default function LandingPage() {
 
       <main className="flex-1">
         {/* 2. Centered Hero + Soft Blue Glow UI Showcase */}
-        <section className="pt-14 pb-20 sm:pt-20 sm:pb-28 px-4 sm:px-6 overflow-hidden">
+        <section className="pt-20 pb-20 sm:pt-28 sm:pb-28 px-4 sm:px-6 overflow-hidden">
           <div className="max-w-5xl mx-auto text-center space-y-6">
             <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#F8FAFC] dark:bg-[#111827] border border-slate-200 dark:border-slate-800 text-xs font-semibold text-[#2563EB]">
               <span className="w-1.5 h-1.5 rounded-full bg-[#2563EB]" />
@@ -442,66 +442,6 @@ export default function LandingPage() {
           className="py-20 sm:py-24 px-4 sm:px-6 bg-[#F8FAFC] dark:bg-[#0B1120] border-y border-slate-200 dark:border-slate-800"
         >
           <div className="max-w-5xl mx-auto text-center space-y-10">
-            {/* Mobile (< 640px): 4 icons top row + 3 icons centered bottom row */}
-            <div className="sm:hidden">
-              <div className="grid grid-cols-4 gap-2.5 justify-items-center">
-                {ECOSYSTEM_TOP.map((item) => {
-                  const Icon = item.icon;
-                  return (
-                    <div
-                      key={item.name}
-                      className="flex flex-col items-center gap-1.5"
-                    >
-                      <div className="w-16 h-16 rounded-2xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 flex items-center justify-center text-slate-900 dark:text-slate-100">
-                        <Icon className="w-6 h-6 text-[#2563EB]" />
-                      </div>
-                      <span className="text-[11px] font-semibold text-slate-600 dark:text-slate-400">
-                        {item.name}
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
-              <div className="flex justify-center gap-2.5 mt-2.5">
-                {ECOSYSTEM_BOTTOM.map((item) => {
-                  const Icon = item.icon;
-                  return (
-                    <div
-                      key={item.name}
-                      className="flex flex-col items-center gap-1.5"
-                    >
-                      <div className="w-16 h-16 rounded-2xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 flex items-center justify-center text-slate-900 dark:text-slate-100">
-                        <Icon className="w-6 h-6 text-[#2563EB]" />
-                      </div>
-                      <span className="text-[11px] font-semibold text-slate-600 dark:text-slate-400">
-                        {item.name}
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Desktop (sm+): 1 centered row */}
-            <div className="hidden sm:flex flex-wrap justify-center gap-5">
-              {ECOSYSTEM_ALL.map((item) => {
-                const Icon = item.icon;
-                return (
-                  <div
-                    key={item.name}
-                    className="flex flex-col items-center gap-2"
-                  >
-                    <div className="w-16 h-16 rounded-2xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 shadow-xs flex items-center justify-center text-slate-900 dark:text-slate-100 hover:border-[#2563EB] transition">
-                      <Icon className="w-6 h-6 text-[#2563EB]" />
-                    </div>
-                    <span className="text-xs font-semibold text-slate-600 dark:text-slate-400">
-                      {item.name}
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
-
             <div className="max-w-2xl mx-auto space-y-3">
               <p className="text-xs font-bold uppercase tracking-wider text-[#2563EB]">
                 Ekosistem Terbuka
@@ -514,6 +454,26 @@ export default function LandingPage() {
                 notifikasi WhatsApp kasir, hingga printer struk thermal 58mm —
                 semuanya siap bekerja bersama tanpa konfigurasi rumit.
               </p>
+            </div>
+
+            {/* All 7 icons — below description, unified flex-wrap */}
+            <div className="flex flex-wrap justify-center gap-3 sm:gap-5 max-w-md sm:max-w-3xl mx-auto">
+              {ECOSYSTEM_ALL.map((item) => {
+                const Icon = item.icon;
+                return (
+                  <div
+                    key={item.name}
+                    className="flex flex-col items-center gap-2"
+                  >
+                    <div className="w-16 h-16 rounded-2xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 shadow-xs flex items-center justify-center hover:border-[#2563EB] transition">
+                      <Icon className="w-6 h-6 text-[#2563EB]" />
+                    </div>
+                    <span className="text-xs font-semibold text-slate-600 dark:text-slate-400">
+                      {item.name}
+                    </span>
+                  </div>
+                );
+              })}
             </div>
           </div>
         </section>
@@ -768,12 +728,14 @@ export default function LandingPage() {
               </h2>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
-              <div className="flex flex-col gap-4">
-                {leftFaqs.map((item, idx) => renderFaqCard(item, idx))}
-              </div>
-              <div className="flex flex-col gap-4">
-                {rightFaqs.map((item, idx) => renderFaqCard(item, idx + 4))}
+            <div className="min-h-[690px] md:min-h-[430px] flex flex-col justify-start">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
+                <div className="flex flex-col gap-4">
+                  {leftFaqs.map((item, idx) => renderFaqCard(item, idx))}
+                </div>
+                <div className="flex flex-col gap-4">
+                  {rightFaqs.map((item, idx) => renderFaqCard(item, idx + 4))}
+                </div>
               </div>
             </div>
 
