@@ -135,45 +135,30 @@ export default function LandingPage() {
     <div className="min-h-screen bg-[#FFFFFF] dark:bg-[#090D16] text-slate-900 dark:text-slate-100 flex flex-col">
       {/* 1. Minimalist Sticky Navbar */}
       <header className="sticky top-0 z-40 bg-white/85 dark:bg-[#090D16]/85 backdrop-blur-md border-b border-slate-200 dark:border-slate-800">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-4">
-          <Link href="/" className="shrink-0">
+        {/* Desktop: 3-column grid for perfect center alignment */}
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 hidden md:grid md:grid-cols-[1fr_auto_1fr] items-center gap-4">
+          {/* Left: Logo */}
+          <Link href="/" className="justify-self-start shrink-0">
             <MukaroLogo size="sm" />
           </Link>
 
-          <nav className="hidden md:flex items-center gap-7 text-sm font-medium text-slate-600 dark:text-slate-400">
-            <a
-              href="#fitur"
-              className="hover:text-slate-900 dark:hover:text-white transition"
+          {/* Center: Nav links — perfectly centered */}
+          <nav className="justify-self-center flex items-center gap-6 text-sm font-medium text-slate-600 dark:text-slate-400">
+            <a href="#fitur" className="hover:text-slate-900 dark:hover:text-white transition">Fitur</a>
+            <a href="#ekosistem" className="hover:text-slate-900 dark:hover:text-white transition">Ekosistem</a>
+            <a href="#cara-kerja" className="hover:text-slate-900 dark:hover:text-white transition">Cara Kerja</a>
+            <a href="#harga" className="hover:text-slate-900 dark:hover:text-white transition">Harga</a>
+            <a href="#faq" className="hover:text-slate-900 dark:hover:text-white transition">FAQ</a>
+            <Link
+              href="/affiliate"
+              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-400 text-xs font-bold hover:bg-emerald-100 dark:hover:bg-emerald-900/60 transition"
             >
-              Fitur
-            </a>
-            <a
-              href="#ekosistem"
-              className="hover:text-slate-900 dark:hover:text-white transition"
-            >
-              Ekosistem
-            </a>
-            <a
-              href="#cara-kerja"
-              className="hover:text-slate-900 dark:hover:text-white transition"
-            >
-              Cara Kerja
-            </a>
-            <a
-              href="#harga"
-              className="hover:text-slate-900 dark:hover:text-white transition"
-            >
-              Harga
-            </a>
-            <a
-              href="#faq"
-              className="hover:text-slate-900 dark:hover:text-white transition"
-            >
-              FAQ
-            </a>
+              Affiliate 30%
+            </Link>
           </nav>
 
-          <div className="hidden md:flex items-center gap-2.5">
+          {/* Right: CTA buttons */}
+          <div className="justify-self-end flex items-center gap-2.5">
             <ThemeToggle />
             <Link
               href="/login"
@@ -188,8 +173,22 @@ export default function LandingPage() {
               Mulai Gratis
             </Link>
           </div>
+        </div>
 
-          <div className="flex md:hidden items-center gap-2">
+        {/* Mobile/Tablet top bar */}
+        <div className="md:hidden max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-2">
+          <Link href="/" className="shrink-0">
+            <MukaroLogo size="sm" />
+          </Link>
+
+          <div className="flex items-center gap-2">
+            {/* Affiliate pill — always visible on mobile before opening hamburger */}
+            <Link
+              href="/affiliate"
+              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-400 text-[11px] font-bold hover:bg-emerald-100 dark:hover:bg-emerald-900/60 transition"
+            >
+              Affiliate 30%
+            </Link>
             <ThemeToggle />
             <button
               type="button"
@@ -210,41 +209,19 @@ export default function LandingPage() {
         {mobileMenuOpen && (
           <div className="md:hidden border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-[#111827] px-4 py-4 space-y-3">
             <div className="flex flex-col space-y-2 text-sm font-medium text-slate-600 dark:text-slate-300">
-              <a
-                href="#fitur"
+              <a href="#fitur" onClick={() => setMobileMenuOpen(false)} className="py-1.5 hover:text-slate-900 dark:hover:text-white">Fitur</a>
+              <a href="#ekosistem" onClick={() => setMobileMenuOpen(false)} className="py-1.5 hover:text-slate-900 dark:hover:text-white">Ekosistem</a>
+              <a href="#cara-kerja" onClick={() => setMobileMenuOpen(false)} className="py-1.5 hover:text-slate-900 dark:hover:text-white">Cara Kerja</a>
+              <a href="#harga" onClick={() => setMobileMenuOpen(false)} className="py-1.5 hover:text-slate-900 dark:hover:text-white">Harga</a>
+              <a href="#faq" onClick={() => setMobileMenuOpen(false)} className="py-1.5 hover:text-slate-900 dark:hover:text-white">FAQ</a>
+              <Link
+                href="/affiliate"
                 onClick={() => setMobileMenuOpen(false)}
-                className="py-1.5 hover:text-slate-900 dark:hover:text-white"
+                className="py-1.5 inline-flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 font-semibold hover:text-emerald-700 dark:hover:text-emerald-300 transition"
               >
-                Fitur
-              </a>
-              <a
-                href="#ekosistem"
-                onClick={() => setMobileMenuOpen(false)}
-                className="py-1.5 hover:text-slate-900 dark:hover:text-white"
-              >
-                Ekosistem
-              </a>
-              <a
-                href="#cara-kerja"
-                onClick={() => setMobileMenuOpen(false)}
-                className="py-1.5 hover:text-slate-900 dark:hover:text-white"
-              >
-                Cara Kerja
-              </a>
-              <a
-                href="#harga"
-                onClick={() => setMobileMenuOpen(false)}
-                className="py-1.5 hover:text-slate-900 dark:hover:text-white"
-              >
-                Harga
-              </a>
-              <a
-                href="#faq"
-                onClick={() => setMobileMenuOpen(false)}
-                className="py-1.5 hover:text-slate-900 dark:hover:text-white"
-              >
-                FAQ
-              </a>
+                <span>Program Affiliate</span>
+                <span className="px-1.5 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300 text-[10px] font-bold">Komisi 30%</span>
+              </Link>
             </div>
             <div className="pt-2 border-t border-slate-200 dark:border-slate-800 grid grid-cols-2 gap-2.5">
               <Link
@@ -324,6 +301,15 @@ export default function LandingPage() {
                   — langsung pakai dari HP, tablet, atau laptop
                 </span>
               </div>
+
+              {/* Affiliate shortcut pill */}
+              <Link
+                href="/affiliate"
+                className="mt-1 inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-400 text-xs font-semibold hover:bg-emerald-100 dark:hover:bg-emerald-900/60 transition group"
+              >
+                <span>Ingin penghasilan tambahan? Gabung Program Affiliate (Komisi 30%)</span>
+                <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+              </Link>
             </div>
           </div>
 
@@ -333,7 +319,7 @@ export default function LandingPage() {
               className="absolute -inset-x-6 -bottom-8 top-10 bg-[#2563EB]/20 blur-3xl rounded-full pointer-events-none"
               aria-hidden="true"
             />
-            <div className="relative z-10">
+            <div className="relative z-10 rounded-2xl border-2 border-slate-200/90 dark:border-slate-700/80 shadow-xl shadow-slate-900/5 dark:shadow-[0_12px_36px_rgba(0,0,0,0.65)] ring-1 ring-inset ring-slate-900/5 dark:ring-white/10 overflow-hidden bg-slate-50/90 dark:bg-[#090E1A]">
               <HeroDashboardMockup />
             </div>
           </div>
@@ -360,7 +346,7 @@ export default function LandingPage() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Row 1 Left */}
-              <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#111827] p-6 space-y-5 flex flex-col justify-between">
+              <div className="rounded-2xl border-2 border-slate-200/90 dark:border-slate-700/80 hover:border-blue-500/60 dark:hover:border-blue-500/50 bg-white dark:bg-[#0F172A] shadow-xl shadow-slate-900/5 dark:shadow-[0_12px_36px_rgba(0,0,0,0.65)] ring-1 ring-inset ring-slate-900/5 dark:ring-white/10 p-6 space-y-5 flex flex-col justify-between transition-colors duration-200">
                 <div className="space-y-2">
                   <h3 className="text-lg font-bold tracking-[-0.02em] text-slate-900 dark:text-slate-100">
                     QR Self-Order Meja
@@ -375,7 +361,7 @@ export default function LandingPage() {
               </div>
 
               {/* Row 1 Right */}
-              <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#111827] p-6 space-y-5 flex flex-col justify-between">
+              <div className="rounded-2xl border-2 border-slate-200/90 dark:border-slate-700/80 hover:border-blue-500/60 dark:hover:border-blue-500/50 bg-white dark:bg-[#0F172A] shadow-xl shadow-slate-900/5 dark:shadow-[0_12px_36px_rgba(0,0,0,0.65)] ring-1 ring-inset ring-slate-900/5 dark:ring-white/10 p-6 space-y-5 flex flex-col justify-between transition-colors duration-200">
                 <div className="space-y-2">
                   <h3 className="text-lg font-bold tracking-[-0.02em] text-slate-900 dark:text-slate-100">
                     Kasir Manual POS &amp; Ojol
@@ -390,7 +376,7 @@ export default function LandingPage() {
               </div>
 
               {/* Row 2 Left */}
-              <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#111827] p-6 space-y-5 flex flex-col justify-between">
+              <div className="rounded-2xl border-2 border-slate-200/90 dark:border-slate-700/80 hover:border-blue-500/60 dark:hover:border-blue-500/50 bg-white dark:bg-[#0F172A] shadow-xl shadow-slate-900/5 dark:shadow-[0_12px_36px_rgba(0,0,0,0.65)] ring-1 ring-inset ring-slate-900/5 dark:ring-white/10 p-6 space-y-5 flex flex-col justify-between transition-colors duration-200">
                 <div className="space-y-2">
                   <h3 className="text-lg font-bold tracking-[-0.02em] text-slate-900 dark:text-slate-100">
                     Layar Dapur Live &amp; Struk 58mm
@@ -405,7 +391,7 @@ export default function LandingPage() {
               </div>
 
               {/* Row 2 Right */}
-              <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#111827] p-6 space-y-5 flex flex-col justify-between">
+              <div className="rounded-2xl border-2 border-slate-200/90 dark:border-slate-700/80 hover:border-blue-500/60 dark:hover:border-blue-500/50 bg-white dark:bg-[#0F172A] shadow-xl shadow-slate-900/5 dark:shadow-[0_12px_36px_rgba(0,0,0,0.65)] ring-1 ring-inset ring-slate-900/5 dark:ring-white/10 p-6 space-y-5 flex flex-col justify-between transition-colors duration-200">
                 <div className="space-y-2">
                   <h3 className="text-lg font-bold tracking-[-0.02em] text-slate-900 dark:text-slate-100">
                     Stok Resep &amp; Stock Opname
@@ -419,7 +405,7 @@ export default function LandingPage() {
               </div>
 
               {/* Row 3 Full Width */}
-              <div className="md:col-span-2 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#111827] p-6 space-y-5">
+              <div className="md:col-span-2 rounded-2xl border-2 border-slate-200/90 dark:border-slate-700/80 hover:border-blue-500/60 dark:hover:border-blue-500/50 bg-white dark:bg-[#0F172A] shadow-xl shadow-slate-900/5 dark:shadow-[0_12px_36px_rgba(0,0,0,0.65)] ring-1 ring-inset ring-slate-900/5 dark:ring-white/10 p-6 space-y-5 transition-colors duration-200">
                 <div className="max-w-2xl space-y-2">
                   <h3 className="text-lg font-bold tracking-[-0.02em] text-slate-900 dark:text-slate-100">
                     Analitik Omzet &amp; Rekap Google Sheets / PDF
