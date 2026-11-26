@@ -38,12 +38,9 @@ export const metadata: Metadata = {
     type: "website",
   },
   icons: {
-    icon: [
-      {
-        url: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%232563EB'/><path d='M7 22V10.5C7 9.67 7.67 9 8.5 9h1.6c.55 0 1.05.3 1.3.78L16 18.2l4.6-8.42c.25-.48.75-.78 1.3-.78h1.6c.83 0 1.5.67 1.5 1.5V22' stroke='%23FFFFFF' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round' fill='none'/></svg>",
-        type: "image/svg+xml",
-      },
-    ],
+    icon: "/mukaro-logo.jpg",
+    shortcut: "/mukaro-logo.jpg",
+    apple: "/mukaro-logo.jpg",
   },
 };
 

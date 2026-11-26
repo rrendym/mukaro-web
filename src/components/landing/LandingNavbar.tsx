@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { Menu, X } from "lucide-react";
+import { MukaroLogo } from "@/components/MukaroLogo";
 
 export function LandingNavbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -10,33 +11,9 @@ export function LandingNavbar() {
   return (
     <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b-[1.5px] border-[#141413]">
       <div className="max-w-6xl mx-auto px-5 h-16 flex items-center justify-between gap-4">
-        {/* Left: Geometric Black Logo + Mukaro + Sub-label */}
-        <Link href="/" className="inline-flex items-center gap-2.5 shrink-0">
-          <div className="w-9 h-9 rounded-xl bg-[#141413] flex items-center justify-center shrink-0">
-            <svg
-              viewBox="0 0 32 32"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-              className="w-5 h-5"
-            >
-              <path
-                d="M7 23V9.5C7 8.67157 7.67157 8 8.5 8H10.2C10.75 8 11.25 8.3 11.5 8.78L16 17.2L20.5 8.78C20.75 8.3 21.25 8 21.8 8H23.5C24.3284 8 25 8.67157 25 9.5V23"
-                stroke="#FFFFFF"
-                strokeWidth="2.6"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-              <circle cx="16" cy="23" r="2.2" fill="#F7B928" />
-            </svg>
-          </div>
-          <div className="flex flex-col leading-none">
-            <span className="text-lg font-extrabold tracking-tight text-[#141413]">
-              Mukaro
-            </span>
-            <span className="text-[10px] font-semibold text-neutral-500 mt-0.5">
-              QR POS &amp; Self-Order
-            </span>
-          </div>
+        {/* Left: Mukaro Logo */}
+        <Link href="/" className="inline-flex items-center shrink-0">
+          <MukaroLogo size="sm" subtitle="QR POS & Self-Order" />
         </Link>
 
         {/* Right (Desktop) */}

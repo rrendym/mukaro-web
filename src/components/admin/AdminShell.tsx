@@ -30,6 +30,7 @@ import { createClient } from "@/lib/supabase/client";
 import { formatRupiah, slugify } from "@/lib/format";
 import { getStorePlanTier } from "@/lib/subscription";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { MukaroLogo } from "@/components/MukaroLogo";
 
 interface AdminShellProps {
   store: Store;
@@ -84,33 +85,9 @@ function SidebarContent({
         <div className="px-2 pt-1 flex items-center justify-between">
           <Link
             href={`/${store.slug}/admin`}
-            className="inline-flex items-center gap-2.5"
+            className="inline-flex items-center"
           >
-            <div className="w-9 h-9 rounded-xl bg-[#2563EB] flex items-center justify-center shrink-0">
-              <svg
-                viewBox="0 0 32 32"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-                className="w-5 h-5"
-              >
-                <path
-                  d="M7 23V9.5C7 8.67157 7.67157 8 8.5 8H10.2C10.75 8 11.25 8.3 11.5 8.78L16 17.2L20.5 8.78C20.75 8.3 21.25 8 21.8 8H23.5C24.3284 8 25 8.67157 25 9.5V23"
-                  stroke="#FFFFFF"
-                  strokeWidth="2.8"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-                <circle cx="16" cy="23" r="2.2" fill="#93C5FD" />
-              </svg>
-            </div>
-            <div className="flex flex-col leading-none">
-              <span className="text-lg font-extrabold tracking-[-0.03em] text-slate-900 dark:text-slate-100">
-                Mukaro
-              </span>
-              <span className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 mt-0.5">
-                Merchant POS
-              </span>
-            </div>
+            <MukaroLogo size="sm" subtitle="Merchant POS" />
           </Link>
 
           <button

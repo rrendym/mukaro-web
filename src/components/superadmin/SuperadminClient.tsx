@@ -13,6 +13,14 @@ import {
   Building2,
   Handshake,
   CheckCircle2,
+  TrendingUp,
+  Users,
+  Clock,
+  Wallet,
+  MessageCircle,
+  Megaphone,
+  Save,
+  AlertTriangle,
 } from "lucide-react";
 import {
   AffiliateCommission,
@@ -25,6 +33,11 @@ import { MukaroLogo } from "@/components/MukaroLogo";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { createClient } from "@/lib/supabase/client";
 import { formatRupiah, slugify } from "@/lib/format";
+import {
+  DEFAULT_LANDING_PROMO,
+  LANDING_PROMO_KEY,
+  LandingPromoConfig,
+} from "@/lib/promo-settings";
 
 const PLAN_COMMISSION: Record<PlanTier, number> = {
   starter: 24000,
@@ -32,24 +45,55 @@ const PLAN_COMMISSION: Record<PlanTier, number> = {
   enterprise: 90000,
 };
 
+const PLAN_MRR: Record<PlanTier, number> = {
+  starter: 79000,
+  pro: 149000,
+  enterprise: 299000,
+};
+
+function formatWaPhone(raw: string | null | undefined): string {
+  if (!raw) return "";
+  const digits = raw.replace(/\D/g, "");
+  if (!digits) return "";
+  if (digits.startsWith("0")) return `62${digits.slice(1)}`;
+  if (digits.startsWith("62")) return digits;
+  return `62${digits}`;
+}
+
 export function SuperadminClient({
   initialStores,
   initialProfiles = [],
   initialCommissions = [],
+  menuCounts = {},
+  orderCounts = {},
+  initialPromoConfig = DEFAULT_LANDING_PROMO,
   adminEmail,
 }: {
   initialStores: Store[];
   initialProfiles?: AffiliateProfile[];
   initialCommissions?: AffiliateCommission[];
+  menuCounts?: Record<string, number>;
+  orderCounts?: Record<string, number>;
+  initialPromoConfig?: LandingPromoConfig;
   adminEmail: string;
 }) {
-  const [activeTab, setActiveTab] = useState<"tenants" | "affiliate">(
+  const [activeTab, setActiveTab] = useState<"tenants" | "affiliate" | "promo">(
     "tenants"
   );
+  const [tenantFilter, setTenantFilter] = useState<
+    "all" | "expiring" | "expired" | "no_menu"
+  >("all");
   const [stores, setStores] = useState<Store[]>(initialStores);
   const [profiles] = useState<AffiliateProfile[]>(initialProfiles);
   const [commissions, setCommissions] =
     useState<AffiliateCommission[]>(initialCommissions);
+  const [nowMs] = useState(() => Date.now());
+
+  // Promo & Popup CMS State
+  const [promoConfig, setPromoConfig] =
+    useState<LandingPromoConfig>(initialPromoConfig);
+  const [savingPromo, setSavingPromo] = useState(false);
+  const [promoSavedMsg, setPromoSavedMsg] = useState<string | null>(null);
 
   const [name, setName] = useState("");
   const [slug, setSlug] = useState("");
@@ -67,13 +111,92 @@ export function SuperadminClient({
       list.push(s);
       map.set(key, list);
     }
-    return Array.from(map.entries()).map(([groupKey, groupStores]) => ({
-      groupKey,
-      ownerId: groupStores[0]?.owner_id || null,
-      primaryStore: groupStores[0],
-      stores: groupStores,
-    }));
-  }, [stores]);
+    return Array.from(map.entries()).map(([groupKey, groupStores]) => {
+      const primaryStore = groupStores[0];
+      const totalMenus = groupStores.reduce(
+        (sum, st) => sum + (menuCounts[st.id] || 0),
+        0
+      );
+      const totalOrders = groupStores.reduce(
+        (sum, st) => sum + (orderCounts[st.id] || 0),
+        0
+      );
+      const expMs = new Date(primaryStore.expired_at).getTime();
+      const daysRemaining = Math.ceil((expMs - nowMs) / (1000 * 60 * 60 * 24));
+      const isExpired =
+        primaryStore.subscription_status === "expired" || daysRemaining < 0;
+      const isExpiringSoon =
+        !isExpired && daysRemaining >= 0 && daysRemaining <= 3;
+
+      return {
+        groupKey,
+        ownerId: primaryStore?.owner_id || null,
+        primaryStore,
+        stores: groupStores,
+        totalMenus,
+        totalOrders,
+        daysRemaining,
+        isExpired,
+        isExpiringSoon,
+      };
+    });
+  }, [stores, menuCounts, orderCounts, nowMs]);
+
+  // SaaS Financial KPIs
+  const saasKpis = useMemo(() => {
+    let mrr = 0;
+    let activePaidCount = 0;
+    let trialCount = 0;
+
+    for (const g of ownerGroups) {
+      if (g.isExpired) continue;
+      if (g.primaryStore.subscription_status === "active") {
+        activePaidCount += 1;
+        const plan = (g.primaryStore.plan_tier || "pro") as PlanTier;
+        mrr += PLAN_MRR[plan] || 149000;
+      } else if (g.primaryStore.subscription_status === "trial") {
+        trialCount += 1;
+      }
+    }
+
+    const pendingPayoutTotal = commissions
+      .filter((c) => c.status !== "paid")
+      .reduce((sum, c) => sum + Number(c.commission_amount || 0), 0);
+
+    const availablePayoutTotal = commissions
+      .filter((c) => c.status === "available")
+      .reduce((sum, c) => sum + Number(c.commission_amount || 0), 0);
+
+    return {
+      mrr,
+      activePaidCount,
+      trialCount,
+      pendingPayoutTotal,
+      availablePayoutTotal,
+    };
+  }, [ownerGroups, commissions]);
+
+  const filterCounts = useMemo(() => {
+    return {
+      all: ownerGroups.length,
+      expiring: ownerGroups.filter((g) => g.isExpiringSoon).length,
+      expired: ownerGroups.filter((g) => g.isExpired).length,
+      no_menu: ownerGroups.filter((g) => g.totalMenus === 0).length,
+    };
+  }, [ownerGroups]);
+
+  const filteredGroups = useMemo(() => {
+    if (tenantFilter === "expiring") {
+      return ownerGroups.filter((g) => g.isExpiringSoon);
+    }
+    if (tenantFilter === "expired") {
+      return ownerGroups.filter((g) => g.isExpired);
+    }
+    if (tenantFilter === "no_menu") {
+      return ownerGroups.filter((g) => g.totalMenus === 0);
+    }
+    return ownerGroups;
+  }, [ownerGroups, tenantFilter]);
 
   const profileMap = useMemo(() => {
     const m = new Map<string, AffiliateProfile>();
@@ -293,6 +416,30 @@ export function SuperadminClient({
     setCreating(false);
   };
 
+  const handleSavePromo = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSavingPromo(true);
+    setPromoSavedMsg(null);
+    setError(null);
+
+    const supabase = createClient();
+    const { error: upsertErr } = await supabase.from("app_settings").upsert(
+      {
+        key: LANDING_PROMO_KEY,
+        value: promoConfig,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: "key" }
+    );
+
+    if (upsertErr) {
+      setError(upsertErr.message);
+    } else {
+      setPromoSavedMsg("Pengaturan popup promosi berhasil disimpan!");
+    }
+    setSavingPromo(false);
+  };
+
   return (
     <div className="min-h-screen bg-[#F8FAFC] dark:bg-[#090D16] text-[#0F172A] dark:text-slate-100">
       <header className="bg-white dark:bg-[#111827] border-b border-slate-200 dark:border-slate-800 sticky top-0 z-20">
@@ -331,11 +478,11 @@ export function SuperadminClient({
             </p>
           </div>
 
-          <div className="inline-flex p-1 bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 rounded-xl">
+          <div className="inline-flex flex-wrap p-1 bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 rounded-xl gap-1">
             <button
               type="button"
               onClick={() => setActiveTab("tenants")}
-              className={`px-4 py-2 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer ${
+              className={`px-3.5 py-2 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer ${
                 activeTab === "tenants"
                   ? "bg-[#2563EB] text-white"
                   : "text-slate-600 dark:text-slate-400"
@@ -347,7 +494,7 @@ export function SuperadminClient({
             <button
               type="button"
               onClick={() => setActiveTab("affiliate")}
-              className={`px-4 py-2 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer ${
+              className={`px-3.5 py-2 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer ${
                 activeTab === "affiliate"
                   ? "bg-[#2563EB] text-white"
                   : "text-slate-600 dark:text-slate-400"
@@ -356,6 +503,73 @@ export function SuperadminClient({
               <Handshake className="w-3.5 h-3.5" />
               <span>Affiliate &amp; Payout ({commissions.length})</span>
             </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab("promo")}
+              className={`px-3.5 py-2 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer ${
+                activeTab === "promo"
+                  ? "bg-[#2563EB] text-white"
+                  : "text-slate-600 dark:text-slate-400"
+              }`}
+            >
+              <Megaphone className="w-3.5 h-3.5" />
+              <span>Promo &amp; Popup</span>
+            </button>
+          </div>
+        </div>
+
+        {/* 1. SaaS Financial KPIs (MRR & Payout) */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="bg-white dark:bg-[#111827] rounded-2xl p-4 border border-slate-200 dark:border-slate-800 space-y-1.5">
+            <div className="flex items-center justify-between text-xs font-semibold text-slate-500 dark:text-slate-400">
+              <span>Estimasi MRR Bulanan</span>
+              <TrendingUp className="w-4 h-4 text-[#2563EB]" />
+            </div>
+            <p className="text-xl font-extrabold font-mono tabular-nums text-slate-900 dark:text-slate-100">
+              {formatRupiah(saasKpis.mrr)}
+            </p>
+            <p className="text-[11px] text-slate-500 dark:text-slate-400">
+              Dari {saasKpis.activePaidCount} akun berbayar aktif
+            </p>
+          </div>
+
+          <div className="bg-white dark:bg-[#111827] rounded-2xl p-4 border border-slate-200 dark:border-slate-800 space-y-1.5">
+            <div className="flex items-center justify-between text-xs font-semibold text-slate-500 dark:text-slate-400">
+              <span>Merchant Aktif Berbayar</span>
+              <Users className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+            </div>
+            <p className="text-xl font-extrabold font-mono tabular-nums text-slate-900 dark:text-slate-100">
+              {saasKpis.activePaidCount}
+            </p>
+            <p className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium">
+              Starter / Pro / Enterprise
+            </p>
+          </div>
+
+          <div className="bg-white dark:bg-[#111827] rounded-2xl p-4 border border-slate-200 dark:border-slate-800 space-y-1.5">
+            <div className="flex items-center justify-between text-xs font-semibold text-slate-500 dark:text-slate-400">
+              <span>Merchant Masa Trial</span>
+              <Clock className="w-4 h-4 text-amber-500" />
+            </div>
+            <p className="text-xl font-extrabold font-mono tabular-nums text-slate-900 dark:text-slate-100">
+              {saasKpis.trialCount}
+            </p>
+            <p className="text-[11px] text-slate-500 dark:text-slate-400">
+              {filterCounts.expiring} akan habis ≤ 3 hari
+            </p>
+          </div>
+
+          <div className="bg-white dark:bg-[#111827] rounded-2xl p-4 border border-slate-200 dark:border-slate-800 space-y-1.5">
+            <div className="flex items-center justify-between text-xs font-semibold text-slate-500 dark:text-slate-400">
+              <span>Pending Payout Affiliate</span>
+              <Wallet className="w-4 h-4 text-purple-500" />
+            </div>
+            <p className="text-xl font-extrabold font-mono tabular-nums text-slate-900 dark:text-slate-100">
+              {formatRupiah(saasKpis.pendingPayoutTotal)}
+            </p>
+            <p className="text-[11px] text-slate-500 dark:text-slate-400">
+              Siap transfer: {formatRupiah(saasKpis.availablePayoutTotal)}
+            </p>
           </div>
         </div>
 
@@ -431,154 +645,277 @@ export function SuperadminClient({
               </button>
             </form>
 
+            {/* Quick Filter Tabs */}
+            <div className="flex flex-wrap items-center gap-2">
+              {[
+                { key: "all", label: `Semua (${filterCounts.all})` },
+                {
+                  key: "expiring",
+                  label: `Akan Habis ≤ 3 Hari (${filterCounts.expiring})`,
+                },
+                { key: "expired", label: `Expired (${filterCounts.expired})` },
+                {
+                  key: "no_menu",
+                  label: `Belum Input Menu (${filterCounts.no_menu})`,
+                },
+              ].map((tab) => (
+                <button
+                  key={tab.key}
+                  type="button"
+                  onClick={() =>
+                    setTenantFilter(
+                      tab.key as "all" | "expiring" | "expired" | "no_menu"
+                    )
+                  }
+                  className={`px-3.5 py-2 rounded-xl text-xs font-semibold border transition cursor-pointer ${
+                    tenantFilter === tab.key
+                      ? "bg-[#2563EB] text-white border-[#2563EB]"
+                      : "bg-white dark:bg-[#111827] border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 hover:border-[#2563EB]"
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+
             {/* Grouped Owner / Store List */}
             <div className="space-y-4">
-              {ownerGroups.map(({ groupKey, ownerId, primaryStore, stores: groupStores }) => {
-                const isExpired =
-                  primaryStore.subscription_status === "expired" ||
-                  new Date() > new Date(primaryStore.expired_at);
-                const currentMax = primaryStore.max_outlets || 1;
+              {filteredGroups.length === 0 ? (
+                <div className="bg-white dark:bg-[#111827] rounded-2xl p-8 border border-slate-200 dark:border-slate-800 text-center text-xs text-slate-500 dark:text-slate-400">
+                  Tidak ada merchant pada filter ini.
+                </div>
+              ) : (
+                filteredGroups.map(
+                  ({
+                    groupKey,
+                    ownerId,
+                    primaryStore,
+                    stores: groupStores,
+                    totalMenus,
+                    totalOrders,
+                    daysRemaining,
+                    isExpired,
+                    isExpiringSoon,
+                  }) => {
+                    const currentMax = primaryStore.max_outlets || 1;
+                    const expiredDateStr = new Date(
+                      primaryStore.expired_at
+                    ).toLocaleDateString("id-ID", {
+                      day: "2-digit",
+                      month: "short",
+                      year: "numeric",
+                    });
 
-                return (
-                  <div
-                    key={groupKey}
-                    className="bg-white dark:bg-[#111827] rounded-2xl p-5 border border-slate-200 dark:border-slate-800 space-y-4"
-                  >
-                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-2.5 flex-wrap">
-                          <h3 className="text-base font-bold text-slate-900 dark:text-slate-100">
-                            {primaryStore.name}
-                          </h3>
-                          <span className="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-[10px] font-mono font-bold text-slate-600 dark:text-slate-300">
-                            {groupStores.length} / {currentMax} Cabang
-                          </span>
-                          <span
-                            className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase ${
-                              isExpired
-                                ? "bg-rose-50 dark:bg-rose-950/50 text-rose-700"
-                                : primaryStore.subscription_status === "trial"
-                                  ? "bg-blue-50 dark:bg-blue-950/60 text-[#2563EB]"
-                                  : "bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700"
-                            }`}
-                          >
-                            {primaryStore.subscription_status}
-                          </span>
-                          {primaryStore.referred_by_code && (
-                            <span className="px-2 py-0.5 rounded-full bg-purple-50 dark:bg-purple-950/50 text-purple-700 dark:text-purple-300 text-[10px] font-mono font-bold">
-                              Ref: {primaryStore.referred_by_code}
-                            </span>
-                          )}
-                        </div>
-                        <p className="text-xs text-slate-500 dark:text-slate-400">
-                          Jatuh tempo:{" "}
-                          <strong className="text-slate-900 dark:text-slate-100 font-mono tabular-nums">
-                            {new Date(primaryStore.expired_at).toLocaleDateString(
-                              "id-ID",
-                              {
-                                day: "2-digit",
-                                month: "short",
-                                year: "numeric",
+                    const waPhone = formatWaPhone(primaryStore.wa_number);
+                    const waText = encodeURIComponent(
+                      `Halo Kak ${primaryStore.name}, masa aktif paket Mukaro untuk outlet *${primaryStore.name}* (${expiredDateStr}) ${
+                        isExpired
+                          ? "sudah berakhir"
+                          : `tinggal ${Math.max(0, daysRemaining)} hari lagi`
+                      }. Yuk perpanjang agar sistem QR Self-Order & Kasir POS tetap berjalan lancar!`
+                    );
+                    const waFollowUpUrl = waPhone
+                      ? `https://wa.me/${waPhone}?text=${waText}`
+                      : `https://wa.me/?text=${waText}`;
+
+                    const onboardingBadge =
+                      totalOrders > 0
+                        ? {
+                            label: `Aktif Transaksi (${totalOrders})`,
+                            cls: "bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300",
+                          }
+                        : totalMenus > 0
+                          ? {
+                              label: `Menu Siap (${totalMenus}), Belum Order`,
+                              cls: "bg-blue-50 dark:bg-blue-950/60 text-[#2563EB]",
+                            }
+                          : {
+                              label: "Belum Input Menu",
+                              cls: "bg-amber-50 dark:bg-amber-950/50 text-amber-700 dark:text-amber-300",
+                            };
+
+                    return (
+                      <div
+                        key={groupKey}
+                        className="bg-white dark:bg-[#111827] rounded-2xl p-5 border border-slate-200 dark:border-slate-800 space-y-4"
+                      >
+                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                          <div className="space-y-1.5">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <h3 className="text-base font-bold text-slate-900 dark:text-slate-100">
+                                {primaryStore.name}
+                              </h3>
+                              <span className="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-[10px] font-mono font-bold text-slate-600 dark:text-slate-300">
+                                {groupStores.length} / {currentMax} Cabang
+                              </span>
+                              <span className="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-[10px] font-mono font-bold uppercase text-slate-700 dark:text-slate-300">
+                                {(primaryStore.plan_tier || "pro").toUpperCase()}
+                              </span>
+                              <span
+                                className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase ${
+                                  isExpired
+                                    ? "bg-rose-50 dark:bg-rose-950/50 text-rose-700 dark:text-rose-300"
+                                    : primaryStore.subscription_status ===
+                                        "trial"
+                                      ? "bg-blue-50 dark:bg-blue-950/60 text-[#2563EB]"
+                                      : "bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300"
+                                }`}
+                              >
+                                {primaryStore.subscription_status}
+                              </span>
+
+                              {/* Expiry Alert Badge */}
+                              {isExpired ? (
+                                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-rose-100 dark:bg-rose-950/80 text-rose-700 dark:text-rose-300 text-[10px] font-bold">
+                                  <AlertTriangle className="w-3 h-3" />
+                                  Expired
+                                </span>
+                              ) : isExpiringSoon ? (
+                                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-100 dark:bg-amber-950/80 text-amber-800 dark:text-amber-300 text-[10px] font-mono font-bold">
+                                  <AlertTriangle className="w-3 h-3" />
+                                  {daysRemaining === 0
+                                    ? "Habis Hari Ini"
+                                    : `H-${daysRemaining}`}
+                                </span>
+                              ) : (
+                                <span className="px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 text-[10px] font-mono font-semibold">
+                                  H-{daysRemaining}
+                                </span>
+                              )}
+
+                              {/* Onboarding Health Badge */}
+                              <span
+                                className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${onboardingBadge.cls}`}
+                              >
+                                {onboardingBadge.label}
+                              </span>
+
+                              {primaryStore.referred_by_code && (
+                                <span className="px-2 py-0.5 rounded-full bg-purple-50 dark:bg-purple-950/50 text-purple-700 dark:text-purple-300 text-[10px] font-mono font-bold">
+                                  Ref: {primaryStore.referred_by_code}
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-xs text-slate-500 dark:text-slate-400">
+                              Jatuh tempo:{" "}
+                              <strong className="text-slate-900 dark:text-slate-100 font-mono tabular-nums">
+                                {expiredDateStr}
+                              </strong>
+                              {primaryStore.wa_number && (
+                                <span className="ml-2 font-mono text-slate-500 dark:text-slate-400">
+                                  • WA: {primaryStore.wa_number}
+                                </span>
+                              )}
+                            </p>
+                          </div>
+
+                          <div className="flex flex-wrap items-center gap-2">
+                            {/* 1-Click Follow-Up WA */}
+                            <a
+                              href={waFollowUpUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="px-3.5 py-2 rounded-xl bg-[#10B981] hover:bg-[#059669] text-white text-xs font-semibold inline-flex items-center gap-1.5 transition"
+                            >
+                              <MessageCircle className="w-3.5 h-3.5" />
+                              <span>Follow Up WA</span>
+                            </a>
+
+                            {/* Max Outlets Selector */}
+                            <select
+                              value={currentMax}
+                              disabled={busyId === primaryStore.id}
+                              onChange={(e) =>
+                                handleUpdateMaxOutlets(
+                                  primaryStore,
+                                  ownerId,
+                                  Number(e.target.value)
+                                )
                               }
-                            )}
-                          </strong>
-                        </p>
-                      </div>
+                              aria-label="Kuota maksimal outlet"
+                              className="px-2.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-[#090D16] text-xs font-semibold"
+                            >
+                              {[1, 3, 5, 10, 20].map((n) => (
+                                <option key={n} value={n}>
+                                  Max {n} Cabang
+                                </option>
+                              ))}
+                            </select>
 
-                      <div className="flex flex-wrap items-center gap-2">
-                        {/* Max Outlets Selector */}
-                        <select
-                          value={currentMax}
-                          disabled={busyId === primaryStore.id}
-                          onChange={(e) =>
-                            handleUpdateMaxOutlets(
-                              primaryStore,
-                              ownerId,
-                              Number(e.target.value)
-                            )
-                          }
-                          aria-label="Kuota maksimal outlet"
-                          className="px-2.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-[#090D16] text-xs font-semibold"
-                        >
-                          {[1, 3, 5, 10, 20].map((n) => (
-                            <option key={n} value={n}>
-                              Max {n} Cabang
-                            </option>
+                            <button
+                              type="button"
+                              disabled={busyId === primaryStore.id}
+                              onClick={() =>
+                                handleExtendGroup(groupStores, ownerId, 30)
+                              }
+                              className="px-3.5 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-xs font-semibold text-slate-800 dark:text-slate-200 flex items-center gap-1.5 transition"
+                            >
+                              <CalendarPlus className="w-3.5 h-3.5" />
+                              <span>+30 Hari</span>
+                            </button>
+                            <button
+                              type="button"
+                              disabled={busyId === primaryStore.id}
+                              onClick={() =>
+                                handleExtendGroup(groupStores, ownerId, 365)
+                              }
+                              className="px-3.5 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-xs font-semibold text-slate-800 dark:text-slate-200 flex items-center gap-1.5 transition"
+                            >
+                              <CalendarPlus className="w-3.5 h-3.5" />
+                              <span>+1 Tahun</span>
+                            </button>
+                            <button
+                              type="button"
+                              disabled={busyId === primaryStore.id}
+                              onClick={() =>
+                                handleToggleLockGroup(groupStores, ownerId)
+                              }
+                              className={`px-3.5 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition ${
+                                primaryStore.subscription_status === "expired"
+                                  ? "bg-emerald-600 text-white hover:bg-emerald-700"
+                                  : "bg-rose-50 dark:bg-rose-950/50 text-rose-700 border border-rose-200 hover:bg-rose-100"
+                              }`}
+                            >
+                              {primaryStore.subscription_status === "expired" ? (
+                                <>
+                                  <Unlock className="w-3.5 h-3.5" />
+                                  <span>Aktifkan</span>
+                                </>
+                              ) : (
+                                <>
+                                  <Lock className="w-3.5 h-3.5" />
+                                  <span>Kunci</span>
+                                </>
+                              )}
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Branch Pills */}
+                        <div className="flex flex-wrap gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+                          {groupStores.map((branch) => (
+                            <Link
+                              key={branch.id}
+                              href={`/${branch.slug}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#F8FAFC] dark:bg-[#090D16] border border-slate-200 dark:border-slate-800 text-xs font-medium hover:border-[#2563EB] transition"
+                            >
+                              <span className="font-semibold text-slate-900 dark:text-slate-100">
+                                {branch.name}
+                              </span>
+                              <span className="font-mono text-[11px] text-slate-500">
+                                /{branch.slug}
+                              </span>
+                              <ExternalLink className="w-3 h-3 text-slate-400" />
+                            </Link>
                           ))}
-                        </select>
-
-                        <button
-                          type="button"
-                          disabled={busyId === primaryStore.id}
-                          onClick={() =>
-                            handleExtendGroup(groupStores, ownerId, 30)
-                          }
-                          className="px-3.5 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-xs font-semibold text-slate-800 dark:text-slate-200 flex items-center gap-1.5 transition"
-                        >
-                          <CalendarPlus className="w-3.5 h-3.5" />
-                          <span>+30 Hari</span>
-                        </button>
-                        <button
-                          type="button"
-                          disabled={busyId === primaryStore.id}
-                          onClick={() =>
-                            handleExtendGroup(groupStores, ownerId, 365)
-                          }
-                          className="px-3.5 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-xs font-semibold text-slate-800 dark:text-slate-200 flex items-center gap-1.5 transition"
-                        >
-                          <CalendarPlus className="w-3.5 h-3.5" />
-                          <span>+1 Tahun</span>
-                        </button>
-                        <button
-                          type="button"
-                          disabled={busyId === primaryStore.id}
-                          onClick={() =>
-                            handleToggleLockGroup(groupStores, ownerId)
-                          }
-                          className={`px-3.5 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition ${
-                            primaryStore.subscription_status === "expired"
-                              ? "bg-emerald-600 text-white hover:bg-emerald-700"
-                              : "bg-rose-50 dark:bg-rose-950/50 text-rose-700 border border-rose-200 hover:bg-rose-100"
-                          }`}
-                        >
-                          {primaryStore.subscription_status === "expired" ? (
-                            <>
-                              <Unlock className="w-3.5 h-3.5" />
-                              <span>Aktifkan</span>
-                            </>
-                          ) : (
-                            <>
-                              <Lock className="w-3.5 h-3.5" />
-                              <span>Kunci</span>
-                            </>
-                          )}
-                        </button>
+                        </div>
                       </div>
-                    </div>
-
-                    {/* Branch Pills */}
-                    <div className="flex flex-wrap gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
-                      {groupStores.map((branch) => (
-                        <Link
-                          key={branch.id}
-                          href={`/${branch.slug}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#F8FAFC] dark:bg-[#090D16] border border-slate-200 dark:border-slate-800 text-xs font-medium hover:border-[#2563EB] transition"
-                        >
-                          <span className="font-semibold text-slate-900 dark:text-slate-100">
-                            {branch.name}
-                          </span>
-                          <span className="font-mono text-[11px] text-slate-500">
-                            /{branch.slug}
-                          </span>
-                          <ExternalLink className="w-3 h-3 text-slate-400" />
-                        </Link>
-                      ))}
-                    </div>
-                  </div>
-                );
-              })}
+                    );
+                  }
+                )
+              )}
             </div>
           </div>
         )}
@@ -679,6 +1016,176 @@ export function SuperadminClient({
               </div>
             )}
           </div>
+        )}
+
+        {activeTab === "promo" && (
+          <form
+            onSubmit={handleSavePromo}
+            className="bg-white dark:bg-[#111827] rounded-2xl border border-slate-200 dark:border-slate-800 p-6 space-y-6"
+          >
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 dark:border-slate-800 pb-4">
+              <div>
+                <h2 className="text-base font-bold text-slate-900 dark:text-slate-100">
+                  Kontrol Popup Promosi Landing Page
+                </h2>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                  Atur status aktif, judul, deskripsi, dan tombol CTA popup
+                  promosi di halaman utama (`app_settings`).
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() =>
+                  setPromoConfig((prev) => ({
+                    ...prev,
+                    enabled: !prev.enabled,
+                  }))
+                }
+                className={`px-4 py-2 rounded-xl text-xs font-bold border transition cursor-pointer ${
+                  promoConfig.enabled
+                    ? "bg-emerald-50 dark:bg-emerald-950/50 border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300"
+                    : "bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400"
+                }`}
+              >
+                Status: {promoConfig.enabled ? "AKTIF" : "NONAKTIF"}
+              </button>
+            </div>
+
+            {promoSavedMsg && (
+              <div className="p-3.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800 text-xs font-semibold text-emerald-700 dark:text-emerald-300 flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 shrink-0" />
+                <span>{promoSavedMsg}</span>
+              </div>
+            )}
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Owner Tab Settings */}
+              <div className="p-4 rounded-xl bg-[#F8FAFC] dark:bg-[#090D16] border border-slate-200 dark:border-slate-800 space-y-3">
+                <p className="text-xs font-bold uppercase tracking-wider text-[#2563EB]">
+                  Tab Pengguna Baru (Pemilik Usaha)
+                </p>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-900 dark:text-slate-100 mb-1">
+                    Judul Promo
+                  </label>
+                  <input
+                    type="text"
+                    value={promoConfig.ownerTitle}
+                    onChange={(e) =>
+                      setPromoConfig((prev) => ({
+                        ...prev,
+                        ownerTitle: e.target.value,
+                      }))
+                    }
+                    className="w-full px-3.5 py-2 rounded-xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-700 text-xs focus:outline-none focus:border-[#2563EB]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-900 dark:text-slate-100 mb-1">
+                    Deskripsi
+                  </label>
+                  <textarea
+                    rows={3}
+                    value={promoConfig.ownerDesc}
+                    onChange={(e) =>
+                      setPromoConfig((prev) => ({
+                        ...prev,
+                        ownerDesc: e.target.value,
+                      }))
+                    }
+                    className="w-full px-3.5 py-2 rounded-xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-700 text-xs focus:outline-none focus:border-[#2563EB]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-900 dark:text-slate-100 mb-1">
+                    Teks Tombol CTA
+                  </label>
+                  <input
+                    type="text"
+                    value={promoConfig.ownerCta}
+                    onChange={(e) =>
+                      setPromoConfig((prev) => ({
+                        ...prev,
+                        ownerCta: e.target.value,
+                      }))
+                    }
+                    className="w-full px-3.5 py-2 rounded-xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-700 text-xs focus:outline-none focus:border-[#2563EB]"
+                  />
+                </div>
+              </div>
+
+              {/* Affiliate Tab Settings */}
+              <div className="p-4 rounded-xl bg-[#F8FAFC] dark:bg-[#090D16] border border-slate-200 dark:border-slate-800 space-y-3">
+                <p className="text-xs font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
+                  Tab Partner Affiliate
+                </p>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-900 dark:text-slate-100 mb-1">
+                    Judul Promo
+                  </label>
+                  <input
+                    type="text"
+                    value={promoConfig.affiliateTitle}
+                    onChange={(e) =>
+                      setPromoConfig((prev) => ({
+                        ...prev,
+                        affiliateTitle: e.target.value,
+                      }))
+                    }
+                    className="w-full px-3.5 py-2 rounded-xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-700 text-xs focus:outline-none focus:border-[#2563EB]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-900 dark:text-slate-100 mb-1">
+                    Deskripsi
+                  </label>
+                  <textarea
+                    rows={3}
+                    value={promoConfig.affiliateDesc}
+                    onChange={(e) =>
+                      setPromoConfig((prev) => ({
+                        ...prev,
+                        affiliateDesc: e.target.value,
+                      }))
+                    }
+                    className="w-full px-3.5 py-2 rounded-xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-700 text-xs focus:outline-none focus:border-[#2563EB]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-900 dark:text-slate-100 mb-1">
+                    Teks Tombol CTA
+                  </label>
+                  <input
+                    type="text"
+                    value={promoConfig.affiliateCta}
+                    onChange={(e) =>
+                      setPromoConfig((prev) => ({
+                        ...prev,
+                        affiliateCta: e.target.value,
+                      }))
+                    }
+                    className="w-full px-3.5 py-2 rounded-xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-700 text-xs focus:outline-none focus:border-[#2563EB]"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="flex justify-end">
+              <button
+                type="submit"
+                disabled={savingPromo}
+                className="px-5 py-2.5 rounded-xl bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-xs font-semibold inline-flex items-center gap-2 transition disabled:opacity-50 cursor-pointer"
+              >
+                {savingPromo ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Save className="w-4 h-4" />
+                )}
+                <span>Simpan Pengaturan Promo</span>
+              </button>
+            </div>
+          </form>
         )}
       </main>
     </div>

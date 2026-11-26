@@ -23,6 +23,13 @@ import {
 } from "lucide-react";
 import { MukaroLogo } from "@/components/MukaroLogo";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
+import {
+  DEFAULT_LANDING_PROMO,
+  LANDING_PROMO_KEY,
+  LandingPromoConfig,
+  mergeLandingPromo,
+} from "@/lib/promo-settings";
 import {
   HeroDashboardMockup,
   QrMenuMockup,
@@ -96,26 +103,52 @@ export default function LandingPage() {
   const [openFaqIdx, setOpenFaqIdx] = useState<number | null>(0);
   const [showPromo, setShowPromo] = useState(false);
   const [promoTab, setPromoTab] = useState<"owner" | "affiliate">("owner");
+  const [promoConfig, setPromoConfig] = useState<LandingPromoConfig>(
+    DEFAULT_LANDING_PROMO
+  );
 
   useEffect(() => {
-    try {
-      if (sessionStorage.getItem("mukaro_promo_dismissed") === "1") return;
-    } catch {
-      // Ignore storage access errors
-    }
-    const timer = window.setTimeout(() => {
-      setShowPromo(true);
-    }, 2000);
-    return () => window.clearTimeout(timer);
+    let active = true;
+    let timerId: number | undefined;
+
+    const loadPromoAndSchedule = async () => {
+      let config = DEFAULT_LANDING_PROMO;
+      if (isSupabaseConfigured()) {
+        try {
+          const supabase = createClient();
+          const { data } = await supabase
+            .from("app_settings")
+            .select("value")
+            .eq("key", LANDING_PROMO_KEY)
+            .maybeSingle();
+          if (data?.value) {
+            config = mergeLandingPromo(data.value);
+          }
+        } catch {
+          // Fallback to default config if app_settings is unavailable
+        }
+      }
+
+      if (!active) return;
+      setPromoConfig(config);
+
+      if (config.enabled) {
+        timerId = window.setTimeout(() => {
+          if (active) setShowPromo(true);
+        }, 1500);
+      }
+    };
+
+    void loadPromoAndSchedule();
+
+    return () => {
+      active = false;
+      if (timerId !== undefined) window.clearTimeout(timerId);
+    };
   }, []);
 
   const handleClosePromo = () => {
     setShowPromo(false);
-    try {
-      sessionStorage.setItem("mukaro_promo_dismissed", "1");
-    } catch {
-      // Ignore storage access errors
-    }
   };
 
   const pricing = {
@@ -987,11 +1020,10 @@ export default function LandingPage() {
                 <div className="space-y-4">
                   <div className="p-4 rounded-xl bg-blue-50/70 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800/70 space-y-2">
                     <p className="text-sm font-extrabold text-slate-900 dark:text-slate-100 leading-snug">
-                      Gratis Uji Coba 14 Hari Full Fitur + 0% Komisi Transaksi
+                      {promoConfig.ownerTitle}
                     </p>
                     <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
-                      Langsung aktifkan QR Self-Order Meja, Kasir POS &amp; Ojol,
-                      Layar Dapur Live, serta Stok Resep tanpa kartu kredit.
+                      {promoConfig.ownerDesc}
                     </p>
                   </div>
                   <Link
@@ -999,7 +1031,7 @@ export default function LandingPage() {
                     onClick={handleClosePromo}
                     className="w-full py-3 rounded-xl bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-sm font-bold flex items-center justify-center gap-2 transition shadow-sm"
                   >
-                    <span>Mulai Gratis Sekarang</span>
+                    <span>{promoConfig.ownerCta}</span>
                     <ArrowRight className="w-4 h-4" />
                   </Link>
                 </div>
@@ -1007,12 +1039,10 @@ export default function LandingPage() {
                 <div className="space-y-4">
                   <div className="p-4 rounded-xl bg-emerald-50/70 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/70 space-y-2">
                     <p className="text-sm font-extrabold text-slate-900 dark:text-slate-100 leading-snug">
-                      Komisi 30% Tanpa Modal — Ajak 1 Outlet Dapat Hingga Rp
-                      90.000/bln
+                      {promoConfig.affiliateTitle}
                     </p>
                     <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
-                      Bagikan link referral Anda ke pemilik kedai kopi, resto,
-                      atau warmindo dan pantau komisi secara real-time.
+                      {promoConfig.affiliateDesc}
                     </p>
                   </div>
                   <Link
@@ -1020,7 +1050,7 @@ export default function LandingPage() {
                     onClick={handleClosePromo}
                     className="w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold flex items-center justify-center gap-2 transition shadow-sm"
                   >
-                    <span>Gabung Affiliate Gratis</span>
+                    <span>{promoConfig.affiliateCta}</span>
                     <ArrowRight className="w-4 h-4" />
                   </Link>
                 </div>
