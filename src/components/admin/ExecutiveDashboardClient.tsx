@@ -24,6 +24,7 @@ import {
 } from "recharts";
 import { Ingredient, Menu, Order, OrderItem, Store } from "@/types/database";
 import { formatRupiah } from "@/lib/format";
+import { MukaroAiAdvisorPanel } from "./MukaroAiAdvisorPanel";
 
 interface ExecutiveDashboardClientProps {
   store: Store;
@@ -201,6 +202,106 @@ export function ExecutiveDashboardClient({
   }, [paidOrders, orderItems, menus]);
 
   const lowStockCount = lowStockMenus.length + lowStockIngredients.length;
+
+  // Metrics for Mukaro AI Advisor (30 days real outlet data)
+  const advisorData = useMemo(() => {
+    const now = new Date();
+    const totalRevenue30d = paidOrders.reduce(
+      (sum, o) => sum + Number(o.total_amount || 0),
+      0
+    );
+    const totalTransactions30d = paidOrders.length;
+    const aov30d =
+      totalTransactions30d > 0
+        ? Math.round(totalRevenue30d / totalTransactions30d)
+        : 0;
+
+    // 15d vs previous 15d comparison
+    const fifteenDaysAgo = now.getTime() - 15 * 24 * 60 * 60 * 1000;
+    let recent15d = 0;
+    let prev15d = 0;
+    const hourBuckets = new Array<number>(24).fill(0);
+
+    for (const o of paidOrders) {
+      const d = new Date(o.created_at);
+      const amt = Number(o.total_amount || 0);
+      if (d.getTime() >= fifteenDaysAgo) recent15d += amt;
+      else prev15d += amt;
+      hourBuckets[d.getHours()] += 1;
+    }
+
+    const periodComparison =
+      prev15d > 0
+        ? `15 hari terakhir ${recent15d >= prev15d ? "naik" : "turun"} ${Math.abs(
+            Math.round(((recent15d - prev15d) / prev15d) * 100)
+          )}% dibanding 15 hari sebelumnya (${growthPercent >= 0 ? `+${growthPercent}%` : `${growthPercent}%`} hari ini vs kemarin)`
+        : `Hari ini ${growthPercent >= 0 ? `+${growthPercent}%` : `${growthPercent}%`} vs kemarin`;
+
+    // Menu sales map across all paidOrders
+    const paidIds = new Set(paidOrders.map((o) => o.id));
+    const qtyByMenu = new Map<string, number>();
+    for (const item of orderItems) {
+      if (!paidIds.has(item.order_id)) continue;
+      const key = item.menu_name.toLowerCase();
+      qtyByMenu.set(key, (qtyByMenu.get(key) || 0) + Number(item.qty || 1));
+    }
+
+    const lowMenus = menus
+      .map((m) => ({
+        name: m.name,
+        qty: qtyByMenu.get(m.name.toLowerCase()) || 0,
+      }))
+      .sort((a, b) => a.qty - b.qty)
+      .slice(0, 5);
+
+    // Peak and quiet hours within 08:00 - 22:00
+    const operatingHours = Array.from({ length: 15 }, (_, i) => ({
+      hour: i + 8,
+      count: hourBuckets[i + 8],
+    }));
+    const sortedHours = [...operatingHours].sort((a, b) => b.count - a.count);
+    const peak = sortedHours.slice(0, 2).filter((h) => h.count > 0);
+    const quiet = [...operatingHours]
+      .sort((a, b) => a.count - b.count)
+      .slice(0, 2);
+
+    const fmtHour = (h: number) => `${String(h).padStart(2, "0")}:00`;
+    const peakHours =
+      peak.length > 0
+        ? peak.map((h) => `${fmtHour(h.hour)} (${h.count} trx)`).join(", ")
+        : "Belum ada transaksi";
+    const quietHours =
+      totalTransactions30d > 0
+        ? quiet.map((h) => `${fmtHour(h.hour)} (${h.count} trx)`).join(", ")
+        : "Belum terdeteksi";
+
+    const lastDayOfMonth = new Date(
+      now.getFullYear(),
+      now.getMonth() + 1,
+      0
+    ).getDate();
+    const daysRemainingInMonth = Math.max(1, lastDayOfMonth - now.getDate() + 1);
+
+    return {
+      currentRevenue: totalRevenue30d,
+      defaultTargetRevenue:
+        targetSales > 0 ? Math.round(targetSales * 30) : null,
+      defaultDaysRemaining: daysRemainingInMonth,
+      metrics: {
+        totalTransactions: totalTransactions30d,
+        aov: aov30d,
+        previousPeriodComparison: periodComparison,
+        topMenus: topMenus.map((m) => ({
+          name: m.name,
+          qty: m.qty,
+          revenue: m.revenue,
+        })),
+        lowMenus,
+        peakHours,
+        quietHours,
+      },
+    };
+  }, [paidOrders, orderItems, menus, topMenus, growthPercent, targetSales]);
 
   return (
     <div className="space-y-6 animate-stagger">
@@ -548,6 +649,15 @@ export function ExecutiveDashboardClient({
           </div>
         )}
       </div>
+
+      {/* Baris 4 — Mukaro AI Advisor */}
+      <MukaroAiAdvisorPanel
+        outletName={store.name}
+        currentRevenue={advisorData.currentRevenue}
+        defaultTargetRevenue={advisorData.defaultTargetRevenue}
+        defaultDaysRemaining={advisorData.defaultDaysRemaining}
+        metrics={advisorData.metrics}
+      />
     </div>
   );
 }

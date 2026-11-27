@@ -9,12 +9,14 @@ import {
   Upload,
   Loader2,
   FolderPlus,
+  Camera,
 } from "lucide-react";
 import { Category, Menu, Store } from "@/types/database";
 import { formatRupiah } from "@/lib/format";
 import { createClient } from "@/lib/supabase/client";
 import { compressImageFile } from "@/lib/image-compression";
 import { MenuFormModal } from "./MenuFormModal";
+import { MenuScanModal } from "./MenuScanModal";
 
 interface MenuManagerClientProps {
   store: Store;
@@ -33,6 +35,7 @@ export function MenuManagerClient({
   const [search, setSearch] = useState("");
   const [editingMenu, setEditingMenu] = useState<Menu | null>(null);
   const [isMenuModalOpen, setIsMenuModalOpen] = useState(false);
+  const [isScanModalOpen, setIsScanModalOpen] = useState(false);
 
   // Category Form State
   const [catName, setCatName] = useState("");
@@ -198,17 +201,27 @@ export function MenuManagerClient({
         </div>
 
         {activeTab === "menus" && (
-          <button
-            type="button"
-            onClick={() => {
-              setEditingMenu(null);
-              setIsMenuModalOpen(true);
-            }}
-            className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-[#2563EB] text-white text-xs font-extrabold hover:bg-[#1D4ED8] transition"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Tambah Menu</span>
-          </button>
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setIsScanModalOpen(true)}
+              className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-[#111827] text-slate-800 dark:text-slate-100 text-xs font-extrabold hover:border-[#2563EB] transition"
+            >
+              <Camera className="w-4 h-4 text-[#2563EB]" />
+              <span>Generate Menu dari Foto</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setEditingMenu(null);
+                setIsMenuModalOpen(true);
+              }}
+              className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-[#2563EB] text-white text-xs font-extrabold hover:bg-[#1D4ED8] transition"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Tambah Menu</span>
+            </button>
+          </div>
         )}
       </div>
 
@@ -532,6 +545,26 @@ export function MenuManagerClient({
           initialMenu={editingMenu}
           onClose={() => setIsMenuModalOpen(false)}
           onSaved={handleSavedMenu}
+        />
+      )}
+
+      {isScanModalOpen && (
+        <MenuScanModal
+          storeId={store.id}
+          categories={categories}
+          onClose={() => setIsScanModalOpen(false)}
+          onSaved={(newMenus, newCategories) => {
+            if (newCategories.length > 0) {
+              setCategories((prev) =>
+                [...prev, ...newCategories].sort(
+                  (a, b) => a.sort_order - b.sort_order
+                )
+              );
+            }
+            if (newMenus.length > 0) {
+              setMenus((prev) => [...newMenus, ...prev]);
+            }
+          }}
         />
       )}
     </div>
