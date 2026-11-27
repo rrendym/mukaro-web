@@ -40,6 +40,11 @@ import {
   LandingPromoConfig,
 } from "@/lib/promo-settings";
 import {
+  AffiliateSettingsConfig,
+  DEFAULT_AFFILIATE_SETTINGS,
+} from "@/lib/affiliate-settings";
+import { AffiliateManagementPanel } from "./AffiliateManagementPanel";
+import {
   isSelfReferralCommission,
   normalizeAffiliatePhone,
 } from "@/lib/affiliate";
@@ -72,6 +77,7 @@ export function SuperadminClient({
   menuCounts = {},
   orderCounts = {},
   initialPromoConfig = DEFAULT_LANDING_PROMO,
+  initialAffiliateSettings = DEFAULT_AFFILIATE_SETTINGS,
   adminEmail,
 }: {
   initialStores: Store[];
@@ -80,6 +86,7 @@ export function SuperadminClient({
   menuCounts?: Record<string, number>;
   orderCounts?: Record<string, number>;
   initialPromoConfig?: LandingPromoConfig;
+  initialAffiliateSettings?: AffiliateSettingsConfig;
   adminEmail: string;
 }) {
   const [activeTab, setActiveTab] = useState<"tenants" | "affiliate" | "promo">(
@@ -89,7 +96,8 @@ export function SuperadminClient({
     "all" | "expiring" | "expired" | "no_menu"
   >("all");
   const [stores, setStores] = useState<Store[]>(initialStores);
-  const [profiles] = useState<AffiliateProfile[]>(initialProfiles);
+  const [profiles, setProfiles] =
+    useState<AffiliateProfile[]>(initialProfiles);
   const [commissions, setCommissions] =
     useState<AffiliateCommission[]>(initialCommissions);
   const [nowMs] = useState(() => Date.now());
@@ -387,33 +395,6 @@ export function SuperadminClient({
     } else if (data) {
       const updatedMap = new Map((data as Store[]).map((s) => [s.id, s]));
       setStores((prev) => prev.map((s) => updatedMap.get(s.id) || s));
-    }
-    setBusyId(null);
-  };
-
-  const handleMarkPaid = async (commissionId: string) => {
-    setBusyId(commissionId);
-    setError(null);
-    const supabase = createClient();
-
-    const { data, error: err } = await supabase
-      .from("affiliate_commissions")
-      .update({
-        status: "paid",
-        paid_at: new Date().toISOString(),
-      })
-      .eq("id", commissionId)
-      .select("*, stores(name, slug, subscription_status, plan_tier)")
-      .single();
-
-    if (err) {
-      setError(err.message);
-    } else if (data) {
-      setCommissions((prev) =>
-        prev.map((c) =>
-          c.id === commissionId ? (data as AffiliateCommission) : c
-        )
-      );
     }
     setBusyId(null);
   };
@@ -956,105 +937,14 @@ export function SuperadminClient({
         )}
 
         {activeTab === "affiliate" && (
-          <div className="bg-white dark:bg-[#111827] rounded-2xl border border-slate-200 dark:border-slate-800 p-6 space-y-4">
-            <h2 className="text-base font-bold text-slate-900 dark:text-slate-100">
-              Daftar Komisi &amp; Payout Partner
-            </h2>
-
-            {commissions.length === 0 ? (
-              <p className="text-xs text-slate-500 dark:text-slate-400 py-8 text-center">
-                Belum ada komisi affiliate tercatat.
-              </p>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs">
-                  <thead>
-                    <tr className="border-b border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400">
-                      <th className="py-2.5 pr-4 font-semibold">Partner</th>
-                      <th className="py-2.5 pr-4 font-semibold">Rekening</th>
-                      <th className="py-2.5 pr-4 font-semibold">
-                        Outlet Referral
-                      </th>
-                      <th className="py-2.5 pr-4 font-semibold">Komisi</th>
-                      <th className="py-2.5 pr-4 font-semibold">Status</th>
-                      <th className="py-2.5 font-semibold text-right">Aksi</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                    {commissions.map((c) => {
-                      const partner = profileMap.get(c.referrer_user_id);
-                      const selfRef = isSelfReferralCommission(c, partner);
-                      const displayAmount = selfRef ? 0 : c.commission_amount;
-                      return (
-                        <tr key={c.id}>
-                          <td className="py-3 pr-4">
-                            <p className="font-bold text-slate-900 dark:text-slate-100">
-                              {partner?.full_name || "Partner"}
-                            </p>
-                            <p className="text-[11px] font-mono text-slate-500">
-                              {partner?.referral_code || "-"} •{" "}
-                              {partner?.whatsapp || "-"}
-                            </p>
-                          </td>
-                          <td className="py-3 pr-4 text-[11px]">
-                            {partner?.bank_name ? (
-                              <div>
-                                <p className="font-semibold">
-                                  {partner.bank_name}
-                                </p>
-                                <p className="font-mono text-slate-500">
-                                  {partner.account_number} (
-                                  {partner.account_holder})
-                                </p>
-                              </div>
-                            ) : (
-                              <span className="text-slate-400">
-                                Belum diisi
-                              </span>
-                            )}
-                          </td>
-                          <td className="py-3 pr-4 font-semibold">
-                            {c.stores?.name || "-"} ({c.plan_name.toUpperCase()})
-                          </td>
-                          <td className="py-3 pr-4 font-mono tabular-nums font-bold">
-                            {formatRupiah(displayAmount)}
-                          </td>
-                          <td className="py-3 pr-4">
-                            <span
-                              className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase ${
-                                selfRef
-                                  ? "bg-rose-50 dark:bg-rose-950/50 text-rose-700 dark:text-rose-300"
-                                  : c.status === "paid"
-                                    ? "bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700"
-                                    : c.status === "available"
-                                      ? "bg-blue-50 dark:bg-blue-950/60 text-[#2563EB]"
-                                      : "bg-amber-50 dark:bg-amber-950/50 text-amber-700"
-                              }`}
-                            >
-                              {selfRef ? "Invalid (Self-Referral)" : c.status}
-                            </span>
-                          </td>
-                          <td className="py-3 text-right">
-                            {!selfRef && c.status === "available" && (
-                              <button
-                                type="button"
-                                disabled={busyId === c.id}
-                                onClick={() => handleMarkPaid(c.id)}
-                                className="px-3 py-1.5 rounded-lg bg-[#10B981] hover:bg-[#059669] text-white text-[11px] font-semibold inline-flex items-center gap-1 transition cursor-pointer"
-                              >
-                                <CheckCircle2 className="w-3.5 h-3.5" />
-                                <span>Tandai Sudah Ditransfer</span>
-                              </button>
-                            )}
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
+          <AffiliateManagementPanel
+            stores={stores}
+            profiles={profiles}
+            onProfilesChange={setProfiles}
+            commissions={commissions}
+            onCommissionsChange={setCommissions}
+            initialSettings={initialAffiliateSettings}
+          />
         )}
 
         {activeTab === "promo" && (

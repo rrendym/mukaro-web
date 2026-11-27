@@ -13,6 +13,11 @@ import {
   LANDING_PROMO_KEY,
   mergeLandingPromo,
 } from "@/lib/promo-settings";
+import {
+  AFFILIATE_SETTINGS_KEY,
+  DEFAULT_AFFILIATE_SETTINGS,
+  mergeAffiliateSettings,
+} from "@/lib/affiliate-settings";
 
 export const dynamic = "force-dynamic";
 
@@ -50,6 +55,7 @@ export default async function SuperadminPage() {
     { data: menusRows },
     { data: ordersRows },
     { data: promoRow },
+    { data: affiliateSettingsRow },
   ] = await Promise.all([
     supabase
       .from("stores")
@@ -72,6 +78,11 @@ export default async function SuperadminPage() {
       .select("value")
       .eq("key", LANDING_PROMO_KEY)
       .maybeSingle(),
+    supabase
+      .from("app_settings")
+      .select("value")
+      .eq("key", AFFILIATE_SETTINGS_KEY)
+      .maybeSingle(),
   ]);
 
   const menuCounts: Record<string, number> = {};
@@ -88,6 +99,10 @@ export default async function SuperadminPage() {
     ? mergeLandingPromo(promoRow.value)
     : DEFAULT_LANDING_PROMO;
 
+  const initialAffiliateSettings = affiliateSettingsRow?.value
+    ? mergeAffiliateSettings(affiliateSettingsRow.value)
+    : DEFAULT_AFFILIATE_SETTINGS;
+
   return (
     <SuperadminClient
       initialStores={(storesData as Store[]) || []}
@@ -96,6 +111,7 @@ export default async function SuperadminPage() {
       menuCounts={menuCounts}
       orderCounts={orderCounts}
       initialPromoConfig={initialPromoConfig}
+      initialAffiliateSettings={initialAffiliateSettings}
       adminEmail={user.email || ""}
     />
   );
