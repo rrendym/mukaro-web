@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import {
   BellRing,
   Volume2,
@@ -626,129 +627,185 @@ export function LiveOrdersClient({
 
       {/* Thermal Receipt 58mm Preview & Print Modal */}
       {printOrder && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-[2px] p-4"
-          onClick={() => setPrintOrder(null)}
-        >
-          <div
-            className="w-full max-w-xs bg-white dark:bg-[#111827] rounded-2xl border border-[#E6E4DF] p-5 space-y-4 shadow-2xl"
-            onClick={(e) => e.stopPropagation()}
+        <ThermalReceiptPortal
+          store={store}
+          printOrder={printOrder}
+          onClose={() => setPrintOrder(null)}
+        />
+      )}
+    </div>
+  );
+}
+
+function ThermalReceiptPortal({
+  store,
+  printOrder,
+  onClose,
+}: {
+  store: Store;
+  printOrder: Order;
+  onClose: () => void;
+}) {
+  useEffect(() => {
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        onClose();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.body.style.overflow = prevOverflow;
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [onClose]);
+
+  if (typeof document === "undefined") return null;
+
+  return createPortal(
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-[2px] p-4"
+      onClick={onClose}
+      role="dialog"
+      aria-modal="true"
+      aria-label="Pratinjau Struk 58mm"
+    >
+      <div
+        className="w-full max-w-sm bg-white dark:bg-[#111827] rounded-2xl border border-slate-200 dark:border-slate-800 max-h-[88vh] flex flex-col overflow-hidden shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="px-5 pt-4 pb-3 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between shrink-0">
+          <h3 className="text-sm font-extrabold tracking-tight text-slate-900 dark:text-slate-100">
+            Pratinjau Struk 58mm
+          </h3>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Tutup pratinjau resi"
+            className="w-7 h-7 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 flex items-center justify-center hover:bg-slate-200 dark:hover:bg-slate-700 transition"
           >
-            <div className="flex items-center justify-between">
-              <h3 className="text-sm font-extrabold tracking-tight text-[#141413]">
-                Pratinjau Struk 58mm
-              </h3>
-              <button
-                type="button"
-                onClick={() => setPrintOrder(null)}
-                className="w-7 h-7 rounded-full bg-[#F7F6F2] flex items-center justify-center hover:bg-[#E6E4DF] transition"
-              >
-                <X className="w-4 h-4" />
-              </button>
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+
+        <div className="flex-1 min-h-0 max-h-[85vh] overflow-y-auto px-5 py-4">
+          <div
+            id="thermal-receipt"
+            className="p-3.5 border border-dashed border-slate-300 rounded-xl font-mono text-[11px] leading-snug text-slate-950 bg-white space-y-2"
+          >
+            <div className="text-center border-b border-dashed border-slate-400 pb-2">
+              <p className="font-bold text-xs uppercase text-slate-950">
+                {store.name}
+              </p>
+              {store.tagline && (
+                <p className="text-[10px] text-slate-700">{store.tagline}</p>
+              )}
             </div>
 
-            <div
-              id="thermal-receipt"
-              className="p-3 border border-dashed border-neutral-300 rounded-xl font-mono text-[11px] leading-snug text-black bg-white dark:bg-[#111827] space-y-2"
-            >
-              <div className="text-center border-b border-dashed border-neutral-400 pb-2">
-                <p className="font-bold text-xs uppercase">{store.name}</p>
-                {store.tagline && <p className="text-[10px]">{store.tagline}</p>}
-              </div>
+            <div className="space-y-0.5 text-[10px] text-slate-900">
+              <p>No: {printOrder.order_number}</p>
+              <p>
+                Tgl: {new Date(printOrder.created_at).toLocaleString("id-ID")}
+              </p>
+              <p>
+                Kasir: {printOrder.cashier_name || store.active_staff_name || "-"}
+              </p>
+              <p>
+                Pemesan: {printOrder.customer_name || "-"}{" "}
+                {printOrder.table_number
+                  ? `(Meja ${printOrder.table_number})`
+                  : ""}
+              </p>
+              <p>Channel: {printOrder.order_source}</p>
+            </div>
 
-              <div className="space-y-0.5 text-[10px]">
-                <p>No: {printOrder.order_number}</p>
-                <p>
-                  Tgl:{" "}
-                  {new Date(printOrder.created_at).toLocaleString("id-ID")}
-                </p>
-                <p>
-                  Kasir: {printOrder.cashier_name || store.active_staff_name || "-"}
-                </p>
-                <p>
-                  Pemesan: {printOrder.customer_name || "-"}{" "}
-                  {printOrder.table_number
-                    ? `(Meja ${printOrder.table_number})`
-                    : ""}
-                </p>
-                <p>Channel: {printOrder.order_source}</p>
-              </div>
-
-              <div className="border-t border-b border-dashed border-neutral-400 py-2 space-y-1.5">
-                {(printOrder.order_items || []).map((item) => (
-                  <div key={item.id}>
-                    <div className="flex justify-between">
-                      <span>
-                        {item.qty}x {item.menu_name}
-                      </span>
-                      <span>{formatRupiah(Number(item.subtotal))}</span>
-                    </div>
-                    {item.selected_variants &&
-                      item.selected_variants.length > 0 && (
-                        <p className="text-[9px] text-neutral-600 pl-2">
-                          +{" "}
-                          {item.selected_variants
-                            .map((v) => v.optionName)
-                            .join(", ")}
-                        </p>
-                      )}
+            <div className="border-t border-b border-dashed border-slate-400 py-2 space-y-1.5 text-slate-950">
+              {(printOrder.order_items || []).map((item) => (
+                <div key={item.id}>
+                  <div className="flex justify-between gap-2">
+                    <span>
+                      {item.qty}x {item.menu_name}
+                    </span>
+                    <span className="shrink-0">
+                      {formatRupiah(Number(item.subtotal))}
+                    </span>
                   </div>
-                ))}
-              </div>
+                  {item.selected_variants &&
+                    item.selected_variants.length > 0 && (
+                      <p className="text-[9px] text-slate-600 pl-2">
+                        +{" "}
+                        {item.selected_variants
+                          .map((v) => v.optionName)
+                          .join(", ")}
+                      </p>
+                    )}
+                </div>
+              ))}
+            </div>
 
-              <div className="space-y-0.5 text-[10px]">
+            <div className="space-y-0.5 text-[10px] text-slate-900">
+              <div className="flex justify-between">
+                <span>Subtotal</span>
+                <span>{formatRupiah(Number(printOrder.subtotal))}</span>
+              </div>
+              {Number(printOrder.discount_amount) > 0 && (
                 <div className="flex justify-between">
-                  <span>Subtotal</span>
-                  <span>{formatRupiah(Number(printOrder.subtotal))}</span>
+                  <span>Diskon</span>
+                  <span>
+                    -{formatRupiah(Number(printOrder.discount_amount))}
+                  </span>
                 </div>
-                {Number(printOrder.discount_amount) > 0 && (
-                  <div className="flex justify-between">
-                    <span>Diskon</span>
-                    <span>
-                      -{formatRupiah(Number(printOrder.discount_amount))}
-                    </span>
-                  </div>
-                )}
-                {Number(printOrder.tax_amount) > 0 && (
-                  <div className="flex justify-between">
-                    <span>Pajak</span>
-                    <span>{formatRupiah(Number(printOrder.tax_amount))}</span>
-                  </div>
-                )}
-                {Number(printOrder.service_amount) > 0 && (
-                  <div className="flex justify-between">
-                    <span>Service</span>
-                    <span>
-                      {formatRupiah(Number(printOrder.service_amount))}
-                    </span>
-                  </div>
-                )}
-                <div className="flex justify-between font-bold text-xs pt-1 border-t border-dashed border-neutral-400">
-                  <span>TOTAL</span>
-                  <span>{formatRupiah(Number(printOrder.total_amount))}</span>
+              )}
+              {Number(printOrder.tax_amount) > 0 && (
+                <div className="flex justify-between">
+                  <span>Pajak</span>
+                  <span>{formatRupiah(Number(printOrder.tax_amount))}</span>
                 </div>
-                <p className="pt-1">
-                  Bayar: {(printOrder.payment_method || "-").toUpperCase()} (
-                  {printOrder.payment_status.toUpperCase()})
-                </p>
+              )}
+              {Number(printOrder.service_amount) > 0 && (
+                <div className="flex justify-between">
+                  <span>Service</span>
+                  <span>{formatRupiah(Number(printOrder.service_amount))}</span>
+                </div>
+              )}
+              <div className="flex justify-between font-bold text-xs text-slate-950 pt-1 border-t border-dashed border-slate-400">
+                <span>TOTAL</span>
+                <span>{formatRupiah(Number(printOrder.total_amount))}</span>
               </div>
-
-              <p className="text-center text-[10px] pt-2 border-t border-dashed border-neutral-400">
-                Terima kasih • Powered by Mukaro
+              <p className="pt-1 text-slate-900">
+                Bayar: {(printOrder.payment_method || "-").toUpperCase()} (
+                {printOrder.payment_status.toUpperCase()})
               </p>
             </div>
 
-            <button
-              type="button"
-              onClick={() => window.print()}
-              className="w-full py-2.5 rounded-xl bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-xs font-semibold flex items-center justify-center gap-2 transition"
-            >
-              <Printer className="w-4 h-4" />
-              <span>Cetak Sekarang</span>
-            </button>
+            <p className="text-center text-[10px] text-slate-700 pt-2 border-t border-dashed border-slate-400">
+              Terima kasih • Powered by Mukaro
+            </p>
           </div>
         </div>
-      )}
-    </div>
+
+        <div className="px-5 pb-4 pt-3 border-t border-slate-200 dark:border-slate-800 flex items-center gap-2 shrink-0">
+          <button
+            type="button"
+            onClick={onClose}
+            className="px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 transition"
+          >
+            Tutup
+          </button>
+          <button
+            type="button"
+            onClick={() => window.print()}
+            className="flex-1 py-2.5 rounded-xl bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-xs font-semibold flex items-center justify-center gap-2 transition"
+          >
+            <Printer className="w-4 h-4" />
+            <span>Cetak Sekarang</span>
+          </button>
+        </div>
+      </div>
+    </div>,
+    document.body
   );
 }
