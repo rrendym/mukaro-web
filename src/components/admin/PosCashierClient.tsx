@@ -6,13 +6,16 @@ import {
   Search,
   Plus,
   Minus,
-  Trash2,
   Banknote,
   QrCode,
   ShoppingBag,
   CheckCircle2,
   Loader2,
   Split,
+  X,
+  Printer,
+  UserCheck,
+  UtensilsCrossed,
 } from "lucide-react";
 import {
   CartItem,
@@ -58,6 +61,46 @@ export function PosCashierClient({
   const [splitModalOpen, setSplitModalOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [successOrder, setSuccessOrder] = useState<string | null>(null);
+  const [activeCashier, setActiveCashier] = useState<string>(
+    store.active_staff_name || (store.staff_list?.[0] ?? "")
+  );
+  const [lastReceipt, setLastReceipt] = useState<{
+    orderNumber: string;
+    createdAt: string;
+    customerName: string;
+    tableNumber: string | null;
+    orderSource: string;
+    paymentMethod: string;
+    cashierName: string;
+    items: Array<{
+      name: string;
+      qty: number;
+      subtotal: number;
+      variants: string;
+    }>;
+    subtotal: number;
+    taxAmount: number;
+    serviceAmount: number;
+    grandTotal: number;
+  } | null>(null);
+  const [showReceiptModal, setShowReceiptModal] = useState(false);
+
+  const staffOptions = useMemo(() => {
+    const base = Array.isArray(store.staff_list) ? store.staff_list : [];
+    if (activeCashier && !base.includes(activeCashier)) {
+      return [activeCashier, ...base];
+    }
+    return base;
+  }, [store.staff_list, activeCashier]);
+
+  const handleSwitchCashier = async (nextName: string) => {
+    setActiveCashier(nextName);
+    const supabase = createClient();
+    await supabase
+      .from("stores")
+      .update({ active_staff_name: nextName || null })
+      .eq("id", store.id);
+  };
 
   const isOjol = orderSource !== "walk_in";
   const accentColor = store.accent_color || "#C8102E";
@@ -153,28 +196,46 @@ export function PosCashierClient({
     const paymentMethod = isOjol ? "ojol_platform" : walkInPayment;
 
     try {
-      const { data: orderData, error: orderErr } = await supabase
+      const orderPayload = {
+        store_id: store.id,
+        order_number: orderNumber,
+        customer_name:
+          customerName.trim() ||
+          (isOjol ? orderSource.toUpperCase() : "Walk-in"),
+        table_number: tableNumber.trim() || null,
+        order_type: isOjol ? "ojol" : "dine_in",
+        order_source: orderSource,
+        payment_method: paymentMethod,
+        payment_status: "paid",
+        order_status: "queued",
+        subtotal,
+        tax_amount: taxAmount,
+        service_amount: serviceAmount,
+        discount_amount: 0,
+        total_amount: grandTotal,
+      };
+
+      let { data: orderData, error: orderErr } = await supabase
         .from("orders")
         .insert({
-          store_id: store.id,
-          order_number: orderNumber,
-          customer_name:
-            customerName.trim() ||
-            (isOjol ? orderSource.toUpperCase() : "Walk-in"),
-          table_number: tableNumber.trim() || null,
-          order_type: isOjol ? "ojol" : "dine_in",
-          order_source: orderSource,
-          payment_method: paymentMethod,
-          payment_status: "paid",
-          order_status: "queued",
-          subtotal,
-          tax_amount: taxAmount,
-          service_amount: serviceAmount,
-          discount_amount: 0,
-          total_amount: grandTotal,
+          ...orderPayload,
+          cashier_name: activeCashier.trim() || null,
         })
         .select("*")
         .single();
+
+      if (
+        orderErr &&
+        orderErr.message.toLowerCase().includes("cashier_name")
+      ) {
+        const retry = await supabase
+          .from("orders")
+          .insert(orderPayload)
+          .select("*")
+          .single();
+        orderData = retry.data;
+        orderErr = retry.error;
+      }
 
       if (orderErr || !orderData) throw orderErr;
 
@@ -191,6 +252,26 @@ export function PosCashierClient({
 
       await supabase.from("order_items").insert(itemsPayload);
       await deductOrderStock(supabase, orderData.id);
+
+      setLastReceipt({
+        orderNumber: orderData.order_number,
+        createdAt: orderData.created_at || new Date().toISOString(),
+        customerName: orderPayload.customer_name,
+        tableNumber: orderPayload.table_number,
+        orderSource: orderSource.toUpperCase(),
+        paymentMethod: paymentMethod.toUpperCase(),
+        cashierName: activeCashier.trim() || "-",
+        items: computedCart.map((item) => ({
+          name: item.menu.name,
+          qty: item.qty,
+          subtotal: item.unitPrice * item.qty,
+          variants: item.selectedVariants.map((v) => v.optionName).join(", "),
+        })),
+        subtotal,
+        taxAmount,
+        serviceAmount,
+        grandTotal,
+      });
 
       setCart([]);
       setCustomerName("");
@@ -245,6 +326,39 @@ export function PosCashierClient({
           </p>
         </div>
 
+        {/* Quick Switch Kasir On-Duty */}
+        <div className="flex items-center gap-2 bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 w-fit">
+          <UserCheck className="w-4 h-4 text-[#2563EB] shrink-0" />
+          <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 shrink-0">
+            Kasir On-Duty:
+          </span>
+          {staffOptions.length > 0 ? (
+            <select
+              value={activeCashier}
+              onChange={(e) => handleSwitchCashier(e.target.value)}
+              className="text-xs font-bold text-slate-900 dark:text-slate-100 bg-transparent focus:outline-none cursor-pointer"
+            >
+              <option value="" className="dark:bg-[#111827]">
+                Pilih Kasir
+              </option>
+              {staffOptions.map((st) => (
+                <option key={st} value={st} className="dark:bg-[#111827]">
+                  {st}
+                </option>
+              ))}
+            </select>
+          ) : (
+            <input
+              type="text"
+              value={activeCashier}
+              onChange={(e) => setActiveCashier(e.target.value)}
+              onBlur={(e) => handleSwitchCashier(e.target.value)}
+              placeholder="Nama kasir..."
+              className="w-28 text-xs font-bold text-slate-900 dark:text-slate-100 bg-transparent focus:outline-none"
+            />
+          )}
+        </div>
+
         {/* Mobile pane switcher */}
         <div className="lg:hidden grid grid-cols-2 gap-1 p-1 bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 rounded-2xl">
           <button
@@ -274,9 +388,23 @@ export function PosCashierClient({
 
       {/* Success Banner */}
       {successOrder && (
-        <div className="p-3.5 rounded-2xl bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 text-xs text-emerald-700 font-semibold flex items-center gap-2">
-          <CheckCircle2 className="w-4 h-4" />
-          <span>Order {successOrder} berhasil dicatat &amp; masuk antrean dapur!</span>
+        <div className="p-3.5 rounded-2xl bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-900/60 text-xs text-emerald-700 dark:text-emerald-300 font-semibold flex flex-wrap items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <CheckCircle2 className="w-4 h-4 shrink-0" />
+            <span>
+              Order {successOrder} berhasil dicatat &amp; masuk antrean dapur!
+            </span>
+          </div>
+          {lastReceipt && (
+            <button
+              type="button"
+              onClick={() => setShowReceiptModal(true)}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#059669] hover:bg-emerald-700 text-white text-[11px] font-bold transition"
+            >
+              <Printer className="w-3.5 h-3.5" />
+              <span>Cetak Struk 58mm</span>
+            </button>
+          )}
         </div>
       )}
 
@@ -357,9 +485,11 @@ export function PosCashierClient({
                             prev.filter((c) => c.cartKey !== item.cartKey)
                           )
                         }
-                        className="p-1 text-slate-400 hover:text-rose-600 transition"
+                        aria-label={`Batalkan ${item.menu.name}`}
+                        title="Batalkan item"
+                        className="w-6 h-6 rounded-full bg-rose-50 dark:bg-rose-950/40 text-rose-600 hover:bg-rose-600 hover:text-white flex items-center justify-center transition ml-0.5"
                       >
-                        <Trash2 className="w-3.5 h-3.5" />
+                        <X className="w-3.5 h-3.5" />
                       </button>
                     </div>
                   </div>
@@ -568,18 +698,71 @@ export function PosCashierClient({
             {filteredMenus.map((menu) => {
               const displayPrice = getEffectiveBasePrice(menu);
               const disabled = !menu.is_available;
+              const qtyInCart = cart
+                .filter((c) => c.menu.id === menu.id)
+                .reduce((s, c) => s + c.qty, 0);
+
               return (
-                <button
+                <div
                   key={menu.id}
-                  type="button"
-                  disabled={disabled}
-                  onClick={() => handleMenuClick(menu)}
-                  className={`bg-white dark:bg-[#111827] rounded-2xl p-3.5 border border-slate-200 dark:border-slate-800 text-left flex flex-col justify-between gap-2 transition ${
+                  role="button"
+                  tabIndex={disabled ? -1 : 0}
+                  onClick={() => {
+                    if (!disabled) handleMenuClick(menu);
+                  }}
+                  onKeyDown={(e) => {
+                    if (!disabled && (e.key === "Enter" || e.key === " ")) {
+                      e.preventDefault();
+                      handleMenuClick(menu);
+                    }
+                  }}
+                  className={`relative bg-white dark:bg-[#111827] rounded-2xl p-3 border text-left flex flex-col justify-between gap-2.5 transition select-none ${
+                    qtyInCart > 0
+                      ? "border-[#2563EB] ring-1 ring-[#2563EB]/20"
+                      : "border-slate-200 dark:border-slate-800"
+                  } ${
                     disabled
                       ? "opacity-50 cursor-not-allowed"
-                      : "hover:border-[#2563EB] active:scale-[0.98]"
+                      : "hover:border-[#2563EB] cursor-pointer active:scale-[0.98]"
                   }`}
                 >
+                  {/* Cancel X button when item is in cart */}
+                  {qtyInCart > 0 && (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setCart((prev) =>
+                          prev.filter((c) => c.menu.id !== menu.id)
+                        );
+                      }}
+                      aria-label={`Batalkan ${menu.name} dari pesanan`}
+                      title="Batalkan pilihan"
+                      className="absolute top-2 right-2 z-10 w-6 h-6 rounded-full bg-rose-600 hover:bg-rose-700 text-white shadow flex items-center justify-center transition"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+
+                  {qtyInCart > 0 && (
+                    <span className="absolute top-2 left-2 z-10 px-2 py-0.5 rounded-full bg-[#2563EB] text-white text-[10px] font-mono font-bold shadow">
+                      {qtyInCart}x
+                    </span>
+                  )}
+
+                  {/* Uniform Aspect Ratio Image */}
+                  <div className="aspect-[4/3] w-full rounded-xl overflow-hidden bg-slate-100 dark:bg-[#090D16] flex items-center justify-center">
+                    {menu.image_url ? (
+                      <img
+                        src={menu.image_url}
+                        alt={menu.name}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <UtensilsCrossed className="w-6 h-6 text-slate-300 dark:text-slate-600" />
+                    )}
+                  </div>
+
                   <div>
                     <p className="text-xs font-bold text-slate-900 dark:text-slate-100 line-clamp-2">
                       {menu.name}
@@ -590,15 +773,15 @@ export function PosCashierClient({
                       </span>
                     )}
                   </div>
-                  <div className="flex items-center justify-between pt-1">
+                  <div className="flex items-center justify-between pt-0.5">
                     <span className="text-xs font-bold font-mono tabular-nums text-slate-900 dark:text-slate-100">
                       {formatRupiah(displayPrice)}
                     </span>
-                    <span className="w-7 h-7 rounded-full bg-[#2563EB] hover:bg-[#1D4ED8] text-white flex items-center justify-center transition">
+                    <span className="w-7 h-7 rounded-full bg-[#2563EB] hover:bg-[#1D4ED8] text-white flex items-center justify-center transition shrink-0">
                       <Plus className="w-3.5 h-3.5" />
                     </span>
                   </div>
-                </button>
+                </div>
               );
             })}
           </div>
@@ -633,6 +816,107 @@ export function PosCashierClient({
           onItemSplitPaid={handleItemSplitPaid}
           onAllSplitCompleted={handleAllSplitCompleted}
         />
+      )}
+
+      {/* 58mm Thermal Receipt Modal */}
+      {showReceiptModal && lastReceipt && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-[2px] p-4"
+          onClick={() => setShowReceiptModal(false)}
+        >
+          <div
+            className="w-full max-w-sm bg-white dark:bg-[#111827] rounded-2xl border border-slate-200 dark:border-slate-800 p-5 space-y-4 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-extrabold text-slate-900 dark:text-slate-100">
+                Pratinjau Struk 58mm
+              </h3>
+              <button
+                type="button"
+                onClick={() => setShowReceiptModal(false)}
+                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div
+              id="thermal-receipt"
+              className="p-3.5 border border-dashed border-neutral-300 rounded-xl font-mono text-[11px] leading-snug text-black bg-white space-y-2"
+            >
+              <div className="text-center border-b border-dashed border-neutral-400 pb-2">
+                <p className="font-bold text-xs uppercase">{store.name}</p>
+                {store.tagline && <p className="text-[10px]">{store.tagline}</p>}
+              </div>
+              <div className="space-y-0.5 text-[10px]">
+                <p>No: {lastReceipt.orderNumber}</p>
+                <p>
+                  Tgl: {new Date(lastReceipt.createdAt).toLocaleString("id-ID")}
+                </p>
+                <p>Kasir: {lastReceipt.cashierName}</p>
+                <p>
+                  Pemesan: {lastReceipt.customerName}
+                  {lastReceipt.tableNumber
+                    ? ` (Meja ${lastReceipt.tableNumber})`
+                    : ""}
+                </p>
+                <p>Channel: {lastReceipt.orderSource}</p>
+              </div>
+              <div className="border-t border-b border-dashed border-neutral-400 py-2 space-y-1.5">
+                {lastReceipt.items.map((item, idx) => (
+                  <div key={idx}>
+                    <div className="flex justify-between">
+                      <span>
+                        {item.qty}x {item.name}
+                      </span>
+                      <span>{formatRupiah(item.subtotal)}</span>
+                    </div>
+                    {item.variants && (
+                      <p className="text-[9px] text-neutral-600 pl-2">
+                        + {item.variants}
+                      </p>
+                    )}
+                  </div>
+                ))}
+              </div>
+              <div className="space-y-0.5 text-[10px]">
+                <div className="flex justify-between">
+                  <span>Subtotal</span>
+                  <span>{formatRupiah(lastReceipt.subtotal)}</span>
+                </div>
+                {lastReceipt.taxAmount > 0 && (
+                  <div className="flex justify-between">
+                    <span>Pajak</span>
+                    <span>{formatRupiah(lastReceipt.taxAmount)}</span>
+                  </div>
+                )}
+                {lastReceipt.serviceAmount > 0 && (
+                  <div className="flex justify-between">
+                    <span>Service</span>
+                    <span>{formatRupiah(lastReceipt.serviceAmount)}</span>
+                  </div>
+                )}
+                <div className="flex justify-between font-bold text-xs pt-1 border-t border-dashed border-neutral-400">
+                  <span>TOTAL ({lastReceipt.paymentMethod})</span>
+                  <span>{formatRupiah(lastReceipt.grandTotal)}</span>
+                </div>
+              </div>
+              <p className="text-center text-[10px] pt-1">
+                Terima kasih telah berkunjung!
+              </p>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => window.print()}
+              className="w-full py-2.5 rounded-xl bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-xs font-bold inline-flex items-center justify-center gap-2 transition"
+            >
+              <Printer className="w-4 h-4" />
+              <span>Print Struk</span>
+            </button>
+          </div>
+        </div>
       )}
     </div>
   );

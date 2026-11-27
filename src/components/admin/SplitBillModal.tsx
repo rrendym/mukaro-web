@@ -442,6 +442,7 @@ export function SplitBillModal({
                       Tgl:{" "}
                       {new Date(receipt.createdAt).toLocaleString("id-ID")}
                     </p>
+                    <p>Kasir: {store.active_staff_name || "-"}</p>
                     <p>
                       Bagian: {receipt.label}
                       {receipt.tableNumber

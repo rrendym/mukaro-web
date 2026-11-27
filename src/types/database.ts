@@ -54,6 +54,9 @@ export interface Store {
   daily_sales_target: number;
   cash_drawer_initial: number;
   staff_pin: string;
+  stock_pin?: string | null;
+  staff_list?: string[] | null;
+  active_staff_name?: string | null;
   midtrans_server_key: string | null;
   midtrans_client_key: string | null;
   static_qris_url: string | null;
@@ -133,6 +136,7 @@ export interface StockOpnameLog {
   actual_qty: number;
   difference: number;
   notes: string | null;
+  updated_by_staff?: string | null;
   created_at: string;
 }
 
@@ -144,6 +148,9 @@ export interface Voucher {
   discount_value: number;
   min_order: number;
   is_active: boolean;
+  show_in_customer_bar?: boolean;
+  valid_from?: string | null;
+  valid_until?: string | null;
 }
 
 export interface Order {
@@ -164,6 +171,7 @@ export interface Order {
   total_amount: number;
   notes: string | null;
   void_reason: string | null;
+  cashier_name?: string | null;
   created_at: string;
   order_items?: OrderItem[];
 }

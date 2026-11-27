@@ -7,7 +7,7 @@ import {
   DEMO_MENUS,
   DEMO_STORE,
 } from "@/lib/demo-data";
-import { Category, Menu, Store } from "@/types/database";
+import { Category, Menu, Store, Voucher } from "@/types/database";
 import { CustomerMenuClient } from "@/components/customer/CustomerMenuClient";
 import { MukaroLogo } from "@/components/MukaroLogo";
 import { checkStoreSubscription } from "@/lib/subscription";
@@ -29,6 +29,7 @@ export default async function StoreMenuPage({
   let store: Store | null = null;
   let categories: Category[] = [];
   let menus: Menu[] = [];
+  let vouchers: Voucher[] = [];
 
   if (isSupabaseConfigured()) {
     const supabase = await createClient();
@@ -41,21 +42,28 @@ export default async function StoreMenuPage({
     if (storeData) {
       store = storeData as Store;
 
-      const [{ data: catData }, { data: menuData }] = await Promise.all([
-        supabase
-          .from("categories")
-          .select("*")
-          .eq("store_id", store.id)
-          .order("sort_order", { ascending: true }),
-        supabase
-          .from("menus")
-          .select("*")
-          .eq("store_id", store.id)
-          .order("created_at", { ascending: true }),
-      ]);
+      const [{ data: catData }, { data: menuData }, { data: voucherData }] =
+        await Promise.all([
+          supabase
+            .from("categories")
+            .select("*")
+            .eq("store_id", store.id)
+            .order("sort_order", { ascending: true }),
+          supabase
+            .from("menus")
+            .select("*")
+            .eq("store_id", store.id)
+            .order("created_at", { ascending: true }),
+          supabase
+            .from("vouchers")
+            .select("*")
+            .eq("store_id", store.id)
+            .eq("is_active", true),
+        ]);
 
       categories = (catData as Category[]) || [];
       menus = (menuData as Menu[]) || [];
+      vouchers = (voucherData as Voucher[]) || [];
     }
   } else if (slug === "kopi-senja") {
     store = DEMO_STORE;
@@ -99,6 +107,7 @@ export default async function StoreMenuPage({
       store={store}
       categories={categories}
       menus={menus}
+      vouchers={vouchers}
       mejaParam={meja}
     />
   );

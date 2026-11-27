@@ -663,6 +663,9 @@ export function LiveOrdersClient({
                   {new Date(printOrder.created_at).toLocaleString("id-ID")}
                 </p>
                 <p>
+                  Kasir: {printOrder.cashier_name || store.active_staff_name || "-"}
+                </p>
+                <p>
                   Pemesan: {printOrder.customer_name || "-"}{" "}
                   {printOrder.table_number
                     ? `(Meja ${printOrder.table_number})`

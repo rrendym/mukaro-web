@@ -15,6 +15,9 @@ import {
   Loader2,
   Info,
   Store as StoreIcon,
+  Wallet,
+  TicketPercent,
+  ReceiptText,
 } from "lucide-react";
 import { Category, Menu, Order, PlanTier, Store } from "@/types/database";
 import { createClient } from "@/lib/supabase/client";
@@ -181,6 +184,7 @@ export function ReportsClient({
       tanggal: string;
       jam: string;
       noOrder: string;
+      kasir: string;
       channel: string;
       daftarItem: string;
       metodeBayar: string;
@@ -189,7 +193,13 @@ export function ReportsClient({
       omzetBersih: number;
       estimasiHpp: number;
       estimasiProfit: number;
+      catatan: string;
     }[] = [];
+
+    const voucherUsageMap = new Map<
+      string,
+      { label: string; count: number; totalDiscount: number }
+    >();
 
     for (const o of orders) {
       const subtotalKotor = Math.round(Number(o.subtotal || 0));
@@ -255,6 +265,18 @@ export function ReportsClient({
         paymentMethods[pm].omzet += omzetBersih;
       }
 
+      if (diskon > 0) {
+        const voucherLabel = o.notes?.trim() || "Diskon Manual / Promo";
+        const vEntry = voucherUsageMap.get(voucherLabel) || {
+          label: voucherLabel,
+          count: 0,
+          totalDiscount: 0,
+        };
+        vEntry.count += 1;
+        vEntry.totalDiscount += diskon;
+        voucherUsageMap.set(voucherLabel, vEntry);
+      }
+
       const dt = new Date(o.created_at);
       txRows.push({
         tanggal: toYmd(dt),
@@ -263,6 +285,7 @@ export function ReportsClient({
           minute: "2-digit",
         }),
         noOrder: o.order_number,
+        kasir: o.cashier_name || activeStore.active_staff_name || "-",
         channel: formatChannelLabel(o.order_source),
         daftarItem: itemSummaryParts.join(", ") || "-",
         metodeBayar: (o.payment_method || "-").toUpperCase(),
@@ -271,6 +294,7 @@ export function ReportsClient({
         omzetBersih,
         estimasiHpp: orderHpp,
         estimasiProfit: orderProfit,
+        catatan: o.notes || "-",
       });
     }
 
@@ -289,6 +313,16 @@ export function ReportsClient({
         profit: Math.round(m.omzet - m.hpp),
       }));
 
+    const voucherUsage = Array.from(voucherUsageMap.values()).sort(
+      (a, b) => b.totalDiscount - a.totalDiscount
+    );
+
+    const cashInitial = Math.round(Number(activeStore.cash_drawer_initial || 0));
+    const cashSales = paymentMethods.cash.omzet;
+    const estimatedClosingCash = cashInitial + cashSales;
+    const nonCashSales =
+      paymentMethods.qris.omzet + paymentMethods.ojol_platform.omzet;
+
     return {
       totalOrders,
       totalGross,
@@ -302,56 +336,78 @@ export function ReportsClient({
       txRows,
       menuPerformance,
       top5Menus: menuPerformance.slice(0, 5),
+      voucherUsage,
+      cashInitial,
+      cashSales,
+      estimatedClosingCash,
+      nonCashSales,
     };
-  }, [orders, menus, categories]);
+  }, [orders, menus, categories, activeStore]);
+
+  const buildAutoFitCols = (aoa: (string | number)[][]) => {
+    const colWidths: number[] = [];
+    for (const row of aoa) {
+      row.forEach((cell, idx) => {
+        const len = String(cell ?? "").length;
+        colWidths[idx] = Math.max(colWidths[idx] || 10, len + 3);
+      });
+    }
+    return colWidths.map((w) => ({ wch: Math.min(52, Math.max(12, w)) }));
+  };
+
+  const formatNumericCells = (
+    ws: XLSX.WorkSheet,
+    aoa: (string | number)[][],
+    numericCols: number[]
+  ) => {
+    for (let r = 1; r < aoa.length; r++) {
+      for (const c of numericCols) {
+        const addr = XLSX.utils.encode_cell({ r, c });
+        const cell = ws[addr];
+        if (cell && typeof cell.v === "number") {
+          cell.z = "#,##0";
+        }
+      }
+    }
+  };
 
   const handleDownloadXlsx = () => {
     const wb = XLSX.utils.book_new();
 
-    // Tab 1: Ringkasan_Eksekutif
+    // Sheet 1: Ringkasan & Kas Closing
     const summaryAoa: (string | number)[][] = [
-      ["LAPORAN PERKEMBANGAN PENJUALAN MUKARO"],
+      ["LAPORAN OPERASIONAL & PENJUALAN MUKARO"],
       ["Nama Usaha / Cabang", activeStore.name],
       ["Slug Outlet", `/${activeStore.slug}`],
       ["Periode Tanggal", `${startDate} s/d ${endDate}`],
+      ["Kasir On-Duty", activeStore.active_staff_name || "-"],
       [],
-      ["RINGKASAN EKSEKUTIF", "NILAI"],
+      ["RINGKASAN PENJUALAN", "NILAI"],
       ["Total Transaksi Sukses", report.totalOrders],
       ["Total Omzet Kotor (Rp)", report.totalGross],
-      ["Total Diskon (Rp)", report.totalDiscount],
+      ["Total Diskon / Voucher (Rp)", report.totalDiscount],
       ["Total Omzet Bersih (Rp)", report.totalNet],
       ["Total Estimasi HPP (Rp)", report.totalHpp],
       ["Estimasi Laba Kotor (Rp)", report.totalProfit],
-      ["Rata-rata Nilai Order (Rp)", report.aov],
+      ["Rata-rata Nilai Order / AOV (Rp)", report.aov],
       [],
-      ["BREAKDOWN PER CHANNEL", "JUMLAH ORDER", "TOTAL OMZET (Rp)"],
-      [
-        "QR Meja",
-        report.channels.qr_menu.count,
-        report.channels.qr_menu.omzet,
-      ],
-      ["Kasir", report.channels.walk_in.count, report.channels.walk_in.omzet],
-      ["GoFood", report.channels.gofood.count, report.channels.gofood.omzet],
-      [
-        "GrabFood",
-        report.channels.grabfood.count,
-        report.channels.grabfood.omzet,
-      ],
-      [
-        "ShopeeFood",
-        report.channels.shopeefood.count,
-        report.channels.shopeefood.omzet,
-      ],
+      ["RINGKASAN KAS CLOSING", "NILAI (Rp)"],
+      ["Modal Awal Deposit Kasir", report.cashInitial],
+      ["Pemasukan Tunai (Cash)", report.cashSales],
+      ["Estimasi Sisa Kas Closing", report.estimatedClosingCash],
+      ["Total Non-Tunai (QRIS + Ojol)", report.nonCashSales],
     ];
     const ws1 = XLSX.utils.aoa_to_sheet(summaryAoa);
-    ws1["!cols"] = [{ wch: 30 }, { wch: 24 }, { wch: 22 }];
-    XLSX.utils.book_append_sheet(wb, ws1, "Ringkasan_Eksekutif");
+    ws1["!cols"] = buildAutoFitCols(summaryAoa);
+    formatNumericCells(ws1, summaryAoa, [1]);
+    XLSX.utils.book_append_sheet(wb, ws1, "Ringkasan & Kas Closing");
 
-    // Tab 2: Rincian_Transaksi
+    // Sheet 2: Rincian Transaksi
     const txHeader = [
       "Tanggal",
       "Jam",
       "No_Order",
+      "Kasir",
       "Channel",
       "Daftar_Item",
       "Metode_Bayar",
@@ -360,11 +416,13 @@ export function ReportsClient({
       "Omzet_Bersih",
       "Estimasi_HPP",
       "Estimasi_Profit",
+      "Catatan",
     ];
     const txData = report.txRows.map((r) => [
       r.tanggal,
       r.jam,
       r.noOrder,
+      r.kasir,
       r.channel,
       r.daftarItem,
       r.metodeBayar,
@@ -373,9 +431,11 @@ export function ReportsClient({
       r.omzetBersih,
       r.estimasiHpp,
       r.estimasiProfit,
+      r.catatan,
     ]);
     const txTotalRow = [
       "TOTAL",
+      "",
       "",
       "",
       "",
@@ -386,30 +446,21 @@ export function ReportsClient({
       report.totalNet,
       report.totalHpp,
       report.totalProfit,
+      "",
     ];
-    const ws2 = XLSX.utils.aoa_to_sheet([txHeader, ...txData, txTotalRow]);
-    ws2["!cols"] = [
-      { wch: 13 },
-      { wch: 8 },
-      { wch: 16 },
-      { wch: 13 },
-      { wch: 42 },
-      { wch: 15 },
-      { wch: 16 },
-      { wch: 12 },
-      { wch: 16 },
-      { wch: 15 },
-      { wch: 16 },
-    ];
-    XLSX.utils.book_append_sheet(wb, ws2, "Rincian_Transaksi");
+    const txAoa = [txHeader, ...txData, txTotalRow];
+    const ws2 = XLSX.utils.aoa_to_sheet(txAoa);
+    ws2["!cols"] = buildAutoFitCols(txAoa);
+    formatNumericCells(ws2, txAoa, [7, 8, 9, 10, 11]);
+    XLSX.utils.book_append_sheet(wb, ws2, "Rincian Transaksi");
 
-    // Tab 3: Performa_Menu
+    // Sheet 3: Menu Terjual
     const menuHeader = [
       "Peringkat",
       "Nama_Menu",
       "Kategori",
-      "Terjual_Qty",
-      "Total_Omzet",
+      "Qty_Terjual",
+      "Total_Penjualan",
       "Estimasi_Profit",
     ];
     const menuData = report.menuPerformance.map((m) => [
@@ -420,16 +471,37 @@ export function ReportsClient({
       m.omzet,
       m.profit,
     ]);
-    const ws3 = XLSX.utils.aoa_to_sheet([menuHeader, ...menuData]);
-    ws3["!cols"] = [
-      { wch: 11 },
-      { wch: 30 },
-      { wch: 18 },
-      { wch: 14 },
-      { wch: 18 },
-      { wch: 18 },
+    const menuAoa = [menuHeader, ...menuData];
+    const ws3 = XLSX.utils.aoa_to_sheet(menuAoa);
+    ws3["!cols"] = buildAutoFitCols(menuAoa);
+    formatNumericCells(ws3, menuAoa, [3, 4, 5]);
+    XLSX.utils.book_append_sheet(wb, ws3, "Menu Terjual");
+
+    // Sheet 4: Metode Bayar & Voucher
+    const payVoucherAoa: (string | number)[][] = [
+      ["METODE PEMBAYARAN", "JUMLAH TRANSAKSI", "TOTAL NOMINAL (Rp)"],
+      ...Object.values(report.paymentMethods).map((pm) => [
+        pm.label,
+        pm.count,
+        pm.omzet,
+      ]),
+      [],
+      ["CHANNEL PENJUALAN", "JUMLAH ORDER", "TOTAL OMZET (Rp)"],
+      ...Object.values(report.channels).map((ch) => [
+        ch.label,
+        ch.count,
+        ch.omzet,
+      ]),
+      [],
+      ["PENGGUNAAN VOUCHER / DISKON", "JUMLAH PAKAI", "TOTAL DISKON (Rp)"],
+      ...(report.voucherUsage.length > 0
+        ? report.voucherUsage.map((v) => [v.label, v.count, v.totalDiscount])
+        : [["Tidak ada pemakaian voucher/diskon", 0, 0]]),
     ];
-    XLSX.utils.book_append_sheet(wb, ws3, "Performa_Menu");
+    const ws4 = XLSX.utils.aoa_to_sheet(payVoucherAoa);
+    ws4["!cols"] = buildAutoFitCols(payVoucherAoa);
+    formatNumericCells(ws4, payVoucherAoa, [1, 2]);
+    XLSX.utils.book_append_sheet(wb, ws4, "Metode Bayar & Voucher");
 
     const safeName = activeStore.name
       .replace(/[^a-zA-Z0-9-_]+/g, "-")
@@ -783,21 +855,21 @@ export function ReportsClient({
                 </div>
                 <div>
                   <h2 className="text-sm font-bold tracking-tight text-slate-900 dark:text-slate-100">
-                    Top 5 Menu Terlaris
+                    Rincian Menu Terjual ({report.menuPerformance.length})
                   </h2>
                   <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                    Berdasarkan kuantitas terjual pada rentang {startDate} s/d{" "}
+                    Seluruh item menu terjual pada rentang {startDate} s/d{" "}
                     {endDate}.
                   </p>
                 </div>
               </div>
 
-              {report.top5Menus.length === 0 ? (
+              {report.menuPerformance.length === 0 ? (
                 <p className="text-xs text-slate-500 dark:text-slate-400 py-4">
                   Belum ada penjualan menu pada rentang tanggal ini.
                 </p>
               ) : (
-                <div className="overflow-x-auto">
+                <div className="overflow-x-auto max-h-80 overflow-y-auto">
                   <table className="w-full text-left text-xs">
                     <thead>
                       <tr className="border-b border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400">
@@ -816,7 +888,7 @@ export function ReportsClient({
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                      {report.top5Menus.map((m) => (
+                      {report.menuPerformance.map((m) => (
                         <tr key={m.name}>
                           <td className="py-3 pr-4 font-mono font-bold text-[#2563EB]">
                             #{m.rank}
@@ -835,6 +907,171 @@ export function ReportsClient({
                           </td>
                           <td className="py-3 text-right font-mono tabular-nums font-bold text-emerald-700">
                             {formatRupiah(m.profit)}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+
+            {/* Kas Closing & Penggunaan Voucher */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="bg-white dark:bg-[#111827] rounded-2xl border border-slate-200 dark:border-slate-800 p-5 space-y-3">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-9 h-9 rounded-xl bg-emerald-50 dark:bg-emerald-950/50 text-[#059669] flex items-center justify-center">
+                    <Wallet className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h2 className="text-sm font-bold tracking-tight text-slate-900 dark:text-slate-100">
+                      Ringkasan Kas Closing
+                    </h2>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                      Kasir On-Duty: {activeStore.active_staff_name || "Belum dipilih"}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="space-y-2 text-xs pt-1">
+                  <div className="flex justify-between p-2.5 rounded-xl bg-[#F8FAFC] dark:bg-[#090D16]">
+                    <span className="text-slate-600 dark:text-slate-400">
+                      Modal Awal Deposit Kasir
+                    </span>
+                    <span className="font-mono font-bold text-slate-900 dark:text-slate-100">
+                      {formatRupiah(report.cashInitial)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between p-2.5 rounded-xl bg-[#F8FAFC] dark:bg-[#090D16]">
+                    <span className="text-slate-600 dark:text-slate-400">
+                      + Penjualan Tunai (Cash)
+                    </span>
+                    <span className="font-mono font-bold text-[#059669]">
+                      +{formatRupiah(report.cashSales)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between p-3 rounded-xl bg-emerald-50/70 dark:bg-emerald-950/30 border border-emerald-200/70 dark:border-emerald-900/50">
+                    <span className="font-bold text-slate-900 dark:text-slate-100">
+                      Estimasi Sisa Kas Laci
+                    </span>
+                    <span className="font-mono font-extrabold text-[#059669]">
+                      {formatRupiah(report.estimatedClosingCash)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between p-2.5 rounded-xl bg-[#F8FAFC] dark:bg-[#090D16]">
+                    <span className="text-slate-600 dark:text-slate-400">
+                      Total Non-Tunai (QRIS + Ojol)
+                    </span>
+                    <span className="font-mono font-bold text-[#2563EB]">
+                      {formatRupiah(report.nonCashSales)}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white dark:bg-[#111827] rounded-2xl border border-slate-200 dark:border-slate-800 p-5 space-y-3">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-9 h-9 rounded-xl bg-blue-50 dark:bg-blue-950/60 text-[#2563EB] flex items-center justify-center">
+                    <TicketPercent className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h2 className="text-sm font-bold tracking-tight text-slate-900 dark:text-slate-100">
+                      Rincian Voucher &amp; Diskon
+                    </h2>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                      Total potongan terpakai: {formatRupiah(report.totalDiscount)}
+                    </p>
+                  </div>
+                </div>
+
+                {report.voucherUsage.length === 0 ? (
+                  <p className="text-xs text-slate-500 dark:text-slate-400 py-4">
+                    Tidak ada pemakaian voucher atau diskon pada rentang tanggal ini.
+                  </p>
+                ) : (
+                  <div className="space-y-2 max-h-52 overflow-y-auto">
+                    {report.voucherUsage.map((v) => (
+                      <div
+                        key={v.label}
+                        className="flex items-center justify-between p-2.5 rounded-xl bg-[#F8FAFC] dark:bg-[#090D16] text-xs"
+                      >
+                        <div>
+                          <p className="font-bold text-slate-900 dark:text-slate-100">
+                            {v.label}
+                          </p>
+                          <p className="text-[11px] text-slate-500 font-mono">
+                            {v.count} transaksi
+                          </p>
+                        </div>
+                        <span className="font-mono font-bold text-rose-600">
+                          -{formatRupiah(v.totalDiscount)}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Rincian Transaksi Detail */}
+            <div className="bg-white dark:bg-[#111827] rounded-2xl border border-slate-200 dark:border-slate-800 p-5 space-y-4">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-blue-50 dark:bg-blue-950/60 text-[#2563EB] flex items-center justify-center">
+                  <ReceiptText className="w-4 h-4" />
+                </div>
+                <div>
+                  <h2 className="text-sm font-bold tracking-tight text-slate-900 dark:text-slate-100">
+                    Rincian Transaksi ({report.txRows.length})
+                  </h2>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                    Daftar transaksi lunas pada periode {startDate} s/d {endDate}.
+                  </p>
+                </div>
+              </div>
+
+              {report.txRows.length === 0 ? (
+                <p className="text-xs text-slate-500 dark:text-slate-400 py-4">
+                  Belum ada transaksi pada rentang tanggal ini.
+                </p>
+              ) : (
+                <div className="overflow-x-auto max-h-96 overflow-y-auto">
+                  <table className="w-full text-left text-xs">
+                    <thead>
+                      <tr className="border-b border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400">
+                        <th className="py-2.5 pr-4 font-semibold">Waktu</th>
+                        <th className="py-2.5 pr-4 font-semibold">No. Order</th>
+                        <th className="py-2.5 pr-4 font-semibold">Kasir</th>
+                        <th className="py-2.5 pr-4 font-semibold">Channel</th>
+                        <th className="py-2.5 pr-4 font-semibold">Metode</th>
+                        <th className="py-2.5 pr-4 font-semibold text-right">
+                          Diskon
+                        </th>
+                        <th className="py-2.5 font-semibold text-right">
+                          Omzet Bersih
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                      {report.txRows.map((tx) => (
+                        <tr key={tx.noOrder}>
+                          <td className="py-2.5 pr-4 font-mono text-[11px] text-slate-500">
+                            {tx.tanggal} {tx.jam}
+                          </td>
+                          <td className="py-2.5 pr-4 font-mono font-bold text-slate-900 dark:text-slate-100">
+                            {tx.noOrder}
+                          </td>
+                          <td className="py-2.5 pr-4 text-slate-600 dark:text-slate-300">
+                            {tx.kasir}
+                          </td>
+                          <td className="py-2.5 pr-4">{tx.channel}</td>
+                          <td className="py-2.5 pr-4 font-mono text-[11px]">
+                            {tx.metodeBayar}
+                          </td>
+                          <td className="py-2.5 pr-4 text-right font-mono tabular-nums text-rose-600">
+                            {tx.diskon > 0 ? `-${formatRupiah(tx.diskon)}` : "-"}
+                          </td>
+                          <td className="py-2.5 text-right font-mono tabular-nums font-bold text-slate-900 dark:text-slate-100">
+                            {formatRupiah(tx.omzetBersih)}
                           </td>
                         </tr>
                       ))}

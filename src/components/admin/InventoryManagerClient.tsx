@@ -8,6 +8,12 @@ import {
   Boxes,
   CheckCircle2,
   Loader2,
+  ShieldAlert,
+  HelpCircle,
+  ChevronDown,
+  ChevronUp,
+  UserCheck,
+  KeyRound,
 } from "lucide-react";
 import {
   Ingredient,
@@ -65,6 +71,74 @@ export function InventoryManagerClient({
   const [savingOpname, setSavingOpname] = useState(false);
   const [opnameSavedToast, setOpnameSavedToast] = useState(false);
 
+  // Staff & Stock PIN Security + Guide Accordion
+  const staffOptions = Array.isArray(store.staff_list) ? store.staff_list : [];
+  const [staffName, setStaffName] = useState<string>(
+    store.active_staff_name || staffOptions[0] || ""
+  );
+  const [stockPinInput, setStockPinInput] = useState("");
+  const [stockAuthError, setStockAuthError] = useState<string | null>(null);
+  const [showGuide, setShowGuide] = useState(false);
+
+  const validateStockAuth = (): boolean => {
+    setStockAuthError(null);
+    const expectedPin = (store.stock_pin ?? store.staff_pin ?? "").trim();
+    if (!expectedPin) {
+      setStockAuthError(
+        "PIN Khusus Stok belum diatur oleh owner. Silakan atur di Pengaturan Toko terlebih dahulu."
+      );
+      return false;
+    }
+    if (!staffName.trim()) {
+      setStockAuthError(
+        "Pilih atau isi Nama Staf yang melakukan perubahan stok terlebih dahulu."
+      );
+      return false;
+    }
+    if (stockPinInput.trim() !== expectedPin) {
+      setStockAuthError(
+        "PIN Khusus Stok salah. Perubahan stok ditolak demi keamanan."
+      );
+      return false;
+    }
+    return true;
+  };
+
+  const insertOpnameLogSafe = async (
+    supabase: ReturnType<typeof createClient>,
+    payload: {
+      store_id: string;
+      item_name: string;
+      item_type: string;
+      system_qty: number;
+      actual_qty: number;
+      difference: number;
+      notes: string | null;
+      updated_by_staff: string;
+    }
+  ): Promise<StockOpnameLog | null> => {
+    const { data, error } = await supabase
+      .from("stock_opname_logs")
+      .insert(payload)
+      .select("*")
+      .single();
+
+    if (error && error.message.toLowerCase().includes("updated_by_staff")) {
+      const { updated_by_staff, ...fallbackPayload } = payload;
+      const mergedNotes = updated_by_staff
+        ? `[Staf: ${updated_by_staff}]${fallbackPayload.notes ? ` ${fallbackPayload.notes}` : ""}`
+        : fallbackPayload.notes;
+      const retry = await supabase
+        .from("stock_opname_logs")
+        .insert({ ...fallbackPayload, notes: mergedNotes })
+        .select("*")
+        .single();
+      return (retry.data as StockOpnameLog) || null;
+    }
+
+    return (data as StockOpnameLog) || null;
+  };
+
   const directStockMenus = menus.filter((m) => m.stock_mode === "direct");
   const selectedMenu = menus.find((m) => m.id === selectedMenuId);
   const selectedMenuRecipes = recipes.filter(
@@ -74,16 +148,18 @@ export function InventoryManagerClient({
   const handleAddIngredient = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!ingName.trim()) return;
+    if (!validateStockAuth()) return;
     setSavingIng(true);
     const supabase = createClient();
 
+    const qtyNum = Number(ingQty || 0);
     const { data, error } = await supabase
       .from("ingredients")
       .insert({
         store_id: store.id,
         name: ingName.trim(),
         unit: ingUnit,
-        stock_qty: Number(ingQty || 0),
+        stock_qty: qtyNum,
         min_stock: Number(ingMin || 0),
       })
       .select("*")
@@ -93,8 +169,20 @@ export function InventoryManagerClient({
       const created = data as Ingredient;
       setIngredients((prev) => [...prev, created]);
       if (!recipeIngId) setRecipeIngId(created.id);
+      const logEntry = await insertOpnameLogSafe(supabase, {
+        store_id: store.id,
+        item_name: `${created.name} (${created.unit})`,
+        item_type: "ingredient",
+        system_qty: 0,
+        actual_qty: qtyNum,
+        difference: qtyNum,
+        notes: "Tambah bahan baku baru",
+        updated_by_staff: staffName.trim(),
+      });
+      if (logEntry) setLogs((prev) => [logEntry, ...prev]);
       setIngName("");
       setIngQty("0");
+      setStockPinInput("");
     }
     setSavingIng(false);
   };
@@ -156,6 +244,7 @@ export function InventoryManagerClient({
   };
 
   const handleSaveOpname = async () => {
+    if (!validateStockAuth()) return;
     setSavingOpname(true);
     setOpnameSavedToast(false);
     const supabase = createClient();
@@ -178,21 +267,18 @@ export function InventoryManagerClient({
           })
           .eq("id", m.id);
 
-        const { data: logData } = await supabase
-          .from("stock_opname_logs")
-          .insert({
-            store_id: store.id,
-            item_name: m.name,
-            item_type: "menu",
-            system_qty: sys,
-            actual_qty: actual,
-            difference: diff,
-            notes: opnameNotes.trim() || null,
-          })
-          .select("*")
-          .single();
+        const logData = await insertOpnameLogSafe(supabase, {
+          store_id: store.id,
+          item_name: m.name,
+          item_type: "menu",
+          system_qty: sys,
+          actual_qty: actual,
+          difference: diff,
+          notes: opnameNotes.trim() || null,
+          updated_by_staff: staffName.trim(),
+        });
 
-        if (logData) newLogs.push(logData as StockOpnameLog);
+        if (logData) newLogs.push(logData);
       }
 
       // Process ingredients
@@ -208,21 +294,18 @@ export function InventoryManagerClient({
           .update({ stock_qty: actual, updated_at: new Date().toISOString() })
           .eq("id", ing.id);
 
-        const { data: logData } = await supabase
-          .from("stock_opname_logs")
-          .insert({
-            store_id: store.id,
-            item_name: `${ing.name} (${ing.unit})`,
-            item_type: "ingredient",
-            system_qty: sys,
-            actual_qty: actual,
-            difference: diff,
-            notes: opnameNotes.trim() || null,
-          })
-          .select("*")
-          .single();
+        const logData = await insertOpnameLogSafe(supabase, {
+          store_id: store.id,
+          item_name: `${ing.name} (${ing.unit})`,
+          item_type: "ingredient",
+          system_qty: sys,
+          actual_qty: actual,
+          difference: diff,
+          notes: opnameNotes.trim() || null,
+          updated_by_staff: staffName.trim(),
+        });
 
-        if (logData) newLogs.push(logData as StockOpnameLog);
+        if (logData) newLogs.push(logData);
       }
 
       // Refresh local states
@@ -250,6 +333,7 @@ export function InventoryManagerClient({
         setLogs((prev) => [...newLogs, ...prev]);
         setOpnameInputs({});
         setOpnameNotes("");
+        setStockPinInput("");
         setOpnameSavedToast(true);
         setTimeout(() => setOpnameSavedToast(false), 3000);
       }
@@ -267,6 +351,114 @@ export function InventoryManagerClient({
         <p className="text-xs text-neutral-500 mt-0.5">
           Kelola bahan baku, takaran resep per menu, dan stock opname berkala.
         </p>
+      </div>
+
+      {/* Panduan / Tutorial Update Stok Accordion */}
+      <div className="bg-white dark:bg-[#111827] rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden">
+        <button
+          type="button"
+          onClick={() => setShowGuide((v) => !v)}
+          className="w-full px-5 py-3.5 flex items-center justify-between text-left hover:bg-slate-50 dark:hover:bg-slate-800/40 transition"
+        >
+          <div className="flex items-center gap-2.5">
+            <HelpCircle className="w-4 h-4 text-[#2563EB] shrink-0" />
+            <span className="text-xs font-extrabold text-slate-900 dark:text-slate-100">
+              Panduan Cara Update &amp; Stock Opname
+            </span>
+          </div>
+          {showGuide ? (
+            <ChevronUp className="w-4 h-4 text-slate-400" />
+          ) : (
+            <ChevronDown className="w-4 h-4 text-slate-400" />
+          )}
+        </button>
+        {showGuide && (
+          <div className="px-5 pb-4 pt-1 border-t border-slate-100 dark:border-slate-800 text-xs text-slate-600 dark:text-slate-300 space-y-1.5">
+            <p className="font-semibold text-slate-800 dark:text-slate-200">
+              Ikuti langkah berikut agar perubahan stok tercatat rapi:
+            </p>
+            <ol className="list-decimal list-inside space-y-1">
+              <li>
+                Pilih menu/bahan baku pada tab <strong>Stock Opname</strong>{" "}
+                (atau tambah bahan baru di tab <strong>Bahan Baku &amp; Resep</strong>).
+              </li>
+              <li>
+                Masukkan jumlah <strong>Stok Fisik Aktual</strong> hasil hitungan di lapangan.
+              </li>
+              <li>
+                Pilih <strong>Nama Staf</strong> yang bertugas dan masukkan{" "}
+                <strong>PIN Khusus Stok</strong> dari Pengaturan Toko.
+              </li>
+              <li>
+                Klik <strong>Simpan</strong> — selisih dan nama staf otomatis tercatat pada riwayat audit log.
+              </li>
+            </ol>
+          </div>
+        )}
+      </div>
+
+      {/* Identitas Staf & Proteksi PIN Stok */}
+      <div className="bg-white dark:bg-[#111827] rounded-2xl p-4 sm:p-5 border border-slate-200 dark:border-slate-800 space-y-3">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+          <div className="flex-1">
+            <label className="flex items-center gap-1.5 text-[11px] font-bold text-slate-700 dark:text-slate-200 mb-1">
+              <UserCheck className="w-3.5 h-3.5 text-[#2563EB]" />
+              <span>Nama Staf Pengubah Stok *</span>
+            </label>
+            {staffOptions.length > 0 ? (
+              <select
+                value={staffName}
+                onChange={(e) => {
+                  setStaffName(e.target.value);
+                  setStockAuthError(null);
+                }}
+                className="w-full px-3.5 py-2 rounded-xl bg-[#F8FAFC] dark:bg-[#090D16] border border-slate-200 dark:border-slate-800 text-xs font-semibold text-slate-900 dark:text-slate-100 focus:outline-none focus:border-[#2563EB]"
+              >
+                <option value="">-- Pilih Nama Staf --</option>
+                {staffOptions.map((st) => (
+                  <option key={st} value={st}>
+                    {st}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <input
+                type="text"
+                value={staffName}
+                onChange={(e) => {
+                  setStaffName(e.target.value);
+                  setStockAuthError(null);
+                }}
+                placeholder="Ketik nama staf (atau atur daftar di Pengaturan Toko)"
+                className="w-full px-3.5 py-2 rounded-xl bg-[#F8FAFC] dark:bg-[#090D16] border border-slate-200 dark:border-slate-800 text-xs text-slate-900 dark:text-slate-100 focus:outline-none focus:border-[#2563EB]"
+              />
+            )}
+          </div>
+
+          <div className="sm:w-64">
+            <label className="flex items-center gap-1.5 text-[11px] font-bold text-slate-700 dark:text-slate-200 mb-1">
+              <KeyRound className="w-3.5 h-3.5 text-[#2563EB]" />
+              <span>PIN Khusus Stok *</span>
+            </label>
+            <input
+              type="password"
+              value={stockPinInput}
+              onChange={(e) => {
+                setStockPinInput(e.target.value);
+                setStockAuthError(null);
+              }}
+              placeholder="Masukkan PIN stok"
+              className="w-full px-3.5 py-2 rounded-xl bg-[#F8FAFC] dark:bg-[#090D16] border border-slate-200 dark:border-slate-800 text-xs font-mono text-slate-900 dark:text-slate-100 focus:outline-none focus:border-[#2563EB]"
+            />
+          </div>
+        </div>
+
+        {stockAuthError && (
+          <div className="flex items-start gap-2 p-3 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/60 text-xs font-semibold text-rose-700 dark:text-rose-300">
+            <ShieldAlert className="w-4 h-4 shrink-0 mt-0.5" />
+            <span>{stockAuthError}</span>
+          </div>
+        )}
       </div>
 
       {/* Tabs */}
@@ -634,17 +826,29 @@ export function InventoryManagerClient({
                 {logs.map((l) => (
                   <div
                     key={l.id}
-                    className="flex items-center justify-between p-3 rounded-xl bg-[#F8FAFC] dark:bg-[#090D16] text-xs"
+                    className="flex items-center justify-between gap-3 p-3 rounded-xl bg-[#F8FAFC] dark:bg-[#090D16] text-xs"
                   >
-                    <div>
-                      <p className="font-bold text-slate-900 dark:text-slate-100">{l.item_name}</p>
-                      <p className="text-[11px] text-neutral-500 font-mono tabular-nums">
+                    <div className="min-w-0">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className="font-bold text-slate-900 dark:text-slate-100">
+                          {l.item_name}
+                        </p>
+                        {l.updated_by_staff && (
+                          <span className="px-2 py-0.5 rounded-full bg-blue-50 dark:bg-blue-950/60 text-[#2563EB] text-[10px] font-bold">
+                            Staf: {l.updated_by_staff}
+                          </span>
+                        )}
+                        <span className="text-[10px] text-slate-400 font-mono">
+                          {new Date(l.created_at).toLocaleString("id-ID")}
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-neutral-500 font-mono tabular-nums mt-0.5">
                         Sistem: {l.system_qty} → Fisik: {l.actual_qty}{" "}
                         {l.notes ? `• ${l.notes}` : ""}
                       </p>
                     </div>
                     <span
-                      className={`font-extrabold font-mono tabular-nums ${
+                      className={`font-extrabold font-mono tabular-nums shrink-0 ${
                         l.difference === 0
                           ? "text-emerald-700"
                           : l.difference < 0

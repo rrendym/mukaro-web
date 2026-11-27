@@ -44,6 +44,21 @@ export function ExecutiveDashboardClient({
   lowStockIngredients,
 }: ExecutiveDashboardClientProps) {
   const [trendRange, setTrendRange] = useState<"today" | "7d" | "30d">("today");
+  const [channelRange, setChannelRange] = useState<
+    "today" | "7d" | "30d" | "custom"
+  >("today");
+  const [channelCustomStart, setChannelCustomStart] = useState<string>(() => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(
+      d.getDate()
+    ).padStart(2, "0")}`;
+  });
+  const [channelCustomEnd, setChannelCustomEnd] = useState<string>(() => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(
+      d.getDate()
+    ).padStart(2, "0")}`;
+  });
 
   const paidOrders = useMemo(
     () => orders.filter((o) => o.payment_status === "paid"),
@@ -95,6 +110,66 @@ export function ExecutiveDashboardClient({
       : todaySales > 0
         ? 100
         : 0;
+
+  const filteredChannelBreakdown = useMemo(() => {
+    if (channelRange === "today") {
+      return {
+        ...channelBreakdown,
+        label: "Hari ini",
+      };
+    }
+
+    const now = new Date();
+    let startMs = 0;
+    let endMs = Number.MAX_SAFE_INTEGER;
+    let label = "7 hari terakhir";
+
+    if (channelRange === "7d") {
+      const start = new Date(
+        now.getFullYear(),
+        now.getMonth(),
+        now.getDate() - 6
+      );
+      startMs = start.getTime();
+      label = "7 hari terakhir";
+    } else if (channelRange === "30d") {
+      const start = new Date(
+        now.getFullYear(),
+        now.getMonth(),
+        now.getDate() - 29
+      );
+      startMs = start.getTime();
+      label = "30 hari terakhir";
+    } else {
+      startMs = new Date(`${channelCustomStart}T00:00:00`).getTime();
+      endMs = new Date(`${channelCustomEnd}T23:59:59.999`).getTime();
+      label = `${channelCustomStart} s/d ${channelCustomEnd}`;
+    }
+
+    const channels = { qris: 0, cash: 0, ojol: 0 };
+    for (const o of paidOrders) {
+      const t = new Date(o.created_at).getTime();
+      if (t >= startMs && t <= endMs) {
+        const amt = Number(o.total_amount || 0);
+        if (o.payment_method === "qris") channels.qris += amt;
+        else if (o.payment_method === "cash") channels.cash += amt;
+        else channels.ojol += amt;
+      }
+    }
+
+    return { ...channels, label };
+  }, [
+    channelRange,
+    channelBreakdown,
+    paidOrders,
+    channelCustomStart,
+    channelCustomEnd,
+  ]);
+
+  const cashDrawerInitial = Number(store.cash_drawer_initial || 0);
+  const estimatedClosingCash = cashDrawerInitial + filteredChannelBreakdown.cash;
+  const nonCashTotal =
+    filteredChannelBreakdown.qris + filteredChannelBreakdown.ojol;
 
   const targetSales = Number(store.daily_sales_target || 0);
   const targetPercent =
@@ -501,29 +576,73 @@ export function ExecutiveDashboardClient({
         <div className="lg:col-span-4 space-y-5">
           {/* Omzet per Channel */}
           <div className="bg-white dark:bg-[#111827] rounded-2xl border border-slate-200 dark:border-slate-800 p-5 space-y-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-950/60 text-[#2563EB] flex items-center justify-center shrink-0">
-                <Wallet className="w-4 h-4" />
-              </div>
-              <div>
-                <h2 className="text-sm font-bold tracking-tight text-slate-900 dark:text-slate-100">
-                  Omzet per Channel
-                </h2>
-                <p className="text-[11px] text-slate-500 dark:text-slate-400">Hari ini</p>
+            <div className="flex items-start justify-between gap-2">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-950/60 text-[#2563EB] flex items-center justify-center shrink-0">
+                  <Wallet className="w-4 h-4" />
+                </div>
+                <div>
+                  <h2 className="text-sm font-bold tracking-tight text-slate-900 dark:text-slate-100">
+                    Omzet per Channel
+                  </h2>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                    {filteredChannelBreakdown.label}
+                  </p>
+                </div>
               </div>
             </div>
 
-            <div className="space-y-2.5 text-xs">
+            {/* Filter Periode Channel */}
+            <div className="flex flex-wrap gap-1 p-1 rounded-xl bg-[#F8FAFC] dark:bg-[#090D16] border border-slate-200 dark:border-slate-800">
+              {[
+                { key: "today" as const, label: "Hari Ini" },
+                { key: "7d" as const, label: "7 Hari" },
+                { key: "30d" as const, label: "30 Hari" },
+                { key: "custom" as const, label: "Custom" },
+              ].map((opt) => (
+                <button
+                  key={opt.key}
+                  type="button"
+                  onClick={() => setChannelRange(opt.key)}
+                  className={`flex-1 min-w-[56px] px-2 py-1 rounded-lg text-[11px] font-bold transition ${
+                    channelRange === opt.key
+                      ? "bg-[#2563EB] text-white"
+                      : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100"
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+
+            {channelRange === "custom" && (
+              <div className="grid grid-cols-2 gap-2">
+                <input
+                  type="date"
+                  value={channelCustomStart}
+                  onChange={(e) => setChannelCustomStart(e.target.value)}
+                  className="px-2.5 py-1.5 rounded-lg bg-[#F8FAFC] dark:bg-[#090D16] border border-slate-200 dark:border-slate-800 text-[11px] font-mono text-slate-800 dark:text-slate-200"
+                />
+                <input
+                  type="date"
+                  value={channelCustomEnd}
+                  onChange={(e) => setChannelCustomEnd(e.target.value)}
+                  className="px-2.5 py-1.5 rounded-lg bg-[#F8FAFC] dark:bg-[#090D16] border border-slate-200 dark:border-slate-800 text-[11px] font-mono text-slate-800 dark:text-slate-200"
+                />
+              </div>
+            )}
+
+            <div className="space-y-2 text-xs">
               <div className="flex items-center justify-between p-2.5 rounded-xl bg-[#F8FAFC] dark:bg-[#090D16] border border-slate-100 dark:border-slate-800/80">
                 <span className="font-semibold text-slate-900 dark:text-slate-100">QRIS</span>
                 <span className="font-bold font-mono tabular-nums text-slate-900 dark:text-slate-100">
-                  {formatRupiah(channelBreakdown.qris)}
+                  {formatRupiah(filteredChannelBreakdown.qris)}
                 </span>
               </div>
               <div className="flex items-center justify-between p-2.5 rounded-xl bg-[#F8FAFC] dark:bg-[#090D16] border border-slate-100 dark:border-slate-800/80">
                 <span className="font-semibold text-slate-900 dark:text-slate-100">Tunai</span>
                 <span className="font-bold font-mono tabular-nums text-slate-900 dark:text-slate-100">
-                  {formatRupiah(channelBreakdown.cash)}
+                  {formatRupiah(filteredChannelBreakdown.cash)}
                 </span>
               </div>
               <div className="flex items-center justify-between p-2.5 rounded-xl bg-[#F8FAFC] dark:bg-[#090D16] border border-slate-100 dark:border-slate-800/80">
@@ -531,7 +650,37 @@ export function ExecutiveDashboardClient({
                   GoFood / Grab / Shopee
                 </span>
                 <span className="font-bold font-mono tabular-nums text-slate-900 dark:text-slate-100">
-                  {formatRupiah(channelBreakdown.ojol)}
+                  {formatRupiah(filteredChannelBreakdown.ojol)}
+                </span>
+              </div>
+            </div>
+
+            {/* Ringkasan Kas & Modal Awal Deposit */}
+            <div className="pt-3 border-t border-slate-100 dark:border-slate-800 space-y-1.5 text-xs">
+              <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400">
+                <span>Modal Awal Deposit</span>
+                <span className="font-mono tabular-nums font-semibold text-slate-700 dark:text-slate-300">
+                  {formatRupiah(cashDrawerInitial)}
+                </span>
+              </div>
+              <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400">
+                <span>+ Pemasukan Tunai</span>
+                <span className="font-mono tabular-nums font-semibold text-[#059669]">
+                  +{formatRupiah(filteredChannelBreakdown.cash)}
+                </span>
+              </div>
+              <div className="flex items-center justify-between p-2.5 rounded-xl bg-emerald-50/70 dark:bg-emerald-950/30 border border-emerald-200/70 dark:border-emerald-900/50">
+                <span className="font-bold text-slate-900 dark:text-slate-100">
+                  Estimasi Kas Closing
+                </span>
+                <span className="font-extrabold font-mono tabular-nums text-[#059669]">
+                  {formatRupiah(estimatedClosingCash)}
+                </span>
+              </div>
+              <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 pt-0.5">
+                <span>Total Non-Tunai (QRIS + Ojol)</span>
+                <span className="font-mono tabular-nums font-semibold text-[#2563EB]">
+                  {formatRupiah(nonCashTotal)}
                 </span>
               </div>
             </div>

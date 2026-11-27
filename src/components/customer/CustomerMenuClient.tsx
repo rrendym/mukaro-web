@@ -11,6 +11,9 @@ import {
   Store as StoreIcon,
   AlertCircle,
   X,
+  TicketPercent,
+  Copy,
+  Check,
 } from "lucide-react";
 import {
   CartItem,
@@ -18,6 +21,7 @@ import {
   Menu,
   SelectedVariant,
   Store,
+  Voucher,
 } from "@/types/database";
 import { buildWhatsAppUrl, formatRupiah } from "@/lib/format";
 import { MenuDetailModal } from "./MenuDetailModal";
@@ -27,6 +31,7 @@ interface CustomerMenuClientProps {
   store: Store;
   categories: Category[];
   menus: Menu[];
+  vouchers?: Voucher[];
   mejaParam?: string;
 }
 
@@ -34,6 +39,7 @@ export function CustomerMenuClient({
   store,
   categories,
   menus,
+  vouchers = [],
   mejaParam,
 }: CustomerMenuClientProps) {
   const [searchQuery, setSearchQuery] = useState("");
@@ -42,12 +48,33 @@ export function CustomerMenuClient({
   const [cart, setCart] = useState<CartItem[]>([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isOrderStatusOpen, setIsOrderStatusOpen] = useState(false);
+  const [copiedVoucherCode, setCopiedVoucherCode] = useState<string | null>(null);
+  const [nowMs] = useState(() => Date.now());
   const [recentOrder, setRecentOrder] = useState<{
     orderId: string;
     orderNumber: string;
     total: number;
     createdAt: string;
   } | null>(null);
+
+  const runningBarVouchers = useMemo(() => {
+    return vouchers.filter((v) => {
+      if (!v.is_active || !v.show_in_customer_bar) return false;
+      if (v.valid_from && new Date(v.valid_from).getTime() > nowMs) return false;
+      if (v.valid_until && new Date(v.valid_until).getTime() < nowMs) return false;
+      return true;
+    });
+  }, [vouchers, nowMs]);
+
+  const handleCopyVoucher = async (code: string) => {
+    try {
+      await navigator.clipboard.writeText(code);
+      setCopiedVoucherCode(code);
+      setTimeout(() => setCopiedVoucherCode(null), 2000);
+    } catch {
+      // ignore clipboard error
+    }
+  };
 
   const accentColor = store.accent_color || "#C8102E";
 
@@ -134,6 +161,69 @@ export function CustomerMenuClient({
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] text-slate-900 flex flex-col">
+      {/* Promo Running Bar */}
+      {runningBarVouchers.length > 0 && (
+        <div
+          className="w-full text-white text-xs py-2 px-4 overflow-x-auto"
+          style={{ backgroundColor: accentColor }}
+        >
+          <div className="max-w-5xl mx-auto flex items-center gap-3 whitespace-nowrap">
+            <span className="inline-flex items-center gap-1 font-extrabold uppercase tracking-wider text-[10px] bg-white/20 px-2 py-0.5 rounded-full shrink-0">
+              <TicketPercent className="w-3 h-3" />
+              Promo Aktif
+            </span>
+            <div className="flex items-center gap-3 overflow-x-auto">
+              {runningBarVouchers.map((v) => {
+                const discLabel =
+                  v.discount_type === "percent"
+                    ? `Diskon ${v.discount_value}%`
+                    : `Potongan ${formatRupiah(Number(v.discount_value))}`;
+                const minLabel =
+                  Number(v.min_order || 0) > 0
+                    ? ` (Min. ${formatRupiah(Number(v.min_order))})`
+                    : "";
+                const untilLabel = v.valid_until
+                  ? ` • s/d ${new Date(v.valid_until).toLocaleString("id-ID", {
+                      day: "2-digit",
+                      month: "short",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}`
+                  : "";
+                const isCopied = copiedVoucherCode === v.code;
+
+                return (
+                  <button
+                    key={v.id}
+                    type="button"
+                    onClick={() => handleCopyVoucher(v.code)}
+                    className="inline-flex items-center gap-2 bg-white/15 hover:bg-white/25 px-3 py-1 rounded-full transition shrink-0"
+                    title="Klik untuk salin kode voucher"
+                  >
+                    <span className="font-semibold">
+                      {discLabel}
+                      {minLabel}
+                      {untilLabel}
+                    </span>
+                    <span className="font-mono font-extrabold bg-white text-slate-900 px-2 py-0.5 rounded-full text-[10px] inline-flex items-center gap-1">
+                      {v.code}
+                      {isCopied ? (
+                        <Check className="w-3 h-3 text-emerald-600" />
+                      ) : (
+                        <Copy className="w-3 h-3" />
+                      )}
+                    </span>
+                    {isCopied && (
+                      <span className="text-[10px] font-bold">Tersalin!</span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Minimalist Sticky Header */}
       <header className="sticky top-0 z-30 bg-white/85 backdrop-blur-md border-b border-slate-200">
         <div className="max-w-5xl mx-auto px-4 h-16 flex items-center justify-between gap-3">

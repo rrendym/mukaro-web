@@ -9,6 +9,10 @@ import {
   Eye,
   EyeOff,
   KeyRound,
+  Plus,
+  X,
+  Users,
+  Wallet,
 } from "lucide-react";
 import { OrderMode, Store } from "@/types/database";
 import { createClient } from "@/lib/supabase/client";
@@ -45,6 +49,18 @@ export function StoreSettingsClient({ store }: { store: Store }) {
     String(store.service_percent ?? 0)
   );
   const [staffPin, setStaffPin] = useState(store.staff_pin || "1234");
+  const [cashDrawerInitial, setCashDrawerInitial] = useState(
+    String(store.cash_drawer_initial ?? 0)
+  );
+  const [stockPin, setStockPin] = useState(store.stock_pin || "1234");
+  const [showStockPin, setShowStockPin] = useState(false);
+  const [staffList, setStaffList] = useState<string[]>(
+    Array.isArray(store.staff_list) ? store.staff_list : []
+  );
+  const [newStaffName, setNewStaffName] = useState("");
+  const [activeStaffName, setActiveStaffName] = useState(
+    store.active_staff_name || ""
+  );
   const [staticQrisUrl, setStaticQrisUrl] = useState(
     store.static_qris_url || ""
   );
@@ -191,30 +207,53 @@ export function StoreSettingsClient({ store }: { store: Store }) {
 
     try {
       const supabase = createClient();
+      const basePayload = {
+        name: name.trim(),
+        tagline: tagline.trim() || null,
+        logo_url: logoUrl.trim() || null,
+        accent_color: accentColor,
+        banner_url: bannerUrl.trim() || null,
+        banner_title: bannerTitle.trim() || null,
+        banner_subtitle: bannerSubtitle.trim() || null,
+        show_banner: showBanner,
+        order_mode: orderMode,
+        wa_number: waNumber.trim() || null,
+        show_wa: showWa,
+        tax_percent: Number(taxPercent || 0),
+        service_percent: Number(servicePercent || 0),
+        staff_pin: staffPin.trim() || "1234",
+        cash_drawer_initial: Math.max(0, Number(cashDrawerInitial || 0)),
+        static_qris_url: staticQrisUrl.trim() || null,
+        midtrans_server_key: midtransServerKey.trim() || null,
+        midtrans_client_key: midtransClientKey.trim() || null,
+      };
+
       const { error: updateErr } = await supabase
         .from("stores")
         .update({
-          name: name.trim(),
-          tagline: tagline.trim() || null,
-          logo_url: logoUrl.trim() || null,
-          accent_color: accentColor,
-          banner_url: bannerUrl.trim() || null,
-          banner_title: bannerTitle.trim() || null,
-          banner_subtitle: bannerSubtitle.trim() || null,
-          show_banner: showBanner,
-          order_mode: orderMode,
-          wa_number: waNumber.trim() || null,
-          show_wa: showWa,
-          tax_percent: Number(taxPercent || 0),
-          service_percent: Number(servicePercent || 0),
-          staff_pin: staffPin.trim() || "1234",
-          static_qris_url: staticQrisUrl.trim() || null,
-          midtrans_server_key: midtransServerKey.trim() || null,
-          midtrans_client_key: midtransClientKey.trim() || null,
+          ...basePayload,
+          stock_pin: stockPin.trim() || "1234",
+          staff_list: staffList,
+          active_staff_name: activeStaffName.trim() || null,
         })
         .eq("id", store.id);
 
-      if (updateErr) throw updateErr;
+      if (updateErr) {
+        const msg = updateErr.message.toLowerCase();
+        if (
+          msg.includes("stock_pin") ||
+          msg.includes("staff_list") ||
+          msg.includes("active_staff_name")
+        ) {
+          const { error: fallbackErr } = await supabase
+            .from("stores")
+            .update(basePayload)
+            .eq("id", store.id);
+          if (fallbackErr) throw fallbackErr;
+        } else {
+          throw updateErr;
+        }
+      }
 
       setSavedToast(true);
       router.refresh();
@@ -576,6 +615,147 @@ export function StoreSettingsClient({ store }: { store: Store }) {
               className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 text-sm font-mono tabular-nums focus:outline-none focus:border-[#2563EB] transition"
             />
           </div>
+        </div>
+      </div>
+
+      {/* Operasional Kasir, Modal Awal & Daftar Karyawan */}
+      <div className="bg-white dark:bg-[#111827] rounded-2xl p-6 border border-slate-200 dark:border-slate-800 space-y-5">
+        <div className="flex items-center gap-2">
+          <Wallet className="w-4 h-4 text-[#2563EB]" />
+          <h2 className="text-base font-extrabold tracking-tight text-slate-900 dark:text-slate-100">
+            Operasional Kasir, Modal Awal &amp; Daftar Karyawan
+          </h2>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div>
+            <label className="block text-xs font-bold text-slate-900 dark:text-slate-100 mb-1.5">
+              Modal Awal / Deposit Kasir (Rp)
+            </label>
+            <input
+              type="number"
+              min={0}
+              step={10000}
+              value={cashDrawerInitial}
+              onChange={(e) => setCashDrawerInitial(e.target.value)}
+              placeholder="300000"
+              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#111827] text-sm font-bold font-mono tabular-nums focus:outline-none focus:border-[#2563EB] transition"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-slate-900 dark:text-slate-100 mb-1.5">
+              PIN Khusus Stok &amp; Opname
+            </label>
+            <div className="relative">
+              <input
+                type={showStockPin ? "text" : "password"}
+                value={stockPin}
+                onChange={(e) => setStockPin(e.target.value)}
+                placeholder="1234"
+                className="w-full pl-3.5 pr-10 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#111827] text-sm font-bold font-mono tabular-nums focus:outline-none focus:border-[#2563EB] transition"
+              />
+              <button
+                type="button"
+                onClick={() => setShowStockPin((v) => !v)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
+                aria-label="Tampilkan/Sembunyikan PIN Stok"
+              >
+                {showStockPin ? (
+                  <EyeOff className="w-4 h-4" />
+                ) : (
+                  <Eye className="w-4 h-4" />
+                )}
+              </button>
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-slate-900 dark:text-slate-100 mb-1.5">
+              Karyawan Sedang Bertugas (On-Duty)
+            </label>
+            <select
+              value={activeStaffName}
+              onChange={(e) => setActiveStaffName(e.target.value)}
+              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#111827] text-sm font-semibold focus:outline-none focus:border-[#2563EB] transition"
+            >
+              <option value="">-- Belum dipilih --</option>
+              {staffList.map((st) => (
+                <option key={st} value={st}>
+                  {st}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        <div className="space-y-2.5 pt-2 border-t border-slate-100 dark:border-slate-800">
+          <label className="flex items-center gap-1.5 text-xs font-bold text-slate-900 dark:text-slate-100">
+            <Users className="w-3.5 h-3.5 text-[#2563EB]" />
+            <span>Daftar Karyawan / Kasir</span>
+          </label>
+          <div className="flex flex-wrap gap-2">
+            <input
+              type="text"
+              value={newStaffName}
+              onChange={(e) => setNewStaffName(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  const trimmed = newStaffName.trim();
+                  if (trimmed && !staffList.includes(trimmed)) {
+                    setStaffList((prev) => [...prev, trimmed]);
+                    if (!activeStaffName) setActiveStaffName(trimmed);
+                    setNewStaffName("");
+                  }
+                }
+              }}
+              placeholder="Tambah nama karyawan (misal: Budi)"
+              className="flex-1 min-w-[200px] px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#111827] text-xs focus:outline-none focus:border-[#2563EB]"
+            />
+            <button
+              type="button"
+              onClick={() => {
+                const trimmed = newStaffName.trim();
+                if (!trimmed || staffList.includes(trimmed)) return;
+                setStaffList((prev) => [...prev, trimmed]);
+                if (!activeStaffName) setActiveStaffName(trimmed);
+                setNewStaffName("");
+              }}
+              className="inline-flex items-center gap-1 px-4 py-2 rounded-xl bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 text-xs font-bold hover:opacity-90 transition"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>Tambah</span>
+            </button>
+          </div>
+
+          {staffList.length > 0 && (
+            <div className="flex flex-wrap gap-2 pt-1">
+              {staffList.map((st) => (
+                <span
+                  key={st}
+                  className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border ${
+                    activeStaffName === st
+                      ? "bg-blue-50 dark:bg-blue-950/50 border-[#2563EB] text-[#2563EB]"
+                      : "bg-[#F8FAFC] dark:bg-[#090D16] border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200"
+                  }`}
+                >
+                  <span>{st}</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setStaffList((prev) => prev.filter((item) => item !== st));
+                      if (activeStaffName === st) setActiveStaffName("");
+                    }}
+                    className="text-slate-400 hover:text-rose-600"
+                    aria-label={`Hapus ${st}`}
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </span>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
