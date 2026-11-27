@@ -108,11 +108,11 @@ export function MenuDetailModal({
       onClick={onClose}
     >
       <div
-        className="w-full max-w-lg bg-white rounded-t-3xl sm:rounded-3xl border border-slate-200 max-h-[90vh] flex flex-col overflow-hidden shadow-2xl animate-in slide-in-from-bottom-4 duration-200"
+        className="w-full max-w-lg bg-white dark:bg-[#111827] rounded-t-3xl sm:rounded-3xl border border-slate-200 dark:border-slate-800 max-h-[88vh] flex flex-col overflow-hidden shadow-2xl animate-in slide-in-from-bottom-4 duration-200"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Top Image */}
-        <div className="relative w-full aspect-[16/10] bg-[#F8FAFC] shrink-0">
+        <div className="relative w-full h-36 sm:h-40 bg-[#F8FAFC] dark:bg-[#090D16] overflow-hidden shrink-0">
           {menu.image_url ? (
             <img
               src={menu.image_url}
@@ -120,7 +120,7 @@ export function MenuDetailModal({
               className="w-full h-full object-cover"
             />
           ) : (
-            <div className="w-full h-full flex items-center justify-center text-neutral-400 text-sm">
+            <div className="w-full h-full flex items-center justify-center text-neutral-400 dark:text-slate-500 text-sm">
               Tidak ada foto
             </div>
           )}
@@ -128,7 +128,7 @@ export function MenuDetailModal({
             type="button"
             onClick={onClose}
             aria-label="Tutup"
-            className="absolute top-3 right-3 w-9 h-9 rounded-full bg-white/95 backdrop-blur border border-slate-200 text-slate-900 flex items-center justify-center shadow-sm hover:bg-white transition"
+            className="absolute top-3 right-3 w-9 h-9 rounded-full bg-white/95 dark:bg-[#111827]/95 backdrop-blur border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 flex items-center justify-center shadow-sm hover:bg-white dark:hover:bg-slate-800 transition"
           >
             <X className="w-5 h-5" />
           </button>
@@ -143,18 +143,18 @@ export function MenuDetailModal({
         </div>
 
         {/* Scrollable Content */}
-        <div className="flex-1 overflow-y-auto p-5 space-y-5">
+        <div className="flex-1 min-h-0 overflow-y-auto p-5 space-y-4">
           <div>
             <div className="flex items-start justify-between gap-3">
-              <h2 className="text-xl font-extrabold tracking-tight text-slate-900 leading-tight">
+              <h2 className="text-lg sm:text-xl font-extrabold tracking-tight text-slate-900 dark:text-slate-100 leading-tight">
                 {menu.name}
               </h2>
-              <span className="text-lg font-extrabold text-slate-900 shrink-0 font-mono tabular-nums">
+              <span className="text-base sm:text-lg font-extrabold text-slate-900 dark:text-slate-100 shrink-0 font-mono tabular-nums">
                 {formatRupiah(Number(menu.price))}
               </span>
             </div>
             {menu.description && (
-              <p className="text-sm text-neutral-500 mt-1.5 leading-relaxed">
+              <p className="text-xs sm:text-sm text-neutral-500 dark:text-slate-400 mt-1 leading-relaxed">
                 {menu.description}
               </p>
             )}
@@ -168,17 +168,17 @@ export function MenuDetailModal({
                 return (
                   <div
                     key={group.group}
-                    className="border-t border-slate-200 pt-4"
+                    className="border-t border-slate-200 dark:border-slate-800 pt-3.5"
                   >
-                    <div className="flex items-center justify-between mb-2.5">
-                      <h3 className="text-sm font-bold tracking-tight text-slate-900">
+                    <div className="flex items-center justify-between mb-2">
+                      <h3 className="text-sm font-bold tracking-tight text-slate-900 dark:text-slate-100">
                         {group.group}
                       </h3>
                       <span
                         className={`text-[11px] font-semibold px-2 py-0.5 rounded-full ${
                           group.required
-                            ? "bg-rose-50 text-rose-700"
-                            : "bg-[#F8FAFC] text-neutral-600"
+                            ? "bg-rose-50 dark:bg-rose-950/50 text-rose-700 dark:text-rose-300"
+                            : "bg-[#F8FAFC] dark:bg-[#090D16] text-neutral-600 dark:text-slate-300"
                         }`}
                       >
                         {group.required ? "Wajib pilih 1" : "Opsional"}
@@ -204,8 +204,8 @@ export function MenuDetailModal({
                             }
                             className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl border text-left transition ${
                               isChecked
-                                ? "bg-[#F8FAFC] border-[#2563EB]"
-                                : "bg-white border-slate-200 hover:border-[#2563EB]/40"
+                                ? "bg-blue-50/70 dark:bg-blue-950/40 border-[#2563EB]"
+                                : "bg-white dark:bg-[#090D16] border-slate-200 dark:border-slate-800 hover:border-[#2563EB]/60"
                             }`}
                           >
                             <div className="flex items-center gap-2.5">
@@ -215,16 +215,16 @@ export function MenuDetailModal({
                                 } ${
                                   isChecked
                                     ? "bg-[#2563EB] text-white border-[#2563EB]"
-                                    : "border-neutral-300 bg-white"
+                                    : "border-neutral-300 dark:border-slate-600 bg-white dark:bg-[#111827]"
                                 }`}
                               >
                                 {isChecked && <Check className="w-3.5 h-3.5" />}
                               </span>
-                              <span className="text-sm font-semibold text-slate-900">
+                              <span className="text-sm font-semibold text-slate-900 dark:text-slate-100">
                                 {opt.name}
                               </span>
                             </div>
-                            <span className="text-xs font-semibold text-neutral-600 font-mono tabular-nums">
+                            <span className="text-xs font-semibold text-neutral-600 dark:text-slate-300 font-mono tabular-nums">
                               {opt.price > 0
                                 ? `+${formatRupiah(opt.price)}`
                                 : "Gratis"}
@@ -240,8 +240,8 @@ export function MenuDetailModal({
           )}
 
           {/* Item Notes */}
-          <div className="border-t border-slate-200 pt-4">
-            <label className="block text-sm font-bold text-slate-900 mb-1.5">
+          <div className="border-t border-slate-200 dark:border-slate-800 pt-3.5">
+            <label className="block text-sm font-bold text-slate-900 dark:text-slate-100 mb-1.5">
               Catatan Khusus
             </label>
             <input
@@ -249,29 +249,29 @@ export function MenuDetailModal({
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               placeholder="Contoh: Es dipisah, tidak pakai bawang..."
-              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-[#2563EB] transition"
+              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#090D16] text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:border-[#2563EB] transition"
             />
           </div>
         </div>
 
         {/* Sticky Footer Action */}
-        <div className="p-4 border-t border-slate-200 bg-white flex items-center gap-3">
-          <div className="flex items-center gap-2 bg-[#F8FAFC] border border-slate-200 rounded-full px-2 py-1.5">
+        <div className="p-4 border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-[#111827] flex items-center gap-3 shrink-0">
+          <div className="flex items-center gap-2 bg-[#F8FAFC] dark:bg-[#090D16] border border-slate-200 dark:border-slate-800 rounded-full px-2 py-1.5">
             <button
               type="button"
               onClick={() => setQty((q) => Math.max(1, q - 1))}
-              className="w-8 h-8 rounded-full bg-white border border-slate-200 flex items-center justify-center text-slate-900 hover:border-[#2563EB] transition"
+              className="w-8 h-8 rounded-full bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-700 flex items-center justify-center text-slate-900 dark:text-slate-100 hover:border-[#2563EB] transition"
               aria-label="Kurangi jumlah"
             >
               <Minus className="w-4 h-4" />
             </button>
-            <span className="w-7 text-center text-sm font-bold text-slate-900 font-mono tabular-nums">
+            <span className="w-7 text-center text-sm font-bold text-slate-900 dark:text-slate-100 font-mono tabular-nums">
               {qty}
             </span>
             <button
               type="button"
               onClick={() => setQty((q) => q + 1)}
-              className="w-8 h-8 rounded-full bg-white border border-slate-200 flex items-center justify-center text-slate-900 hover:border-[#2563EB] transition"
+              className="w-8 h-8 rounded-full bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-700 flex items-center justify-center text-slate-900 dark:text-slate-100 hover:border-[#2563EB] transition"
               aria-label="Tambah jumlah"
             >
               <Plus className="w-4 h-4" />

@@ -891,7 +891,7 @@ export function StoreSettingsClient({ store }: { store: Store }) {
               <button
                 type="button"
                 onClick={() => setShowCurPass(!showCurPass)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-slate-900 dark:text-slate-100"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-slate-900 dark:hover:text-white"
               >
                 {showCurPass ? (
                   <EyeOff className="w-4 h-4" />
@@ -917,7 +917,7 @@ export function StoreSettingsClient({ store }: { store: Store }) {
               <button
                 type="button"
                 onClick={() => setShowNewPass(!showNewPass)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-slate-900 dark:text-slate-100"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-slate-900 dark:hover:text-white"
               >
                 {showNewPass ? (
                   <EyeOff className="w-4 h-4" />
@@ -943,7 +943,7 @@ export function StoreSettingsClient({ store }: { store: Store }) {
               <button
                 type="button"
                 onClick={() => setShowConfPass(!showConfPass)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-slate-900 dark:text-slate-100"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-slate-900 dark:hover:text-white"
               >
                 {showConfPass ? (
                   <EyeOff className="w-4 h-4" />

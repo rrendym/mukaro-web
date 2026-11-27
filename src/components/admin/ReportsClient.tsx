@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
-import * as XLSX from "xlsx";
+import ExcelJS from "exceljs";
 import {
   FileSpreadsheet,
   FileText,
@@ -77,6 +77,7 @@ export function ReportsClient({
   const [menus, setMenus] = useState<Menu[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(! (planTier === "starter"));
+  const [exporting, setExporting] = useState(false);
 
   const activeStore =
     ownerStores.find((s) => s.id === activeStoreId) || store;
@@ -153,6 +154,8 @@ export function ReportsClient({
     let totalGross = 0;
     let totalDiscount = 0;
     let totalNet = 0;
+    let totalTaxService = 0;
+    let totalCollected = 0;
     let totalHpp = 0;
 
     const channels = {
@@ -191,6 +194,8 @@ export function ReportsClient({
       subtotalKotor: number;
       diskon: number;
       omzetBersih: number;
+      pajakService: number;
+      totalDibayar: number;
       estimasiHpp: number;
       estimasiProfit: number;
       catatan: string;
@@ -204,7 +209,13 @@ export function ReportsClient({
     for (const o of orders) {
       const subtotalKotor = Math.round(Number(o.subtotal || 0));
       const diskon = Math.round(Number(o.discount_amount || 0));
-      const omzetBersih = Math.round(Number(o.total_amount || 0));
+      const omzetBersih = Math.max(0, subtotalKotor - diskon);
+      const pajakService =
+        Math.round(Number(o.tax_amount || 0)) +
+        Math.round(Number(o.service_amount || 0));
+      const totalDibayar = Math.round(
+        Number(o.total_amount || omzetBersih + pajakService)
+      );
 
       let orderHpp = 0;
       const items = o.order_items || [];
@@ -248,21 +259,23 @@ export function ReportsClient({
       totalGross += subtotalKotor;
       totalDiscount += diskon;
       totalNet += omzetBersih;
+      totalTaxService += pajakService;
+      totalCollected += totalDibayar;
       totalHpp += orderHpp;
 
       const src = o.order_source as keyof typeof channels;
       if (channels[src]) {
         channels[src].count += 1;
-        channels[src].omzet += omzetBersih;
+        channels[src].omzet += totalDibayar;
       } else {
         channels.walk_in.count += 1;
-        channels.walk_in.omzet += omzetBersih;
+        channels.walk_in.omzet += totalDibayar;
       }
 
       const pm = (o.payment_method || "cash") as keyof typeof paymentMethods;
       if (paymentMethods[pm]) {
         paymentMethods[pm].count += 1;
-        paymentMethods[pm].omzet += omzetBersih;
+        paymentMethods[pm].omzet += totalDibayar;
       }
 
       if (diskon > 0) {
@@ -292,6 +305,8 @@ export function ReportsClient({
         subtotalKotor,
         diskon,
         omzetBersih,
+        pajakService,
+        totalDibayar,
         estimasiHpp: orderHpp,
         estimasiProfit: orderProfit,
         catatan: o.notes || "-",
@@ -300,6 +315,7 @@ export function ReportsClient({
 
     const totalOrders = orders.length;
     const totalProfit = totalNet - totalHpp;
+    const grossMarginRatio = totalNet > 0 ? totalProfit / totalNet : 0;
     const aov = totalOrders > 0 ? Math.round(totalNet / totalOrders) : 0;
 
     const menuPerformance = Array.from(menuPerfMap.values())
@@ -328,8 +344,11 @@ export function ReportsClient({
       totalGross,
       totalDiscount,
       totalNet,
+      totalTaxService,
+      totalCollected,
       totalHpp,
       totalProfit,
+      grossMarginRatio,
       aov,
       channels,
       paymentMethods,
@@ -344,170 +363,405 @@ export function ReportsClient({
     };
   }, [orders, menus, categories, activeStore]);
 
-  const buildAutoFitCols = (aoa: (string | number)[][]) => {
-    const colWidths: number[] = [];
-    for (const row of aoa) {
-      row.forEach((cell, idx) => {
-        const len = String(cell ?? "").length;
-        colWidths[idx] = Math.max(colWidths[idx] || 10, len + 3);
-      });
-    }
-    return colWidths.map((w) => ({ wch: Math.min(52, Math.max(12, w)) }));
-  };
+  const handleDownloadXlsx = async () => {
+    setExporting(true);
+    try {
+      const wb = new ExcelJS.Workbook();
+      wb.creator = "Mukaro POS";
+      wb.created = new Date();
 
-  const formatNumericCells = (
-    ws: XLSX.WorkSheet,
-    aoa: (string | number)[][],
-    numericCols: number[]
-  ) => {
-    for (let r = 1; r < aoa.length; r++) {
-      for (const c of numericCols) {
-        const addr = XLSX.utils.encode_cell({ r, c });
-        const cell = ws[addr];
-        if (cell && typeof cell.v === "number") {
-          cell.z = "#,##0";
+      const printedAt = new Date().toLocaleString("id-ID");
+      const thinBorder: Partial<ExcelJS.Borders> = {
+        top: { style: "thin", color: { argb: "FFCBD5E1" } },
+        bottom: { style: "thin", color: { argb: "FFCBD5E1" } },
+        left: { style: "thin", color: { argb: "FFCBD5E1" } },
+        right: { style: "thin", color: { argb: "FFCBD5E1" } },
+      };
+
+      const applyReportBanner = (
+        ws: ExcelJS.Worksheet,
+        title: string,
+        colCount: number
+      ) => {
+        ws.addRow([title]);
+        ws.mergeCells(1, 1, 1, colCount);
+        const titleRow = ws.getRow(1);
+        titleRow.height = 28;
+        titleRow.font = { bold: true, size: 13, color: { argb: "FFFFFFFF" } };
+        titleRow.fill = {
+          type: "pattern",
+          pattern: "solid",
+          fgColor: { argb: "FF0F172A" },
+        };
+        titleRow.alignment = { vertical: "middle", horizontal: "left" };
+
+        const metaRows: [string, string][] = [
+          ["Outlet / Cabang", `${activeStore.name} (/${activeStore.slug})`],
+          ["Periode Laporan", `${startDate} s/d ${endDate}`],
+          ["Kasir On-Duty", activeStore.active_staff_name || "-"],
+          ["Waktu Cetak", printedAt],
+        ];
+        for (const [k, v] of metaRows) {
+          const r = ws.addRow([k, v]);
+          r.getCell(1).font = { bold: true, size: 10, color: { argb: "FF475569" } };
+          r.getCell(2).font = { size: 10, color: { argb: "FF0F172A" } };
         }
+        ws.addRow([]);
+      };
+
+      const styleHeaderRow = (row: ExcelJS.Row) => {
+        row.height = 24;
+        row.eachCell((cell) => {
+          cell.font = { bold: true, size: 10, color: { argb: "FFFFFFFF" } };
+          cell.fill = {
+            type: "pattern",
+            pattern: "solid",
+            fgColor: { argb: "FF1E3A8A" },
+          };
+          cell.alignment = { vertical: "middle", horizontal: "center" };
+          cell.border = thinBorder;
+        });
+      };
+
+      const styleDataRow = (row: ExcelJS.Row, isEven: boolean) => {
+        row.height = 20;
+        row.eachCell((cell) => {
+          cell.font = { size: 10, color: { argb: "FF0F172A" } };
+          if (isEven) {
+            cell.fill = {
+              type: "pattern",
+              pattern: "solid",
+              fgColor: { argb: "FFF8FAFC" },
+            };
+          }
+          cell.border = thinBorder;
+          cell.alignment = { vertical: "middle" };
+        });
+      };
+
+      const styleTotalRow = (row: ExcelJS.Row) => {
+        row.height = 22;
+        row.eachCell((cell) => {
+          cell.font = { bold: true, size: 10, color: { argb: "FF0F172A" } };
+          cell.fill = {
+            type: "pattern",
+            pattern: "solid",
+            fgColor: { argb: "FFEFF6FF" },
+          };
+          cell.border = {
+            top: { style: "medium", color: { argb: "FF1E3A8A" } },
+            bottom: { style: "medium", color: { argb: "FF1E3A8A" } },
+            left: { style: "thin", color: { argb: "FFCBD5E1" } },
+            right: { style: "thin", color: { argb: "FFCBD5E1" } },
+          };
+          cell.alignment = { vertical: "middle" };
+        });
+      };
+
+      const autoFitSheet = (ws: ExcelJS.Worksheet) => {
+        ws.columns.forEach((col) => {
+          let maxLen = 12;
+          col.eachCell?.({ includeEmpty: false }, (cell) => {
+            if (Number(cell.row) === 1) return;
+            const val = cell.value;
+            const str =
+              val && typeof val === "object" && "formula" in val
+                ? "Rp 999.999.999"
+                : String(val ?? "");
+            maxLen = Math.max(maxLen, str.length + 4);
+          });
+          col.width = Math.min(48, maxLen);
+        });
+      };
+
+      const RP_FMT = '"Rp "#,##0';
+      const QTY_FMT = "#,##0";
+      const PCT_FMT = "0.0%";
+
+      // 1. Sheet: Ringkasan & Kas Closing
+      const ws1 = wb.addWorksheet("Ringkasan & Kas Closing");
+      applyReportBanner(
+        ws1,
+        `LAPORAN KEUANGAN & KAS CLOSING — ${activeStore.name.toUpperCase()}`,
+        3
+      );
+      const s1Header = ws1.addRow(["METRIK KEUANGAN", "NILAI", "KETERANGAN"]);
+      styleHeaderRow(s1Header);
+      ws1.views = [{ state: "frozen", ySplit: s1Header.number }];
+
+      const summaryRows: Array<[string, number, string, string]> = [
+        ["Total Transaksi Sukses", report.totalOrders, QTY_FMT, "Order berstatus lunas"],
+        ["Omzet Kotor (Subtotal Item)", report.totalGross, RP_FMT, "Sebelum diskon & pajak/service"],
+        ["Total Diskon / Voucher", report.totalDiscount, RP_FMT, "Potongan promo pelanggan"],
+        ["Omzet Bersih (Kotor - Diskon)", report.totalNet, RP_FMT, "Pendapatan penjualan bersih"],
+        ["Pajak & Service Charge", report.totalTaxService, RP_FMT, "Dipungut di luar omzet bersih"],
+        ["Total Penerimaan Pelanggan", report.totalCollected, RP_FMT, "Omzet Bersih + Pajak/Service"],
+        ["Total Estimasi HPP", report.totalHpp, RP_FMT, "Estimasi harga pokok penjualan"],
+        ["Estimasi Laba Kotor", report.totalProfit, RP_FMT, "Omzet Bersih - Estimasi HPP"],
+        ["Margin Laba Kotor", report.grossMarginRatio, PCT_FMT, "Laba Kotor / Omzet Bersih"],
+        ["Rata-rata Order (AOV)", report.aov, RP_FMT, "Omzet Bersih / Total Transaksi"],
+      ];
+
+      summaryRows.forEach(([label, val, fmt, note], idx) => {
+        const r = ws1.addRow([label, val, note]);
+        styleDataRow(r, idx % 2 === 1);
+        r.getCell(2).numFmt = fmt;
+        r.getCell(2).alignment = { vertical: "middle", horizontal: "right" };
+      });
+
+      ws1.addRow([]);
+      const kasHeader = ws1.addRow(["RINGKASAN KAS CLOSING", "NILAI", "KETERANGAN"]);
+      styleHeaderRow(kasHeader);
+
+      const kasRows: Array<[string, number, string]> = [
+        ["Modal Awal Deposit Kasir", report.cashInitial, "Sesuai Pengaturan Toko"],
+        ["+ Pemasukan Tunai (Cash)", report.cashSales, "Total transaksi tunai lunas"],
+        ["Estimasi Sisa Kas Closing", report.estimatedClosingCash, "Modal Awal + Pemasukan Tunai"],
+        ["Total Non-Tunai (QRIS + Ojol)", report.nonCashSales, "Masuk rekening / platform"],
+      ];
+      kasRows.forEach(([label, val, note], idx) => {
+        const r = ws1.addRow([label, val, note]);
+        if (idx === 2) {
+          styleTotalRow(r);
+        } else {
+          styleDataRow(r, idx % 2 === 1);
+        }
+        r.getCell(2).numFmt = RP_FMT;
+        r.getCell(2).alignment = { vertical: "middle", horizontal: "right" };
+      });
+      autoFitSheet(ws1);
+
+      // 2. Sheet: Rincian Transaksi
+      const ws2 = wb.addWorksheet("Rincian Transaksi");
+      applyReportBanner(
+        ws2,
+        `RINCIAN TRANSAKSI PENJUALAN — ${activeStore.name.toUpperCase()}`,
+        14
+      );
+      const txHeaderRow = ws2.addRow([
+        "Tanggal",
+        "Jam",
+        "No. Order",
+        "Kasir",
+        "Channel",
+        "Daftar Item",
+        "Metode Bayar",
+        "Omzet Kotor",
+        "Diskon",
+        "Omzet Bersih",
+        "Pajak & Service",
+        "Total Dibayar",
+        "Est. HPP",
+        "Est. Laba Kotor",
+      ]);
+      styleHeaderRow(txHeaderRow);
+      ws2.views = [{ state: "frozen", ySplit: txHeaderRow.number }];
+
+      const txStartRow = txHeaderRow.number + 1;
+      report.txRows.forEach((tx, idx) => {
+        const r = ws2.addRow([
+          tx.tanggal,
+          tx.jam,
+          tx.noOrder,
+          tx.kasir,
+          tx.channel,
+          tx.daftarItem,
+          tx.metodeBayar,
+          tx.subtotalKotor,
+          tx.diskon,
+          tx.omzetBersih,
+          tx.pajakService,
+          tx.totalDibayar,
+          tx.estimasiHpp,
+          tx.estimasiProfit,
+        ]);
+        styleDataRow(r, idx % 2 === 1);
+        for (let c = 8; c <= 14; c++) {
+          r.getCell(c).numFmt = RP_FMT;
+          r.getCell(c).alignment = { vertical: "middle", horizontal: "right" };
+        }
+      });
+
+      const txEndRow = Math.max(txStartRow, txHeaderRow.number + report.txRows.length);
+      const txTotal = ws2.addRow([
+        "TOTAL",
+        "",
+        "",
+        "",
+        "",
+        `${report.totalOrders} transaksi`,
+        "",
+        report.txRows.length > 0 ? { formula: `SUM(H${txStartRow}:H${txEndRow})` } : 0,
+        report.txRows.length > 0 ? { formula: `SUM(I${txStartRow}:I${txEndRow})` } : 0,
+        report.txRows.length > 0 ? { formula: `SUM(J${txStartRow}:J${txEndRow})` } : 0,
+        report.txRows.length > 0 ? { formula: `SUM(K${txStartRow}:K${txEndRow})` } : 0,
+        report.txRows.length > 0 ? { formula: `SUM(L${txStartRow}:L${txEndRow})` } : 0,
+        report.txRows.length > 0 ? { formula: `SUM(M${txStartRow}:M${txEndRow})` } : 0,
+        report.txRows.length > 0 ? { formula: `SUM(N${txStartRow}:N${txEndRow})` } : 0,
+      ]);
+      styleTotalRow(txTotal);
+      for (let c = 8; c <= 14; c++) {
+        txTotal.getCell(c).numFmt = RP_FMT;
+        txTotal.getCell(c).alignment = { vertical: "middle", horizontal: "right" };
       }
+      autoFitSheet(ws2);
+
+      // 3. Sheet: Menu Terjual
+      const ws3 = wb.addWorksheet("Menu Terjual");
+      applyReportBanner(
+        ws3,
+        `PERFORMA MENU TERJUAL — ${activeStore.name.toUpperCase()}`,
+        6
+      );
+      const menuHeaderRow = ws3.addRow([
+        "Peringkat",
+        "Nama Menu",
+        "Kategori",
+        "Qty Terjual",
+        "Total Penjualan",
+        "Est. Laba Kotor",
+      ]);
+      styleHeaderRow(menuHeaderRow);
+      ws3.views = [{ state: "frozen", ySplit: menuHeaderRow.number }];
+
+      const menuStartRow = menuHeaderRow.number + 1;
+      report.menuPerformance.forEach((m, idx) => {
+        const r = ws3.addRow([
+          m.rank,
+          m.name,
+          m.category,
+          m.qty,
+          m.omzet,
+          m.profit,
+        ]);
+        styleDataRow(r, idx % 2 === 1);
+        r.getCell(1).alignment = { vertical: "middle", horizontal: "center" };
+        r.getCell(4).numFmt = QTY_FMT;
+        r.getCell(4).alignment = { vertical: "middle", horizontal: "right" };
+        r.getCell(5).numFmt = RP_FMT;
+        r.getCell(5).alignment = { vertical: "middle", horizontal: "right" };
+        r.getCell(6).numFmt = RP_FMT;
+        r.getCell(6).alignment = { vertical: "middle", horizontal: "right" };
+      });
+      const menuEndRow = Math.max(
+        menuStartRow,
+        menuHeaderRow.number + report.menuPerformance.length
+      );
+      const menuTotal = ws3.addRow([
+        "TOTAL",
+        "",
+        "",
+        report.menuPerformance.length > 0
+          ? { formula: `SUM(D${menuStartRow}:D${menuEndRow})` }
+          : 0,
+        report.menuPerformance.length > 0
+          ? { formula: `SUM(E${menuStartRow}:E${menuEndRow})` }
+          : 0,
+        report.menuPerformance.length > 0
+          ? { formula: `SUM(F${menuStartRow}:F${menuEndRow})` }
+          : 0,
+      ]);
+      styleTotalRow(menuTotal);
+      menuTotal.getCell(4).numFmt = QTY_FMT;
+      menuTotal.getCell(4).alignment = { vertical: "middle", horizontal: "right" };
+      menuTotal.getCell(5).numFmt = RP_FMT;
+      menuTotal.getCell(5).alignment = { vertical: "middle", horizontal: "right" };
+      menuTotal.getCell(6).numFmt = RP_FMT;
+      menuTotal.getCell(6).alignment = { vertical: "middle", horizontal: "right" };
+      autoFitSheet(ws3);
+
+      // 4. Sheet: Metode Bayar & Voucher
+      const ws4 = wb.addWorksheet("Metode Bayar & Voucher");
+      applyReportBanner(
+        ws4,
+        `METODE PEMBAYARAN, CHANNEL & VOUCHER — ${activeStore.name.toUpperCase()}`,
+        4
+      );
+      const pmHeader = ws4.addRow([
+        "METODE PEMBAYARAN",
+        "JUMLAH TRANSAKSI",
+        "TOTAL PENERIMAAN",
+        "PORSI (%)",
+      ]);
+      styleHeaderRow(pmHeader);
+      ws4.views = [{ state: "frozen", ySplit: pmHeader.number }];
+
+      const pmValues = Object.values(report.paymentMethods);
+      pmValues.forEach((pm, idx) => {
+        const pct = report.totalCollected > 0 ? pm.omzet / report.totalCollected : 0;
+        const r = ws4.addRow([pm.label, pm.count, pm.omzet, pct]);
+        styleDataRow(r, idx % 2 === 1);
+        r.getCell(2).numFmt = QTY_FMT;
+        r.getCell(2).alignment = { vertical: "middle", horizontal: "right" };
+        r.getCell(3).numFmt = RP_FMT;
+        r.getCell(3).alignment = { vertical: "middle", horizontal: "right" };
+        r.getCell(4).numFmt = PCT_FMT;
+        r.getCell(4).alignment = { vertical: "middle", horizontal: "right" };
+      });
+
+      ws4.addRow([]);
+      const chHeader = ws4.addRow([
+        "CHANNEL PENJUALAN",
+        "JUMLAH ORDER",
+        "TOTAL PENERIMAAN",
+        "PORSI (%)",
+      ]);
+      styleHeaderRow(chHeader);
+      Object.values(report.channels).forEach((ch, idx) => {
+        const pct = report.totalCollected > 0 ? ch.omzet / report.totalCollected : 0;
+        const r = ws4.addRow([ch.label, ch.count, ch.omzet, pct]);
+        styleDataRow(r, idx % 2 === 1);
+        r.getCell(2).numFmt = QTY_FMT;
+        r.getCell(2).alignment = { vertical: "middle", horizontal: "right" };
+        r.getCell(3).numFmt = RP_FMT;
+        r.getCell(3).alignment = { vertical: "middle", horizontal: "right" };
+        r.getCell(4).numFmt = PCT_FMT;
+        r.getCell(4).alignment = { vertical: "middle", horizontal: "right" };
+      });
+
+      ws4.addRow([]);
+      const vHeader = ws4.addRow([
+        "VOUCHER / DISKON TERPAKAI",
+        "JUMLAH PAKAI",
+        "TOTAL DISKON",
+        "KETERANGAN",
+      ]);
+      styleHeaderRow(vHeader);
+      if (report.voucherUsage.length === 0) {
+        const r = ws4.addRow(["Tidak ada pemakaian voucher/diskon", 0, 0, "-"]);
+        styleDataRow(r, false);
+        r.getCell(2).numFmt = QTY_FMT;
+        r.getCell(3).numFmt = RP_FMT;
+      } else {
+        report.voucherUsage.forEach((v, idx) => {
+          const r = ws4.addRow([v.label, v.count, v.totalDiscount, "Potongan promo"]);
+          styleDataRow(r, idx % 2 === 1);
+          r.getCell(2).numFmt = QTY_FMT;
+          r.getCell(2).alignment = { vertical: "middle", horizontal: "right" };
+          r.getCell(3).numFmt = RP_FMT;
+          r.getCell(3).alignment = { vertical: "middle", horizontal: "right" };
+        });
+      }
+      autoFitSheet(ws4);
+
+      const buffer = await wb.xlsx.writeBuffer();
+      const blob = new Blob([buffer], {
+        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      const safeName = activeStore.name
+        .replace(/[^a-zA-Z0-9-_]+/g, "-")
+        .replace(/^-+|-+$/g, "");
+      a.href = url;
+      a.download = `Laporan-Mukaro-${safeName || activeStore.slug}-${startDate}-sd-${endDate}.xlsx`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } finally {
+      setExporting(false);
     }
-  };
-
-  const handleDownloadXlsx = () => {
-    const wb = XLSX.utils.book_new();
-
-    // Sheet 1: Ringkasan & Kas Closing
-    const summaryAoa: (string | number)[][] = [
-      ["LAPORAN OPERASIONAL & PENJUALAN MUKARO"],
-      ["Nama Usaha / Cabang", activeStore.name],
-      ["Slug Outlet", `/${activeStore.slug}`],
-      ["Periode Tanggal", `${startDate} s/d ${endDate}`],
-      ["Kasir On-Duty", activeStore.active_staff_name || "-"],
-      [],
-      ["RINGKASAN PENJUALAN", "NILAI"],
-      ["Total Transaksi Sukses", report.totalOrders],
-      ["Total Omzet Kotor (Rp)", report.totalGross],
-      ["Total Diskon / Voucher (Rp)", report.totalDiscount],
-      ["Total Omzet Bersih (Rp)", report.totalNet],
-      ["Total Estimasi HPP (Rp)", report.totalHpp],
-      ["Estimasi Laba Kotor (Rp)", report.totalProfit],
-      ["Rata-rata Nilai Order / AOV (Rp)", report.aov],
-      [],
-      ["RINGKASAN KAS CLOSING", "NILAI (Rp)"],
-      ["Modal Awal Deposit Kasir", report.cashInitial],
-      ["Pemasukan Tunai (Cash)", report.cashSales],
-      ["Estimasi Sisa Kas Closing", report.estimatedClosingCash],
-      ["Total Non-Tunai (QRIS + Ojol)", report.nonCashSales],
-    ];
-    const ws1 = XLSX.utils.aoa_to_sheet(summaryAoa);
-    ws1["!cols"] = buildAutoFitCols(summaryAoa);
-    formatNumericCells(ws1, summaryAoa, [1]);
-    XLSX.utils.book_append_sheet(wb, ws1, "Ringkasan & Kas Closing");
-
-    // Sheet 2: Rincian Transaksi
-    const txHeader = [
-      "Tanggal",
-      "Jam",
-      "No_Order",
-      "Kasir",
-      "Channel",
-      "Daftar_Item",
-      "Metode_Bayar",
-      "Subtotal_Kotor",
-      "Diskon",
-      "Omzet_Bersih",
-      "Estimasi_HPP",
-      "Estimasi_Profit",
-      "Catatan",
-    ];
-    const txData = report.txRows.map((r) => [
-      r.tanggal,
-      r.jam,
-      r.noOrder,
-      r.kasir,
-      r.channel,
-      r.daftarItem,
-      r.metodeBayar,
-      r.subtotalKotor,
-      r.diskon,
-      r.omzetBersih,
-      r.estimasiHpp,
-      r.estimasiProfit,
-      r.catatan,
-    ]);
-    const txTotalRow = [
-      "TOTAL",
-      "",
-      "",
-      "",
-      "",
-      `${report.totalOrders} transaksi`,
-      "",
-      report.totalGross,
-      report.totalDiscount,
-      report.totalNet,
-      report.totalHpp,
-      report.totalProfit,
-      "",
-    ];
-    const txAoa = [txHeader, ...txData, txTotalRow];
-    const ws2 = XLSX.utils.aoa_to_sheet(txAoa);
-    ws2["!cols"] = buildAutoFitCols(txAoa);
-    formatNumericCells(ws2, txAoa, [7, 8, 9, 10, 11]);
-    XLSX.utils.book_append_sheet(wb, ws2, "Rincian Transaksi");
-
-    // Sheet 3: Menu Terjual
-    const menuHeader = [
-      "Peringkat",
-      "Nama_Menu",
-      "Kategori",
-      "Qty_Terjual",
-      "Total_Penjualan",
-      "Estimasi_Profit",
-    ];
-    const menuData = report.menuPerformance.map((m) => [
-      m.rank,
-      m.name,
-      m.category,
-      m.qty,
-      m.omzet,
-      m.profit,
-    ]);
-    const menuAoa = [menuHeader, ...menuData];
-    const ws3 = XLSX.utils.aoa_to_sheet(menuAoa);
-    ws3["!cols"] = buildAutoFitCols(menuAoa);
-    formatNumericCells(ws3, menuAoa, [3, 4, 5]);
-    XLSX.utils.book_append_sheet(wb, ws3, "Menu Terjual");
-
-    // Sheet 4: Metode Bayar & Voucher
-    const payVoucherAoa: (string | number)[][] = [
-      ["METODE PEMBAYARAN", "JUMLAH TRANSAKSI", "TOTAL NOMINAL (Rp)"],
-      ...Object.values(report.paymentMethods).map((pm) => [
-        pm.label,
-        pm.count,
-        pm.omzet,
-      ]),
-      [],
-      ["CHANNEL PENJUALAN", "JUMLAH ORDER", "TOTAL OMZET (Rp)"],
-      ...Object.values(report.channels).map((ch) => [
-        ch.label,
-        ch.count,
-        ch.omzet,
-      ]),
-      [],
-      ["PENGGUNAAN VOUCHER / DISKON", "JUMLAH PAKAI", "TOTAL DISKON (Rp)"],
-      ...(report.voucherUsage.length > 0
-        ? report.voucherUsage.map((v) => [v.label, v.count, v.totalDiscount])
-        : [["Tidak ada pemakaian voucher/diskon", 0, 0]]),
-    ];
-    const ws4 = XLSX.utils.aoa_to_sheet(payVoucherAoa);
-    ws4["!cols"] = buildAutoFitCols(payVoucherAoa);
-    formatNumericCells(ws4, payVoucherAoa, [1, 2]);
-    XLSX.utils.book_append_sheet(wb, ws4, "Metode Bayar & Voucher");
-
-    const safeName = activeStore.name
-      .replace(/[^a-zA-Z0-9-_]+/g, "-")
-      .replace(/^-+|-+$/g, "");
-    const fileName = `Laporan-Mukaro-${safeName || activeStore.slug}-${startDate}-sd-${endDate}.xlsx`;
-    XLSX.writeFile(wb, fileName);
   };
 
   if (isLocked) {
@@ -580,12 +834,20 @@ export function ReportsClient({
         <div className="flex flex-wrap items-center gap-2.5">
           <button
             type="button"
-            disabled={loading}
+            disabled={loading || exporting}
             onClick={handleDownloadXlsx}
             className="px-4 py-2.5 rounded-xl bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-xs font-semibold inline-flex items-center gap-2 transition disabled:opacity-60 cursor-pointer"
           >
-            <FileSpreadsheet className="w-4 h-4" />
-            <span>Download Laporan Google Sheets (.xlsx)</span>
+            {exporting ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <FileSpreadsheet className="w-4 h-4" />
+            )}
+            <span>
+              {exporting
+                ? "Menyiapkan Excel..."
+                : "Download Laporan Google Sheets (.xlsx)"}
+            </span>
           </button>
 
           <button
