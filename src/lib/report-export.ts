@@ -91,7 +91,18 @@ export interface ComputedReportData {
   cashInitial: number;
   cashSales: number;
   estimatedClosingCash: number;
+  physicalCash: number | null;
+  cashVariance: number | null;
   nonCashSales: number;
+  branchComparison?: Array<{
+    id: string;
+    name: string;
+    slug: string;
+    txCount: number;
+    netRevenue: number;
+    totalCollected: number;
+    profit: number;
+  }>;
 
   voidRefundCount: number;
   voidRefundAmount: number;
@@ -145,6 +156,11 @@ function applyBanner(
   titleRow.alignment = { vertical: "middle", horizontal: "left" };
 
   const meta: [string, string][] = [
+    ...(store.company_name
+      ? [["Perusahaan / PT", `${store.company_name}${store.npwp ? ` (NPWP: ${store.npwp})` : ""}`] as [string, string]]
+      : store.npwp
+        ? [["NPWP", store.npwp] as [string, string]]
+        : []),
     ["Outlet / Cabang", `${store.name} (/${store.slug})`],
     ["Periode Laporan", `${startDate} s/d ${endDate}`],
     ["Kasir On-Duty", store.active_staff_name || "-"],
@@ -311,13 +327,23 @@ export async function exportReportToExcel(
   const rModal = ws1.addRow(["Modal Awal Deposit Kasir", report.cashInitial, "Dari Pengaturan Toko"]);
   const rCashIn = ws1.addRow(["+ Pemasukan Tunai (Cash)", report.cashSales, "Penjualan tunai lunas"]);
   const rClosing = ws1.addRow([
-    "Estimasi Sisa Kas Closing",
+    "Estimasi Sisa Kas Sistem",
     { formula: `B${rModal.number}+B${rCashIn.number}` },
     "Modal Awal + Pemasukan Tunai",
   ]);
+  const rPhysical = ws1.addRow([
+    "Uang Tunai Fisik di Laci",
+    report.physicalCash ?? report.estimatedClosingCash,
+    report.physicalCash != null ? "Input kas fisik saat closing" : "Belum diinput (default sesuai sistem)",
+  ]);
+  const rVariance = ws1.addRow([
+    "Selisih Kas (Over / Short)",
+    { formula: `B${rPhysical.number}-B${rClosing.number}` },
+    "Uang Fisik - Estimasi Kas Sistem",
+  ]);
   const rNonCash = ws1.addRow(["Total Non-Tunai (QRIS + Ojol)", report.nonCashSales, "Masuk rekening / platform"]);
 
-  [rModal, rCashIn, rNonCash].forEach((row, idx) => {
+  [rModal, rCashIn, rPhysical, rNonCash].forEach((row, idx) => {
     styleDataRow(row, idx % 2 === 1);
     row.getCell(2).numFmt = RP_FMT;
     row.getCell(2).alignment = { vertical: "middle", horizontal: "right" };
@@ -325,6 +351,9 @@ export async function exportReportToExcel(
   styleTotalRow(rClosing);
   rClosing.getCell(2).numFmt = RP_FMT;
   rClosing.getCell(2).alignment = { vertical: "middle", horizontal: "right" };
+  styleTotalRow(rVariance);
+  rVariance.getCell(2).numFmt = RP_FMT;
+  rVariance.getCell(2).alignment = { vertical: "middle", horizontal: "right" };
 
   ws1.addRow([]);
   const riskHeader = ws1.addRow(["KONTROL RISIKO & POLA OPERASIONAL", "NILAI", "KETERANGAN"]);

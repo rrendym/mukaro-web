@@ -97,9 +97,19 @@ export function ReportsClient({
   const [loading, setLoading] = useState(! (planTier === "starter"));
   const [exporting, setExporting] = useState(false);
   const [printedAt] = useState(() => new Date().toLocaleString("id-ID"));
+  const [physicalCashInput, setPhysicalCashInput] = useState("");
 
-  const activeStore =
-    ownerStores.find((s) => s.id === activeStoreId) || store;
+  const isHqMode = activeStoreId === "ALL_HQ" && ownerStores.length > 1;
+  const activeStore = isHqMode
+    ? {
+        ...store,
+        name: `Semua Cabang (${ownerStores.length} Outlet HQ)`,
+        cash_drawer_initial: ownerStores.reduce(
+          (s, st) => s + Number(st.cash_drawer_initial || 0),
+          0
+        ),
+      }
+    : ownerStores.find((s) => s.id === activeStoreId) || store;
 
   const isLocked = planTier === "starter";
 
@@ -111,21 +121,25 @@ export function ReportsClient({
     const startIso = new Date(`${startDate}T00:00:00`).toISOString();
     const endIso = new Date(`${endDate}T23:59:59.999`).toISOString();
 
+    const targetStoreIds = isHqMode
+      ? ownerStores.map((s) => s.id)
+      : [activeStoreId];
+
     Promise.all([
       supabase
         .from("orders")
         .select("*, order_items(*)")
-        .eq("store_id", activeStoreId)
+        .in("store_id", targetStoreIds)
         .gte("created_at", startIso)
         .lte("created_at", endIso)
         .order("created_at", { ascending: false }),
-      supabase.from("menus").select("*").eq("store_id", activeStoreId),
-      supabase.from("categories").select("*").eq("store_id", activeStoreId),
-      supabase.from("ingredients").select("*").eq("store_id", activeStoreId),
+      supabase.from("menus").select("*").in("store_id", targetStoreIds),
+      supabase.from("categories").select("*").in("store_id", targetStoreIds),
+      supabase.from("ingredients").select("*").in("store_id", targetStoreIds),
       supabase
         .from("stock_opname_logs")
         .select("*")
-        .eq("store_id", activeStoreId)
+        .in("store_id", targetStoreIds)
         .gte("created_at", startIso)
         .lte("created_at", endIso)
         .order("created_at", { ascending: false }),
@@ -463,8 +477,46 @@ export function ReportsClient({
     const cashInitial = Math.round(Number(activeStore.cash_drawer_initial || 0));
     const cashSales = paymentMethods.cash.omzet;
     const estimatedClosingCash = cashInitial + cashSales;
+    const physicalCash =
+      physicalCashInput.trim() !== "" &&
+      !Number.isNaN(Number(physicalCashInput))
+        ? Math.max(0, Math.round(Number(physicalCashInput)))
+        : null;
+    const cashVariance =
+      physicalCash != null ? physicalCash - estimatedClosingCash : null;
     const nonCashSales =
       paymentMethods.qris.omzet + paymentMethods.ojol_platform.omzet;
+
+    const branchComparison = isHqMode
+      ? ownerStores.map((st) => {
+          const stOrders = orders.filter(
+            (o) =>
+              o.store_id === st.id &&
+              o.payment_status === "paid" &&
+              o.order_status !== "cancelled"
+          );
+          let stNet = 0;
+          let stCollected = 0;
+          let stHpp = 0;
+          for (const o of stOrders) {
+            const sub = Math.round(Number(o.subtotal || 0));
+            const disc = Math.round(Number(o.discount_amount || 0));
+            const net = Math.max(0, sub - disc);
+            stNet += net;
+            stCollected += Math.round(Number(o.total_amount || net));
+            stHpp += Math.round(net * 0.4);
+          }
+          return {
+            id: st.id,
+            name: st.name,
+            slug: st.slug,
+            txCount: stOrders.length,
+            netRevenue: stNet,
+            totalCollected: stCollected,
+            profit: stNet - stHpp,
+          };
+        })
+      : undefined;
 
     let bestHour = -1;
     let bestHourCount = 0;
@@ -550,13 +602,16 @@ export function ReportsClient({
       cashInitial,
       cashSales,
       estimatedClosingCash,
+      physicalCash,
+      cashVariance,
       nonCashSales,
+      branchComparison,
       voidRefundCount,
       voidRefundAmount,
       peakHourLabel,
       busiestDayLabel,
     };
-  }, [orders, menus, categories, ingredients, opnameLogs, activeStore]);
+  }, [orders, menus, categories, ingredients, opnameLogs, activeStore, physicalCashInput, isHqMode, ownerStores]);
 
   const handleDownloadXlsx = async () => {
     setExporting(true);
@@ -698,8 +753,9 @@ export function ReportsClient({
               <select
                 value={activeStoreId}
                 onChange={(e) => setActiveStoreId(e.target.value)}
-                className="px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 text-xs font-semibold bg-white dark:bg-[#111827] focus:outline-none focus:border-[#2563EB]"
+                className="px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 text-xs font-semibold bg-white dark:bg-[#111827] text-slate-900 dark:text-slate-100 focus:outline-none focus:border-[#2563EB]"
               >
+                <option value="ALL_HQ">Semua Cabang (HQ Overview)</option>
                 {ownerStores.map((s) => (
                   <option key={s.id} value={s.id}>
                     Outlet: {s.name}
@@ -1017,12 +1073,50 @@ export function ReportsClient({
                   </div>
                   <div className="flex justify-between p-3 rounded-xl bg-emerald-50/70 dark:bg-emerald-950/30 border border-emerald-200/70 dark:border-emerald-900/50">
                     <span className="font-bold text-slate-900 dark:text-slate-100">
-                      Estimasi Sisa Kas Laci
+                      Estimasi Sisa Kas Sistem
                     </span>
                     <span className="font-mono font-extrabold text-[#059669]">
                       {formatRupiah(report.estimatedClosingCash)}
                     </span>
                   </div>
+
+                  {/* Input Uang Tunai Fisik saat Closing */}
+                  <div className="p-3 rounded-xl bg-[#F8FAFC] dark:bg-[#090D16] border border-slate-200 dark:border-slate-800 space-y-2">
+                    <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-200">
+                      Input Uang Tunai Fisik di Laci (Rp)
+                    </label>
+                    <input
+                      type="number"
+                      min={0}
+                      value={physicalCashInput}
+                      onChange={(e) => setPhysicalCashInput(e.target.value)}
+                      placeholder={String(report.estimatedClosingCash)}
+                      className="w-full px-3 py-2 rounded-lg bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-700 text-xs font-mono font-bold text-slate-900 dark:text-slate-100 focus:outline-none focus:border-[#2563EB]"
+                    />
+                    {report.cashVariance != null && (
+                      <div className="flex justify-between items-center text-[11px] pt-1">
+                        <span className="font-semibold text-slate-600 dark:text-slate-400">
+                          Selisih Kas (Over / Short):
+                        </span>
+                        <span
+                          className={`font-mono font-extrabold ${
+                            report.cashVariance === 0
+                              ? "text-[#059669]"
+                              : report.cashVariance > 0
+                                ? "text-[#2563EB]"
+                                : "text-rose-600"
+                          }`}
+                        >
+                          {report.cashVariance === 0
+                            ? "Rp 0 (Klop)"
+                            : report.cashVariance > 0
+                              ? `+${formatRupiah(report.cashVariance)} (Over)`
+                              : `-${formatRupiah(Math.abs(report.cashVariance))} (Short)`}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+
                   <div className="flex justify-between p-2.5 rounded-xl bg-[#F8FAFC] dark:bg-[#090D16]">
                     <span className="text-slate-600 dark:text-slate-400">
                       Total Non-Tunai (QRIS + Ojol)
@@ -1077,6 +1171,45 @@ export function ReportsClient({
                 )}
               </div>
             </div>
+
+            {/* HQ Multi-Outlet Comparison */}
+            {report.branchComparison && report.branchComparison.length > 1 && (
+              <div className="bg-white dark:bg-[#111827] rounded-2xl border border-slate-200 dark:border-slate-800 p-5 space-y-3">
+                <h2 className="text-sm font-bold tracking-tight text-slate-900 dark:text-slate-100">
+                  Perbandingan Performa Antar-Cabang (HQ)
+                </h2>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs">
+                    <thead>
+                      <tr className="border-b border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400">
+                        <th className="py-2 pr-4 font-semibold">Cabang</th>
+                        <th className="py-2 pr-4 font-semibold text-right">Order Lunas</th>
+                        <th className="py-2 pr-4 font-semibold text-right">Omzet Bersih</th>
+                        <th className="py-2 font-semibold text-right">Est. Laba Kotor</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                      {report.branchComparison.map((b) => (
+                        <tr key={b.id}>
+                          <td className="py-2.5 pr-4 font-bold text-slate-900 dark:text-slate-100">
+                            {b.name}
+                          </td>
+                          <td className="py-2.5 pr-4 text-right font-mono tabular-nums">
+                            {b.txCount}
+                          </td>
+                          <td className="py-2.5 pr-4 text-right font-mono tabular-nums font-bold">
+                            {formatRupiah(b.netRevenue)}
+                          </td>
+                          <td className="py-2.5 text-right font-mono tabular-nums font-bold text-[#059669]">
+                            {formatRupiah(b.profit)}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
 
             {/* Rincian Transaksi Detail */}
             <div className="bg-white dark:bg-[#111827] rounded-2xl border border-slate-200 dark:border-slate-800 p-5 space-y-4">

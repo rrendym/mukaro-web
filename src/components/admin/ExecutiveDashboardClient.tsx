@@ -11,6 +11,7 @@ import {
   AlertTriangle,
   ArrowRight,
   Award,
+  Building2,
 } from "lucide-react";
 import {
   ResponsiveContainer,
@@ -28,6 +29,8 @@ import { MukaroAiAdvisorPanel } from "./MukaroAiAdvisorPanel";
 
 interface ExecutiveDashboardClientProps {
   store: Store;
+  ownerStores?: Store[];
+  hqOrders?: Order[];
   orders: Order[];
   orderItems: OrderItem[];
   menus: Menu[];
@@ -37,12 +40,15 @@ interface ExecutiveDashboardClientProps {
 
 export function ExecutiveDashboardClient({
   store,
+  ownerStores = [],
+  hqOrders = [],
   orders,
   orderItems,
   menus,
   lowStockMenus,
   lowStockIngredients,
 }: ExecutiveDashboardClientProps) {
+  const [hqMode, setHqMode] = useState(false);
   const [trendRange, setTrendRange] = useState<"today" | "7d" | "30d">("today");
   const [channelRange, setChannelRange] = useState<
     "today" | "7d" | "30d" | "custom"
@@ -60,10 +66,37 @@ export function ExecutiveDashboardClient({
     ).padStart(2, "0")}`;
   });
 
-  const paidOrders = useMemo(
-    () => orders.filter((o) => o.payment_status === "paid"),
-    [orders]
+  const activeOrders = useMemo(
+    () => (hqMode && hqOrders.length > 0 ? hqOrders : orders),
+    [hqMode, hqOrders, orders]
   );
+
+  const paidOrders = useMemo(
+    () => activeOrders.filter((o) => o.payment_status === "paid"),
+    [activeOrders]
+  );
+
+  const branchComparison = useMemo(() => {
+    if (ownerStores.length <= 1) return [];
+    const sourceOrders = hqOrders.length > 0 ? hqOrders : orders;
+    return ownerStores.map((st) => {
+      const stPaid = sourceOrders.filter(
+        (o) => o.store_id === st.id && o.payment_status === "paid"
+      );
+      const revenue30d = stPaid.reduce(
+        (sum, o) => sum + Number(o.total_amount || 0),
+        0
+      );
+      return {
+        id: st.id,
+        name: st.name,
+        slug: st.slug,
+        txCount: stPaid.length,
+        revenue30d,
+        aov: stPaid.length > 0 ? Math.round(revenue30d / stPaid.length) : 0,
+      };
+    });
+  }, [ownerStores, hqOrders, orders]);
 
   const { todaySales, yesterdaySales, todayOrders, channelBreakdown } =
     useMemo(() => {
@@ -390,12 +423,41 @@ export function ExecutiveDashboardClient({
             Ringkasan penjualan, target harian, dan stok outlet Anda.
           </p>
         </div>
-        <Link
-          href={`/${store.slug}/admin/pos`}
-          className="inline-flex items-center justify-center px-5 py-2.5 rounded-xl bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-xs font-semibold transition w-fit"
-        >
-          Buka Kasir POS
-        </Link>
+        <div className="flex flex-wrap items-center gap-2">
+          {ownerStores.length > 1 && (
+            <div className="inline-flex p-1 rounded-xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800">
+              <button
+                type="button"
+                onClick={() => setHqMode(false)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${
+                  !hqMode
+                    ? "bg-[#2563EB] text-white"
+                    : "text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white"
+                }`}
+              >
+                Outlet Ini
+              </button>
+              <button
+                type="button"
+                onClick={() => setHqMode(true)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold inline-flex items-center gap-1 transition ${
+                  hqMode
+                    ? "bg-[#2563EB] text-white"
+                    : "text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white"
+                }`}
+              >
+                <Building2 className="w-3.5 h-3.5" />
+                <span>Semua Cabang (HQ)</span>
+              </button>
+            </div>
+          )}
+          <Link
+            href={`/${store.slug}/admin/pos`}
+            className="inline-flex items-center justify-center px-5 py-2.5 rounded-xl bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-xs font-semibold transition w-fit"
+          >
+            Buka Kasir POS
+          </Link>
+        </div>
       </div>
 
       {/* Baris 1 — 4 Kartu KPI Utama */}
@@ -799,7 +861,60 @@ export function ExecutiveDashboardClient({
         )}
       </div>
 
-      {/* Baris 4 — Mukaro AI Advisor */}
+      {/* Baris 4 — Perbandingan Performa Antar-Cabang (HQ) */}
+      {hqMode && branchComparison.length > 1 && (
+        <div className="bg-white dark:bg-[#111827] rounded-2xl border border-slate-200 dark:border-slate-800 p-5 space-y-4">
+          <div className="flex items-center gap-2.5">
+            <div className="w-9 h-9 rounded-xl bg-blue-50 dark:bg-blue-950/60 text-[#2563EB] flex items-center justify-center">
+              <Building2 className="w-4 h-4" />
+            </div>
+            <div>
+              <h2 className="text-sm font-bold text-slate-900 dark:text-slate-100">
+                Perbandingan Performa Antar-Cabang (30 Hari Terakhir)
+              </h2>
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                Konsolidasi omzet, transaksi, dan rata-rata order seluruh outlet.
+              </p>
+            </div>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs">
+              <thead>
+                <tr className="border-b border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400">
+                  <th className="py-2 pr-4 font-semibold">Cabang</th>
+                  <th className="py-2 pr-4 font-semibold text-right">Transaksi</th>
+                  <th className="py-2 pr-4 font-semibold text-right">Omzet 30 Hari</th>
+                  <th className="py-2 font-semibold text-right">AOV</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                {branchComparison.map((b) => (
+                  <tr key={b.id}>
+                    <td className="py-2.5 pr-4 font-bold text-slate-900 dark:text-slate-100">
+                      {b.name}{" "}
+                      <span className="text-[10px] font-mono text-slate-400">
+                        /{b.slug}
+                      </span>
+                    </td>
+                    <td className="py-2.5 pr-4 text-right font-mono tabular-nums">
+                      {b.txCount}
+                    </td>
+                    <td className="py-2.5 pr-4 text-right font-mono tabular-nums font-bold text-[#059669]">
+                      {formatRupiah(b.revenue30d)}
+                    </td>
+                    <td className="py-2.5 text-right font-mono tabular-nums">
+                      {formatRupiah(b.aov)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* Baris 5 — Mukaro AI Advisor */}
       <MukaroAiAdvisorPanel
         outletName={store.name}
         currentRevenue={advisorData.currentRevenue}

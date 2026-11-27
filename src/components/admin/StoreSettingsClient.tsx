@@ -54,6 +54,12 @@ export function StoreSettingsClient({ store }: { store: Store }) {
   );
   const [stockPin, setStockPin] = useState(store.stock_pin || "1234");
   const [showStockPin, setShowStockPin] = useState(false);
+  const [supervisorPin, setSupervisorPin] = useState(
+    store.supervisor_pin || store.staff_pin || "1234"
+  );
+  const [showSupervisorPin, setShowSupervisorPin] = useState(false);
+  const [companyName, setCompanyName] = useState(store.company_name || "");
+  const [npwp, setNpwp] = useState(store.npwp || "");
   const [staffList, setStaffList] = useState<string[]>(
     Array.isArray(store.staff_list) ? store.staff_list : []
   );
@@ -232,7 +238,10 @@ export function StoreSettingsClient({ store }: { store: Store }) {
         .from("stores")
         .update({
           ...basePayload,
+          company_name: companyName.trim() || null,
+          npwp: npwp.trim() || null,
           stock_pin: stockPin.trim() || "1234",
+          supervisor_pin: supervisorPin.trim() || "1234",
           staff_list: staffList,
           active_staff_name: activeStaffName.trim() || null,
         })
@@ -242,6 +251,9 @@ export function StoreSettingsClient({ store }: { store: Store }) {
         const msg = updateErr.message.toLowerCase();
         if (
           msg.includes("stock_pin") ||
+          msg.includes("supervisor_pin") ||
+          msg.includes("company_name") ||
+          msg.includes("npwp") ||
           msg.includes("staff_list") ||
           msg.includes("active_staff_name")
         ) {
@@ -627,7 +639,33 @@ export function StoreSettingsClient({ store }: { store: Store }) {
           </h2>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div>
+            <label className="block text-xs font-bold text-slate-900 dark:text-slate-100 mb-1.5">
+              Nama PT / Perusahaan (Opsional)
+            </label>
+            <input
+              type="text"
+              value={companyName}
+              onChange={(e) => setCompanyName(e.target.value)}
+              placeholder="PT Senja Kuliner Nusantara"
+              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#111827] text-sm focus:outline-none focus:border-[#2563EB] transition"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-slate-900 dark:text-slate-100 mb-1.5">
+              NPWP Perusahaan (Opsional)
+            </label>
+            <input
+              type="text"
+              value={npwp}
+              onChange={(e) => setNpwp(e.target.value)}
+              placeholder="01.234.567.8-901.000"
+              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#111827] text-sm font-mono focus:outline-none focus:border-[#2563EB] transition"
+            />
+          </div>
+
           <div>
             <label className="block text-xs font-bold text-slate-900 dark:text-slate-100 mb-1.5">
               Modal Awal / Deposit Kasir (Rp)
@@ -643,6 +681,26 @@ export function StoreSettingsClient({ store }: { store: Store }) {
             />
           </div>
 
+          <div>
+            <label className="block text-xs font-bold text-slate-900 dark:text-slate-100 mb-1.5">
+              Karyawan Sedang Bertugas (On-Duty)
+            </label>
+            <select
+              value={activeStaffName}
+              onChange={(e) => setActiveStaffName(e.target.value)}
+              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#111827] text-sm font-semibold focus:outline-none focus:border-[#2563EB] transition"
+            >
+              <option value="">-- Belum dipilih --</option>
+              {staffList.map((st) => (
+                <option key={st} value={st}>
+                  {st}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label className="block text-xs font-bold text-slate-900 dark:text-slate-100 mb-1.5">
               PIN Khusus Stok &amp; Opname
@@ -672,20 +730,29 @@ export function StoreSettingsClient({ store }: { store: Store }) {
 
           <div>
             <label className="block text-xs font-bold text-slate-900 dark:text-slate-100 mb-1.5">
-              Karyawan Sedang Bertugas (On-Duty)
+              PIN Supervisor (Untuk Void / Refund Pesanan)
             </label>
-            <select
-              value={activeStaffName}
-              onChange={(e) => setActiveStaffName(e.target.value)}
-              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#111827] text-sm font-semibold focus:outline-none focus:border-[#2563EB] transition"
-            >
-              <option value="">-- Belum dipilih --</option>
-              {staffList.map((st) => (
-                <option key={st} value={st}>
-                  {st}
-                </option>
-              ))}
-            </select>
+            <div className="relative">
+              <input
+                type={showSupervisorPin ? "text" : "password"}
+                value={supervisorPin}
+                onChange={(e) => setSupervisorPin(e.target.value)}
+                placeholder="1234"
+                className="w-full pl-3.5 pr-10 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#111827] text-sm font-bold font-mono tabular-nums focus:outline-none focus:border-[#2563EB] transition"
+              />
+              <button
+                type="button"
+                onClick={() => setShowSupervisorPin((v) => !v)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
+                aria-label="Tampilkan/Sembunyikan PIN Supervisor"
+              >
+                {showSupervisorPin ? (
+                  <EyeOff className="w-4 h-4" />
+                ) : (
+                  <Eye className="w-4 h-4" />
+                )}
+              </button>
+            </div>
           </div>
         </div>
 

@@ -427,9 +427,19 @@ export function SplitBillModal({
                   className="w-full max-w-xs p-3.5 border border-dashed border-neutral-300 rounded-xl font-mono text-[11px] leading-snug text-black bg-white space-y-2"
                 >
                   <div className="text-center border-b border-dashed border-neutral-400 pb-2">
+                    {store.company_name && (
+                      <p className="text-[9px] font-semibold uppercase text-neutral-700">
+                        {store.company_name}
+                      </p>
+                    )}
                     <p className="font-bold text-xs uppercase">{store.name}</p>
                     {store.tagline && (
                       <p className="text-[10px]">{store.tagline}</p>
+                    )}
+                    {store.npwp && (
+                      <p className="text-[9px] text-neutral-600">
+                        NPWP: {store.npwp}
+                      </p>
                     )}
                     <p className="text-[10px] font-bold mt-1">
                       ** STRUK SPLIT BILL **

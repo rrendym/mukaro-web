@@ -26,17 +26,44 @@ export default async function AdminDashboardPage({
 
   const thirtyDaysAgo = getDaysAgoIso(30);
 
-  const [{ data: ordersData }, { data: allMenusData }, { data: ingredientsData }] =
-    await Promise.all([
-      supabase
-        .from("orders")
-        .select("*")
-        .eq("store_id", store.id)
-        .gte("created_at", thirtyDaysAgo)
-        .order("created_at", { ascending: false }),
-      supabase.from("menus").select("*").eq("store_id", store.id),
-      supabase.from("ingredients").select("*").eq("store_id", store.id),
-    ]);
+  let ownerStores: Store[] = [store];
+  if (store.owner_id) {
+    const { data: allOwnerStores } = await supabase
+      .from("stores")
+      .select("*")
+      .eq("owner_id", store.owner_id)
+      .order("created_at", { ascending: true });
+    if (allOwnerStores && allOwnerStores.length > 0) {
+      ownerStores = allOwnerStores as Store[];
+    }
+  }
+
+  const [
+    { data: ordersData },
+    { data: allMenusData },
+    { data: ingredientsData },
+    { data: hqOrdersData },
+  ] = await Promise.all([
+    supabase
+      .from("orders")
+      .select("*")
+      .eq("store_id", store.id)
+      .gte("created_at", thirtyDaysAgo)
+      .order("created_at", { ascending: false }),
+    supabase.from("menus").select("*").eq("store_id", store.id),
+    supabase.from("ingredients").select("*").eq("store_id", store.id),
+    ownerStores.length > 1
+      ? supabase
+          .from("orders")
+          .select("*")
+          .in(
+            "store_id",
+            ownerStores.map((s) => s.id)
+          )
+          .gte("created_at", thirtyDaysAgo)
+          .order("created_at", { ascending: false })
+      : Promise.resolve({ data: null }),
+  ]);
 
   const orders = (ordersData as Order[]) || [];
   const allMenus = (allMenusData as Menu[]) || [];
@@ -61,6 +88,8 @@ export default async function AdminDashboardPage({
   return (
     <ExecutiveDashboardClient
       store={store}
+      ownerStores={ownerStores}
+      hqOrders={(hqOrdersData as Order[]) || []}
       orders={orders}
       orderItems={orderItems}
       menus={allMenus}

@@ -54,7 +54,10 @@ export interface Store {
   daily_sales_target: number;
   cash_drawer_initial: number;
   staff_pin: string;
+  company_name?: string | null;
+  npwp?: string | null;
   stock_pin?: string | null;
+  supervisor_pin?: string | null;
   staff_list?: string[] | null;
   active_staff_name?: string | null;
   midtrans_server_key: string | null;

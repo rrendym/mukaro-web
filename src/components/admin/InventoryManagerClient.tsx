@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import {
   Plus,
   Trash2,
@@ -14,6 +14,8 @@ import {
   ChevronUp,
   UserCheck,
   KeyRound,
+  RotateCcw,
+  AlertTriangle,
 } from "lucide-react";
 import {
   Ingredient,
@@ -79,6 +81,82 @@ export function InventoryManagerClient({
   const [stockPinInput, setStockPinInput] = useState("");
   const [stockAuthError, setStockAuthError] = useState<string | null>(null);
   const [showGuide, setShowGuide] = useState(false);
+
+  // Quick Restok & Low Stock Filter + Log Date/Time Filters
+  const [onlyLowStock, setOnlyLowStock] = useState(false);
+  const [logPreset, setLogPreset] = useState<
+    "all" | "today" | "yesterday" | "7d" | "30d"
+  >("all");
+  const [logDateFrom, setLogDateFrom] = useState("");
+  const [logDateTo, setLogDateTo] = useState("");
+  const [logTimeFrom, setLogTimeFrom] = useState("");
+  const [logTimeTo, setLogTimeTo] = useState("");
+
+  const applyQuickRestock = (
+    key: string,
+    systemQty: number,
+    delta: number
+  ) => {
+    setOpnameInputs((prev) => {
+      const current =
+        prev[key] !== undefined && prev[key] !== ""
+          ? Number(prev[key])
+          : Number(systemQty || 0);
+      return {
+        ...prev,
+        [key]: String(current + delta),
+      };
+    });
+  };
+
+  const applyLogPreset = (
+    preset: "all" | "today" | "yesterday" | "7d" | "30d"
+  ) => {
+    setLogPreset(preset);
+    const pad = (n: number) => String(n).padStart(2, "0");
+    const fmt = (d: Date) =>
+      `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+    const now = new Date();
+
+    if (preset === "all") {
+      setLogDateFrom("");
+      setLogDateTo("");
+    } else if (preset === "today") {
+      const t = fmt(now);
+      setLogDateFrom(t);
+      setLogDateTo(t);
+    } else if (preset === "yesterday") {
+      const y = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+      const yStr = fmt(y);
+      setLogDateFrom(yStr);
+      setLogDateTo(yStr);
+    } else if (preset === "7d") {
+      const s = new Date(now.getTime() - 6 * 24 * 60 * 60 * 1000);
+      setLogDateFrom(fmt(s));
+      setLogDateTo(fmt(now));
+    } else if (preset === "30d") {
+      const s = new Date(now.getTime() - 29 * 24 * 60 * 60 * 1000);
+      setLogDateFrom(fmt(s));
+      setLogDateTo(fmt(now));
+    }
+  };
+
+  const filteredLogs = useMemo(() => {
+    return logs.filter((l) => {
+      const d = new Date(l.created_at);
+      const pad = (n: number) => String(n).padStart(2, "0");
+      const ymd = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(
+        d.getDate()
+      )}`;
+      const hhmm = `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+
+      if (logDateFrom && ymd < logDateFrom) return false;
+      if (logDateTo && ymd > logDateTo) return false;
+      if (logTimeFrom && hhmm < logTimeFrom) return false;
+      if (logTimeTo && hhmm > logTimeTo) return false;
+      return true;
+    });
+  }, [logs, logDateFrom, logDateTo, logTimeFrom, logTimeTo]);
 
   const validateStockAuth = (): boolean => {
     setStockAuthError(null);
@@ -182,7 +260,6 @@ export function InventoryManagerClient({
       if (logEntry) setLogs((prev) => [logEntry, ...prev]);
       setIngName("");
       setIngQty("0");
-      setStockPinInput("");
     }
     setSavingIng(false);
   };
@@ -333,7 +410,6 @@ export function InventoryManagerClient({
         setLogs((prev) => [...newLogs, ...prev]);
         setOpnameInputs({});
         setOpnameNotes("");
-        setStockPinInput("");
         setOpnameSavedToast(true);
         setTimeout(() => setOpnameSavedToast(false), 3000);
       }
@@ -675,116 +751,195 @@ export function InventoryManagerClient({
           )}
 
           <div className="bg-white dark:bg-[#111827] rounded-2xl p-5 border border-slate-200 dark:border-slate-800 space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <h2 className="text-sm font-extrabold tracking-tight text-slate-900 dark:text-slate-100">
+                  Restok Cepat &amp; Stock Opname
+                </h2>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                  Gunakan tombol cepat (+10, +50, +100) untuk restok atau ketik langsung stok fisik aktual.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setOnlyLowStock((v) => !v)}
+                className={`px-3.5 py-2 rounded-xl text-xs font-bold border inline-flex items-center gap-1.5 transition w-fit ${
+                  onlyLowStock
+                    ? "bg-rose-50 dark:bg-rose-950/50 border-rose-200 dark:border-rose-900/60 text-rose-700 dark:text-rose-300"
+                    : "bg-[#F8FAFC] dark:bg-[#090D16] border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 hover:border-[#2563EB]"
+                }`}
+              >
+                <AlertTriangle className="w-3.5 h-3.5" />
+                <span>
+                  {onlyLowStock ? "Menampilkan Stok Menipis/Habis" : "Filter Stok Menipis / Habis"}
+                </span>
+              </button>
+            </div>
+
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs">
                 <thead>
-                  <tr className="border-b border-slate-200 dark:border-slate-800 text-neutral-500">
+                  <tr className="border-b border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400">
                     <th className="py-2.5 pr-4 font-bold">Nama Item</th>
                     <th className="py-2.5 pr-4 font-bold">Tipe</th>
                     <th className="py-2.5 pr-4 font-bold">Stok Sistem</th>
-                    <th className="py-2.5 pr-4 font-bold">Stok Fisik</th>
+                    <th className="py-2.5 pr-4 font-bold">Stok Fisik &amp; Restok Cepat</th>
                     <th className="py-2.5 font-bold">Selisih</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
-                  {directStockMenus.map((m) => {
+                  {directStockMenus
+                    .filter((m) =>
+                      onlyLowStock ? m.stock_qty <= m.min_stock : true
+                    )
+                    .map((m) => {
                     const key = `menu:${m.id}`;
                     const val = opnameInputs[key];
                     const hasVal = val !== undefined && val !== "";
                     const diff = hasVal ? Number(val) - Number(m.stock_qty) : 0;
+                    const isLow = m.stock_qty <= m.min_stock;
                     return (
                       <tr key={key}>
                         <td className="py-3 pr-4 font-bold text-slate-900 dark:text-slate-100">
-                          {m.name}
+                          <span>{m.name}</span>
+                          {isLow && (
+                            <span className="ml-2 px-2 py-0.5 rounded-full bg-rose-50 dark:bg-rose-950/50 text-rose-700 dark:text-rose-300 text-[10px] font-bold">
+                              Menipis
+                            </span>
+                          )}
                         </td>
-                        <td className="py-3 pr-4 text-neutral-500">
+                        <td className="py-3 pr-4 text-slate-500 dark:text-slate-400">
                           Menu Langsung
                         </td>
                         <td className="py-3 pr-4 font-semibold font-mono tabular-nums">
                           {m.stock_qty}
                         </td>
                         <td className="py-3 pr-4">
-                          <input
-                            type="number"
-                            value={val ?? ""}
-                            onChange={(e) =>
-                              setOpnameInputs((prev) => ({
-                                ...prev,
-                                [key]: e.target.value,
-                              }))
-                            }
-                            placeholder={String(m.stock_qty)}
-                            className="w-24 px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-800 text-xs font-bold font-mono tabular-nums focus:outline-none focus:border-[#2563EB]"
-                          />
+                          <div className="flex flex-wrap items-center gap-1.5">
+                            <input
+                              type="number"
+                              value={val ?? ""}
+                              onChange={(e) =>
+                                setOpnameInputs((prev) => ({
+                                  ...prev,
+                                  [key]: e.target.value,
+                                }))
+                              }
+                              placeholder={String(m.stock_qty)}
+                              className="w-20 px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-[#090D16] text-xs font-bold font-mono tabular-nums text-slate-900 dark:text-slate-100 focus:outline-none focus:border-[#2563EB]"
+                            />
+                            {[10, 50, 100].map((delta) => (
+                              <button
+                                key={delta}
+                                type="button"
+                                onClick={() =>
+                                  applyQuickRestock(key, Number(m.stock_qty), delta)
+                                }
+                                className="px-2 py-1 rounded-md border border-slate-200 dark:border-slate-700 bg-[#F8FAFC] dark:bg-[#090D16] text-[10px] font-mono font-bold text-slate-700 dark:text-slate-200 hover:border-[#2563EB] hover:text-[#2563EB] transition"
+                              >
+                                +{delta}
+                              </button>
+                            ))}
+                          </div>
                         </td>
                         <td className="py-3 font-extrabold font-mono tabular-nums">
                           {hasVal ? (
                             <span
                               className={
                                 diff === 0
-                                  ? "text-emerald-700"
+                                  ? "text-emerald-700 dark:text-emerald-300"
                                   : diff < 0
-                                    ? "text-rose-700"
+                                    ? "text-rose-700 dark:text-rose-300"
                                     : "text-slate-900 dark:text-slate-100"
                               }
                             >
                               {diff > 0 ? `+${diff}` : diff}
                             </span>
                           ) : (
-                            <span className="text-neutral-300">-</span>
+                            <span className="text-slate-400">-</span>
                           )}
                         </td>
                       </tr>
                     );
                   })}
 
-                  {ingredients.map((ing) => {
+                  {ingredients
+                    .filter((ing) =>
+                      onlyLowStock ? ing.stock_qty <= ing.min_stock : true
+                    )
+                    .map((ing) => {
                     const key = `ing:${ing.id}`;
                     const val = opnameInputs[key];
                     const hasVal = val !== undefined && val !== "";
                     const diff = hasVal
                       ? Number(val) - Number(ing.stock_qty)
                       : 0;
+                    const isLow = ing.stock_qty <= ing.min_stock;
                     return (
                       <tr key={key}>
                         <td className="py-3 pr-4 font-bold text-slate-900 dark:text-slate-100">
-                          {ing.name} ({ing.unit})
+                          <span>
+                            {ing.name} ({ing.unit})
+                          </span>
+                          {isLow && (
+                            <span className="ml-2 px-2 py-0.5 rounded-full bg-rose-50 dark:bg-rose-950/50 text-rose-700 dark:text-rose-300 text-[10px] font-bold">
+                              Menipis
+                            </span>
+                          )}
                         </td>
-                        <td className="py-3 pr-4 text-neutral-500">
+                        <td className="py-3 pr-4 text-slate-500 dark:text-slate-400">
                           Bahan Baku
                         </td>
                         <td className="py-3 pr-4 font-semibold font-mono tabular-nums">
                           {ing.stock_qty}
                         </td>
                         <td className="py-3 pr-4">
-                          <input
-                            type="number"
-                            value={val ?? ""}
-                            onChange={(e) =>
-                              setOpnameInputs((prev) => ({
-                                ...prev,
-                                [key]: e.target.value,
-                              }))
-                            }
-                            placeholder={String(ing.stock_qty)}
-                            className="w-24 px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-800 text-xs font-bold font-mono tabular-nums focus:outline-none focus:border-[#2563EB]"
-                          />
+                          <div className="flex flex-wrap items-center gap-1.5">
+                            <input
+                              type="number"
+                              value={val ?? ""}
+                              onChange={(e) =>
+                                setOpnameInputs((prev) => ({
+                                  ...prev,
+                                  [key]: e.target.value,
+                                }))
+                              }
+                              placeholder={String(ing.stock_qty)}
+                              className="w-20 px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-[#090D16] text-xs font-bold font-mono tabular-nums text-slate-900 dark:text-slate-100 focus:outline-none focus:border-[#2563EB]"
+                            />
+                            {[10, 50, 100].map((delta) => (
+                              <button
+                                key={delta}
+                                type="button"
+                                onClick={() =>
+                                  applyQuickRestock(
+                                    key,
+                                    Number(ing.stock_qty),
+                                    delta
+                                  )
+                                }
+                                className="px-2 py-1 rounded-md border border-slate-200 dark:border-slate-700 bg-[#F8FAFC] dark:bg-[#090D16] text-[10px] font-mono font-bold text-slate-700 dark:text-slate-200 hover:border-[#2563EB] hover:text-[#2563EB] transition"
+                              >
+                                +{delta}
+                              </button>
+                            ))}
+                          </div>
                         </td>
                         <td className="py-3 font-extrabold font-mono tabular-nums">
                           {hasVal ? (
                             <span
                               className={
                                 diff === 0
-                                  ? "text-emerald-700"
+                                  ? "text-emerald-700 dark:text-emerald-300"
                                   : diff < 0
-                                    ? "text-rose-700"
+                                    ? "text-rose-700 dark:text-rose-300"
                                     : "text-slate-900 dark:text-slate-100"
                               }
                             >
                               {diff > 0 ? `+${diff}` : diff}
                             </span>
                           ) : (
-                            <span className="text-neutral-300">-</span>
+                            <span className="text-slate-400">-</span>
                           )}
                         </td>
                       </tr>
@@ -815,15 +970,113 @@ export function InventoryManagerClient({
           </div>
 
           {/* Logs */}
-          <div className="bg-white dark:bg-[#111827] rounded-2xl p-5 border border-slate-200 dark:border-slate-800 space-y-3">
-            <h3 className="text-sm font-extrabold tracking-tight text-slate-900 dark:text-slate-100">
-              Riwayat Stock Opname Terbaru
-            </h3>
-            {logs.length === 0 ? (
-              <p className="text-xs text-neutral-400">Belum ada riwayat.</p>
+          <div className="bg-white dark:bg-[#111827] rounded-2xl p-5 border border-slate-200 dark:border-slate-800 space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <h3 className="text-sm font-extrabold tracking-tight text-slate-900 dark:text-slate-100">
+                Riwayat Stock Opname Terbaru ({filteredLogs.length})
+              </h3>
+              <button
+                type="button"
+                onClick={() => {
+                  setLogPreset("all");
+                  setLogDateFrom("");
+                  setLogDateTo("");
+                  setLogTimeFrom("");
+                  setLogTimeTo("");
+                }}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:border-[#2563EB] hover:text-[#2563EB] transition w-fit"
+              >
+                <RotateCcw className="w-3.5 h-3.5" />
+                <span>Reset Filter</span>
+              </button>
+            </div>
+
+            {/* Filter Hari, Tanggal & Jam */}
+            <div className="space-y-3 p-3.5 rounded-xl bg-[#F8FAFC] dark:bg-[#090D16] border border-slate-200 dark:border-slate-800">
+              <div className="flex flex-wrap gap-1.5">
+                {[
+                  { key: "all" as const, label: "Semua" },
+                  { key: "today" as const, label: "Hari Ini" },
+                  { key: "yesterday" as const, label: "Kemarin" },
+                  { key: "7d" as const, label: "7 Hari" },
+                  { key: "30d" as const, label: "30 Hari" },
+                ].map((p) => (
+                  <button
+                    key={p.key}
+                    type="button"
+                    onClick={() => applyLogPreset(p.key)}
+                    className={`px-3 py-1 rounded-lg text-[11px] font-bold transition ${
+                      logPreset === p.key
+                        ? "bg-[#2563EB] text-white"
+                        : "bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-[#2563EB]"
+                    }`}
+                  >
+                    {p.label}
+                  </button>
+                ))}
+              </div>
+
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                <div>
+                  <label className="block text-[10px] font-semibold text-slate-500 dark:text-slate-400 mb-1">
+                    Dari Tanggal
+                  </label>
+                  <input
+                    type="date"
+                    value={logDateFrom}
+                    onChange={(e) => {
+                      setLogPreset("all");
+                      setLogDateFrom(e.target.value);
+                    }}
+                    className="w-full px-2.5 py-1.5 rounded-lg bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-700 text-xs font-mono text-slate-900 dark:text-slate-100"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-semibold text-slate-500 dark:text-slate-400 mb-1">
+                    Sampai Tanggal
+                  </label>
+                  <input
+                    type="date"
+                    value={logDateTo}
+                    onChange={(e) => {
+                      setLogPreset("all");
+                      setLogDateTo(e.target.value);
+                    }}
+                    className="w-full px-2.5 py-1.5 rounded-lg bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-700 text-xs font-mono text-slate-900 dark:text-slate-100"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-semibold text-slate-500 dark:text-slate-400 mb-1">
+                    Dari Jam
+                  </label>
+                  <input
+                    type="time"
+                    value={logTimeFrom}
+                    onChange={(e) => setLogTimeFrom(e.target.value)}
+                    className="w-full px-2.5 py-1.5 rounded-lg bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-700 text-xs font-mono text-slate-900 dark:text-slate-100"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-semibold text-slate-500 dark:text-slate-400 mb-1">
+                    Sampai Jam
+                  </label>
+                  <input
+                    type="time"
+                    value={logTimeTo}
+                    onChange={(e) => setLogTimeTo(e.target.value)}
+                    className="w-full px-2.5 py-1.5 rounded-lg bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-700 text-xs font-mono text-slate-900 dark:text-slate-100"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {filteredLogs.length === 0 ? (
+              <p className="text-xs text-slate-400 py-4 text-center">
+                Belum ada riwayat yang sesuai filter.
+              </p>
             ) : (
-              <div className="space-y-2 max-h-60 overflow-y-auto">
-                {logs.map((l) => (
+              <div className="space-y-2 max-h-72 overflow-y-auto">
+                {filteredLogs.map((l) => (
                   <div
                     key={l.id}
                     className="flex items-center justify-between gap-3 p-3 rounded-xl bg-[#F8FAFC] dark:bg-[#090D16] text-xs"
@@ -842,7 +1095,7 @@ export function InventoryManagerClient({
                           {new Date(l.created_at).toLocaleString("id-ID")}
                         </span>
                       </div>
-                      <p className="text-[11px] text-neutral-500 font-mono tabular-nums mt-0.5">
+                      <p className="text-[11px] text-slate-500 dark:text-slate-400 font-mono tabular-nums mt-0.5">
                         Sistem: {l.system_qty} → Fisik: {l.actual_qty}{" "}
                         {l.notes ? `• ${l.notes}` : ""}
                       </p>
@@ -850,9 +1103,9 @@ export function InventoryManagerClient({
                     <span
                       className={`font-extrabold font-mono tabular-nums shrink-0 ${
                         l.difference === 0
-                          ? "text-emerald-700"
+                          ? "text-emerald-700 dark:text-emerald-300"
                           : l.difference < 0
-                            ? "text-rose-700"
+                            ? "text-rose-700 dark:text-rose-300"
                             : "text-slate-900 dark:text-slate-100"
                       }`}
                     >

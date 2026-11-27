@@ -26,13 +26,14 @@ export function ReportsPrintView({
       <div className="border-b-2 border-slate-900 pb-3 flex items-start justify-between gap-4">
         <div>
           <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500">
-            Laporan Eksekutif &amp; Audit Operasional
+            {store.company_name || "Laporan Eksekutif & Audit Operasional"}
           </p>
           <h1 className="text-xl font-extrabold text-slate-900 mt-0.5">
             {store.name}
           </h1>
           <p className="text-[10px] text-slate-600">
-            Outlet: /{store.slug} • Kasir On-Duty:{" "}
+            Outlet: /{store.slug}
+            {store.npwp ? ` • NPWP: ${store.npwp}` : ""} • Kasir On-Duty:{" "}
             <strong>{store.active_staff_name || "-"}</strong>
           </p>
         </div>
@@ -109,11 +110,29 @@ export function ReportsPrintView({
               <strong className="font-mono">+{formatRupiah(report.cashSales)}</strong>
             </div>
             <div className="flex justify-between border-t border-slate-200 pt-1 font-bold">
-              <span>Estimasi Sisa Kas Closing</span>
+              <span>Estimasi Sisa Kas Sistem</span>
               <strong className="font-mono">
                 {formatRupiah(report.estimatedClosingCash)}
               </strong>
             </div>
+            {report.physicalCash != null && (
+              <>
+                <div className="flex justify-between">
+                  <span>Uang Tunai Fisik di Laci</span>
+                  <strong className="font-mono">
+                    {formatRupiah(report.physicalCash)}
+                  </strong>
+                </div>
+                <div className="flex justify-between font-bold">
+                  <span>Selisih Kas (Over / Short)</span>
+                  <strong className="font-mono">
+                    {(report.cashVariance ?? 0) >= 0
+                      ? `+${formatRupiah(report.cashVariance ?? 0)}`
+                      : `-${formatRupiah(Math.abs(report.cashVariance ?? 0))}`}
+                  </strong>
+                </div>
+              </>
+            )}
             <div className="flex justify-between text-slate-600 pt-0.5">
               <span>Total Non-Tunai (QRIS + Ojol)</span>
               <strong className="font-mono">{formatRupiah(report.nonCashSales)}</strong>
