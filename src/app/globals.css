@@ -180,6 +180,10 @@ body {
   #reports-print-area * {
     visibility: visible !important;
   }
+  @page {
+    size: A4;
+    margin: 12mm;
+  }
   #reports-print-area {
     position: absolute !important;
     left: 0 !important;
@@ -188,6 +192,15 @@ body {
     padding: 0 !important;
     margin: 0 !important;
     background: #ffffff !important;
+    color: #0f172a !important;
+  }
+  .print-break-inside-avoid {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+  }
+  .print-page-break {
+    break-before: page !important;
+    page-break-before: always !important;
   }
   .no-print {
     display: none !important;
