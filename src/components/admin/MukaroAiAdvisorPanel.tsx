@@ -14,6 +14,7 @@ import {
   Calculator,
   ListChecks,
   MessageSquare,
+  Zap,
 } from "lucide-react";
 import { formatRupiah } from "@/lib/format";
 import type {
@@ -50,7 +51,11 @@ export function MukaroAiAdvisorPanel({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<AdvisorStructuredResult | null>(null);
-  const [copied, setCopied] = useState(false);
+  const [copiedAll, setCopiedAll] = useState(false);
+  const [copiedPromo, setCopiedPromo] = useState(false);
+
+  const isPreLaunch =
+    currentRevenue === 0 || (metrics.totalTransactions ?? 0) === 0;
 
   const parsedTarget =
     targetInput.trim() !== "" && !Number.isNaN(Number(targetInput))
@@ -71,7 +76,8 @@ export function MukaroAiAdvisorPanel({
     setLoading(true);
     setError(null);
     setActiveMode(mode);
-    setCopied(false);
+    setCopiedAll(false);
+    setCopiedPromo(false);
 
     try {
       const res = await fetch("/api/admin/ai-advisor", {
@@ -115,43 +121,44 @@ export function MukaroAiAdvisorPanel({
     }
   };
 
-  const handleCopyResult = async () => {
+  const handleCopyAll = async () => {
     if (!result) return;
     const sections: string[] = [
       `MUKARO AI ADVISOR — ${outletName}`,
-      `Ringkasan:\n${result.summary}`,
-    ];
-    if (result.targetCalculation) {
-      sections.push(`Hitungan Target:\n${result.targetCalculation}`);
-    }
-    if (result.prioritySteps.length > 0) {
-      sections.push(
-        `Langkah Prioritas:\n${result.prioritySteps
-          .map((s, i) => `${i + 1}. ${s}`)
-          .join("\n")}`
-      );
-    }
-    if (result.promoAndBundling.length > 0) {
-      sections.push(
-        `Ide Promo & Bundling:\n${result.promoAndBundling
-          .map((p) => `- ${p}`)
-          .join("\n")}`
-      );
-    }
-    if (result.copywritingIdeas.length > 0) {
-      sections.push(
-        `Ide Copywriting:\n${result.copywritingIdeas
-          .map((c) => `- ${c}`)
-          .join("\n")}`
-      );
-    }
+      result.headline ? `FOKUS UTAMA:\n${result.headline}` : "",
+      result.diagnosis
+        ? `DIAGNOSIS & PELUANG TERBESAR:\n${result.diagnosis}`
+        : "",
+      result.actionPlan.length > 0
+        ? `LANGKAH EKSEKUSI HARI INI:\n${result.actionPlan
+            .map((step, i) => `${i + 1}. ${step}`)
+            .join("\n")}`
+        : "",
+      result.mathBreakdown
+        ? `HITUNGAN TARGET / SKEMA PROMO:\n${result.mathBreakdown}`
+        : "",
+      result.promoCopy
+        ? `TEKS PROMOSI SIAP PAKAI:\n${result.promoCopy}`
+        : "",
+    ].filter(Boolean);
 
     try {
       await navigator.clipboard.writeText(sections.join("\n\n"));
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      setCopiedAll(true);
+      setTimeout(() => setCopiedAll(false), 2000);
     } catch {
       setError("Gagal menyalin ke clipboard.");
+    }
+  };
+
+  const handleCopyPromo = async () => {
+    if (!result?.promoCopy) return;
+    try {
+      await navigator.clipboard.writeText(result.promoCopy);
+      setCopiedPromo(true);
+      setTimeout(() => setCopiedPromo(false), 2000);
+    } catch {
+      setError("Gagal menyalin teks promosi ke clipboard.");
     }
   };
 
@@ -164,17 +171,25 @@ export function MukaroAiAdvisorPanel({
             <Sparkles className="w-5 h-5" />
           </div>
           <div>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <h2 className="text-base font-extrabold tracking-tight text-slate-900 dark:text-slate-100">
                 Mukaro AI Advisor
               </h2>
               <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 dark:bg-blue-950/60 text-[#2563EB]">
                 Gemini AI
               </span>
+              {isPreLaunch && (
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 dark:bg-amber-950/50 text-amber-700 dark:text-amber-300">
+                  Mode Kejar Order Pertama
+                </span>
+              )}
             </div>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-              Analisis otomatis dari data penjualan 30 hari terakhir ({formatRupiah(currentRevenue)},{" "}
-              {metrics.totalTransactions ?? 0} transaksi).
+              {isPreLaunch
+                ? "Siap bantu susun strategi cepat untuk mencetak 10–20 order pertama Anda."
+                : `Analisis otomatis dari data penjualan 30 hari terakhir (${formatRupiah(
+                    currentRevenue
+                  )}, ${metrics.totalTransactions ?? 0} transaksi).`}
             </p>
           </div>
         </div>
@@ -182,10 +197,10 @@ export function MukaroAiAdvisorPanel({
         {result && (
           <button
             type="button"
-            onClick={handleCopyResult}
+            onClick={handleCopyAll}
             className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-[#F8FAFC] dark:bg-[#090D16] text-xs font-semibold text-slate-700 dark:text-slate-200 hover:border-[#2563EB] transition w-fit"
           >
-            {copied ? (
+            {copiedAll ? (
               <>
                 <Check className="w-3.5 h-3.5 text-[#059669]" />
                 <span className="text-[#059669]">Tersalin!</span>
@@ -193,7 +208,7 @@ export function MukaroAiAdvisorPanel({
             ) : (
               <>
                 <Copy className="w-3.5 h-3.5" />
-                <span>Salin Hasil</span>
+                <span>Salin Semua</span>
               </>
             )}
           </button>
@@ -244,7 +259,7 @@ export function MukaroAiAdvisorPanel({
             }`}
           >
             <TrendingUp className="w-3.5 h-3.5" />
-            <span>Audit Penjualan</span>
+            <span>{isPreLaunch ? "Playbook Order Pertama" : "Audit Penjualan"}</span>
           </button>
 
           <button
@@ -321,89 +336,120 @@ export function MukaroAiAdvisorPanel({
       {loading && (
         <div className="p-6 rounded-xl bg-[#F8FAFC] dark:bg-[#090D16] border border-slate-200 dark:border-slate-800 flex items-center justify-center gap-3 text-xs font-semibold text-slate-600 dark:text-slate-300">
           <Loader2 className="w-4 h-4 animate-spin text-[#2563EB]" />
-          <span>Mukaro AI sedang menganalisis data penjualan {outletName}...</span>
+          <span>Mukaro AI sedang menyusun strategi terbaik untuk {outletName}...</span>
         </div>
       )}
 
       {/* Result State */}
       {!loading && result && (
         <div className="space-y-4 pt-1">
-          {/* Summary */}
-          <div className="p-4 rounded-xl bg-[#F8FAFC] dark:bg-[#090D16] border border-slate-200 dark:border-slate-800 space-y-1.5">
-            <p className="text-[11px] font-bold uppercase tracking-wider text-[#2563EB]">
-              Ringkasan Kondisi
-            </p>
-            <p className="text-sm leading-relaxed text-slate-800 dark:text-slate-200 whitespace-pre-line">
-              {result.summary}
-            </p>
-          </div>
-
-          {/* Target Calculation */}
-          {result.targetCalculation && (
-            <div className="p-4 rounded-xl bg-blue-50/70 dark:bg-blue-950/30 border border-blue-200/80 dark:border-blue-900/50 space-y-1.5">
-              <div className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-[#2563EB]">
-                <Calculator className="w-3.5 h-3.5" />
-                <span>Hitungan Target &amp; Proyeksi</span>
+          {/* Headline */}
+          {result.headline && (
+            <div className="p-4 rounded-xl bg-gradient-to-r from-blue-50 to-indigo-50/70 dark:from-blue-950/50 dark:to-indigo-950/30 border border-blue-200/80 dark:border-blue-900/60 flex items-start gap-3">
+              <div className="w-8 h-8 rounded-lg bg-[#2563EB] text-white flex items-center justify-center shrink-0 mt-0.5">
+                <Zap className="w-4 h-4" />
               </div>
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-wider text-[#2563EB] dark:text-blue-400">
+                  Fokus Utama
+                </p>
+                <p className="text-sm sm:text-base font-extrabold text-slate-900 dark:text-slate-100 leading-snug mt-0.5">
+                  {result.headline}
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* Diagnosis & Peluang Terbesar */}
+          {result.diagnosis && (
+            <div className="p-4 rounded-xl bg-[#F8FAFC] dark:bg-[#090D16] border border-slate-200 dark:border-slate-800 space-y-1.5">
+              <p className="text-[11px] font-bold uppercase tracking-wider text-[#2563EB]">
+                Diagnosis &amp; Peluang Terbesar
+              </p>
               <p className="text-sm leading-relaxed text-slate-800 dark:text-slate-200 whitespace-pre-line">
-                {result.targetCalculation}
+                {result.diagnosis}
               </p>
             </div>
           )}
 
-          {/* Grid for Steps, Promo, Copywriting */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-            {result.prioritySteps.length > 0 && (
-              <div className="p-4 rounded-xl bg-[#F8FAFC] dark:bg-[#090D16] border border-slate-200 dark:border-slate-800 space-y-2.5">
+          {/* Action Plan & Math Breakdown */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+            {result.actionPlan.length > 0 && (
+              <div
+                className={`${
+                  result.mathBreakdown ? "lg:col-span-7" : "lg:col-span-12"
+                } p-4 rounded-xl bg-[#F8FAFC] dark:bg-[#090D16] border border-slate-200 dark:border-slate-800 space-y-3`}
+              >
                 <div className="flex items-center gap-1.5 text-xs font-bold text-slate-900 dark:text-slate-100">
                   <ListChecks className="w-4 h-4 text-[#059669]" />
-                  <span>Langkah Prioritas</span>
+                  <span>Langkah Eksekusi Hari Ini</span>
                 </div>
-                <ol className="space-y-2 text-xs text-slate-700 dark:text-slate-300 list-decimal list-inside">
-                  {result.prioritySteps.map((step, i) => (
-                    <li key={i} className="leading-relaxed">
-                      {step}
+                <ol className="space-y-2.5">
+                  {result.actionPlan.map((step, i) => (
+                    <li
+                      key={i}
+                      className="flex items-start gap-2.5 text-xs text-slate-700 dark:text-slate-300 leading-relaxed"
+                    >
+                      <span className="w-5 h-5 rounded-full bg-emerald-100 dark:bg-emerald-950/70 text-[#059669] font-mono font-bold text-[11px] flex items-center justify-center shrink-0 mt-0.5">
+                        {i + 1}
+                      </span>
+                      <span>{step}</span>
                     </li>
                   ))}
                 </ol>
               </div>
             )}
 
-            {result.promoAndBundling.length > 0 && (
-              <div className="p-4 rounded-xl bg-[#F8FAFC] dark:bg-[#090D16] border border-slate-200 dark:border-slate-800 space-y-2.5">
-                <div className="flex items-center gap-1.5 text-xs font-bold text-slate-900 dark:text-slate-100">
-                  <Megaphone className="w-4 h-4 text-[#2563EB]" />
-                  <span>Ide Promo &amp; Bundling</span>
+            {result.mathBreakdown && (
+              <div
+                className={`${
+                  result.actionPlan.length > 0
+                    ? "lg:col-span-5"
+                    : "lg:col-span-12"
+                } p-4 rounded-xl bg-blue-50/70 dark:bg-blue-950/30 border border-blue-200/80 dark:border-blue-900/50 space-y-2`}
+              >
+                <div className="flex items-center gap-1.5 text-xs font-bold text-[#2563EB] dark:text-blue-400">
+                  <Calculator className="w-4 h-4" />
+                  <span>Hitungan Target / Skema Promo</span>
                 </div>
-                <ul className="space-y-2 text-xs text-slate-700 dark:text-slate-300 list-disc list-inside">
-                  {result.promoAndBundling.map((promo, i) => (
-                    <li key={i} className="leading-relaxed">
-                      {promo}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-
-            {result.copywritingIdeas.length > 0 && (
-              <div className="p-4 rounded-xl bg-[#F8FAFC] dark:bg-[#090D16] border border-slate-200 dark:border-slate-800 space-y-2.5">
-                <div className="flex items-center gap-1.5 text-xs font-bold text-slate-900 dark:text-slate-100">
-                  <Sparkles className="w-4 h-4 text-amber-500" />
-                  <span>Ide Copywriting Siap Pakai</span>
-                </div>
-                <div className="space-y-2">
-                  {result.copywritingIdeas.map((copyText, i) => (
-                    <div
-                      key={i}
-                      className="p-2.5 rounded-lg bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 text-xs text-slate-700 dark:text-slate-300 leading-relaxed"
-                    >
-                      {copyText}
-                    </div>
-                  ))}
-                </div>
+                <p className="text-xs sm:text-sm leading-relaxed text-slate-800 dark:text-slate-200 whitespace-pre-line">
+                  {result.mathBreakdown}
+                </p>
               </div>
             )}
           </div>
+
+          {/* Teks Promosi Siap Pakai */}
+          {result.promoCopy && (
+            <div className="p-4 rounded-xl bg-[#F8FAFC] dark:bg-[#090D16] border border-slate-200 dark:border-slate-800 space-y-2.5">
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-1.5 text-xs font-bold text-slate-900 dark:text-slate-100">
+                  <Megaphone className="w-4 h-4 text-amber-500" />
+                  <span>Teks Promosi Siap Pakai (WA / IG / TikTok)</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleCopyPromo}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-[#111827] text-[11px] font-semibold text-slate-700 dark:text-slate-200 hover:border-[#2563EB] transition"
+                >
+                  {copiedPromo ? (
+                    <>
+                      <Check className="w-3 h-3 text-[#059669]" />
+                      <span className="text-[#059669]">Tersalin!</span>
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="w-3 h-3" />
+                      <span>Salin Teks Promo</span>
+                    </>
+                  )}
+                </button>
+              </div>
+              <div className="p-3.5 rounded-xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 text-xs sm:text-sm text-slate-800 dark:text-slate-200 leading-relaxed whitespace-pre-line">
+                {result.promoCopy}
+              </div>
+            </div>
+          )}
         </div>
       )}
     </section>
