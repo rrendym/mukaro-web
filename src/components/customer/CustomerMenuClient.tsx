@@ -421,9 +421,9 @@ export function CustomerMenuClient({
     posters.length > 0 ? posterIndex % posters.length : 0;
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] dark:bg-[#090D16] text-slate-900 dark:text-slate-100 flex flex-col transition-colors">
+    <div className="min-h-screen bg-[linear-gradient(180deg,#E0F2FE_0%,#F0F9FF_38%,#FFFFFF_100%)] dark:bg-none dark:bg-[#090D16] text-slate-900 dark:text-slate-100 flex flex-col transition-colors">
       {/* Compact Sticky Header */}
-      <header className="sticky top-0 z-30 bg-white/90 dark:bg-[#111827]/90 backdrop-blur-md border-b border-slate-200 dark:border-slate-800">
+      <header className="sticky top-0 z-30 bg-white/85 dark:bg-[#111827]/90 backdrop-blur-md border-b border-sky-200/70 dark:border-slate-800">
         <div className="customer-sticky-header-inner max-w-5xl mx-auto px-3 sm:px-5 h-14 sm:h-16 flex items-center justify-between gap-2 sm:gap-3">
           {/* Left: Store Identity */}
           <div className="flex items-center gap-2.5 min-w-0">
@@ -462,43 +462,8 @@ export function CustomerMenuClient({
             </div>
           </div>
 
-          {/* Right: Table Badge, Promo Chip, WA, Theme, Cart */}
+          {/* Right: Theme & Cart */}
           <div className="flex items-center gap-1.5 shrink-0">
-            <span
-              className="hidden sm:inline-flex px-2.5 py-1 rounded-full text-[11px] font-bold text-white shadow-xs"
-              style={{ backgroundColor: accentColor }}
-            >
-              {tableBadgeText}
-            </span>
-
-            {activeVouchers.length > 0 && (
-              <button
-                type="button"
-                onClick={() => setIsPromoModalOpen(true)}
-                aria-label="Lihat Promo Aktif"
-                className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-full bg-amber-50 dark:bg-amber-950/50 border border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-300 text-[11px] font-extrabold hover:bg-amber-100 dark:hover:bg-amber-900/50 transition"
-              >
-                <TicketPercent className="w-3.5 h-3.5" />
-                <span className="hidden xs:inline">Promo</span>
-              </button>
-            )}
-
-            {store.show_wa && store.wa_number && (
-              <a
-                href={buildWhatsAppUrl(
-                  store.wa_number,
-                  store.name,
-                  tableBadgeText
-                )}
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label="Hubungi WhatsApp Resto"
-                className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-white dark:bg-[#090D16] border border-slate-200 dark:border-slate-700 flex items-center justify-center text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 transition"
-              >
-                <MessageCircle className="w-4 h-4" />
-              </a>
-            )}
-
             <ThemeToggle />
 
             <button
@@ -662,7 +627,7 @@ export function CustomerMenuClient({
               <div
                 className={`w-13 h-13 sm:w-14 sm:h-14 rounded-full flex items-center justify-center bg-white dark:bg-[#111827] border transition ${
                   selectedCategoryId === "all"
-                    ? "ring-2 ring-offset-2 ring-offset-[#F8FAFC] dark:ring-offset-[#090D16] border-transparent shadow-sm"
+                    ? "ring-2 ring-offset-2 ring-offset-[#F0F9FF] dark:ring-offset-[#090D16] border-transparent shadow-sm"
                     : "border-slate-200 dark:border-slate-800 group-hover:border-[#2563EB]/40"
                 }`}
                 style={
@@ -703,7 +668,7 @@ export function CustomerMenuClient({
                   <div
                     className={`w-13 h-13 sm:w-14 sm:h-14 rounded-full overflow-hidden bg-white dark:bg-[#111827] border transition ${
                       isSelected
-                        ? "ring-2 ring-offset-2 ring-offset-[#F8FAFC] dark:ring-offset-[#090D16] border-transparent shadow-sm"
+                        ? "ring-2 ring-offset-2 ring-offset-[#F0F9FF] dark:ring-offset-[#090D16] border-transparent shadow-sm"
                         : "border-slate-200 dark:border-slate-800 group-hover:border-[#2563EB]/40"
                     }`}
                     style={
@@ -862,26 +827,59 @@ export function CustomerMenuClient({
         </footer>
       </main>
 
-      {/* Persistent Bottom Bar: "Pesanan Saya" + Cart / Checkout */}
-      <div className="fixed bottom-0 inset-x-0 z-30 bg-white/95 dark:bg-[#111827]/95 backdrop-blur-md border-t border-slate-200 dark:border-slate-800 shadow-[0_-4px_20px_rgba(0,0,0,0.06)]">
-        <div className="max-w-5xl mx-auto px-3 sm:px-5 py-2.5 flex items-center justify-between gap-2.5">
-          {/* Pesanan Saya Button with Small Processing Dot (no count number) */}
-          <button
-            type="button"
-            onClick={() => setIsOrderStatusOpen(true)}
-            className="relative inline-flex items-center gap-2 px-3.5 py-2.5 rounded-full bg-[#F8FAFC] dark:bg-[#090D16] border border-slate-200 dark:border-slate-700 text-xs sm:text-sm font-bold text-slate-900 dark:text-slate-100 hover:border-[#2563EB] transition shrink-0"
-          >
-            <span className="relative inline-flex">
-              <ClipboardList className="w-4 h-4 text-[#2563EB]" />
-              {hasInProgressOrder && (
-                <span
-                  className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-rose-500 ring-2 ring-white dark:ring-[#090D16] animate-pulse"
-                  aria-label="Ada pesanan sedang diproses"
-                />
-              )}
-            </span>
-            <span>Pesanan Saya</span>
-          </button>
+      {/* Persistent Bottom Bar: WA, Voucher, "Pesanan Saya" + Cart / Checkout */}
+      <div className="fixed bottom-0 inset-x-0 z-40 bg-white/95 dark:bg-[#111827]/95 backdrop-blur-md border-t border-slate-200 dark:border-slate-800 shadow-[0_-4px_20px_rgba(0,0,0,0.06)]">
+        <div className="max-w-5xl mx-auto px-3 sm:px-5 py-2.5 flex items-center justify-between gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+            {/* Pesanan Saya Button with Small Processing Dot (no count number) */}
+            <button
+              type="button"
+              onClick={() => setIsOrderStatusOpen(true)}
+              className="relative inline-flex items-center gap-1.5 sm:gap-2 px-3 sm:px-3.5 py-2.5 rounded-full bg-[#F8FAFC] dark:bg-[#090D16] border border-slate-200 dark:border-slate-700 text-xs sm:text-sm font-bold text-slate-900 dark:text-slate-100 hover:border-[#2563EB] transition shrink-0"
+            >
+              <span className="relative inline-flex">
+                <ClipboardList className="w-4 h-4 text-[#2563EB]" />
+                {hasInProgressOrder && (
+                  <span
+                    className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-rose-500 ring-2 ring-white dark:ring-[#090D16] animate-pulse"
+                    aria-label="Ada pesanan sedang diproses"
+                  />
+                )}
+              </span>
+              <span>Pesanan Saya</span>
+            </button>
+
+            {/* Voucher Promo Button */}
+            {activeVouchers.length > 0 && (
+              <button
+                type="button"
+                onClick={() => setIsPromoModalOpen(true)}
+                aria-label="Lihat Voucher Promo"
+                title="Lihat Voucher Promo"
+                className="w-10 h-10 rounded-full bg-amber-50 dark:bg-amber-950/50 border border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-300 flex items-center justify-center hover:bg-amber-100 dark:hover:bg-amber-900/50 transition shrink-0"
+              >
+                <TicketPercent className="w-4 h-4" />
+              </button>
+            )}
+
+            {/* WhatsApp Button */}
+            {store.show_wa && store.wa_number && (
+              <a
+                href={buildWhatsAppUrl(
+                  store.wa_number,
+                  store.name,
+                  tableBadgeText
+                )}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Hubungi WhatsApp Resto"
+                title="Hubungi WhatsApp Resto"
+                className="w-10 h-10 rounded-full bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-400 flex items-center justify-center hover:bg-emerald-100 dark:hover:bg-emerald-900/50 transition shrink-0"
+              >
+                <MessageCircle className="w-4 h-4" />
+              </a>
+            )}
+          </div>
 
           {/* Checkout / Cart Button */}
           <button
