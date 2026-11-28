@@ -442,30 +442,23 @@ export function CustomerMenuClient({
               </div>
             )}
             <div className="min-w-0">
-              <div className="flex items-center gap-1.5">
-                <h1 className="text-sm sm:text-base font-extrabold text-slate-900 dark:text-slate-100 truncate leading-tight tracking-tight">
-                  {store.name}
-                </h1>
+              <h1 className="text-sm sm:text-base font-extrabold text-slate-900 dark:text-slate-100 truncate leading-tight tracking-tight">
+                {store.name}
+              </h1>
+              <span
+                className={`mt-0.5 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold leading-none border ${
+                  store.is_open
+                    ? "bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800"
+                    : "bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border-rose-200 dark:border-rose-800"
+                }`}
+              >
                 <span
-                  className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold shrink-0 border ${
-                    store.is_open
-                      ? "bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800"
-                      : "bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border-rose-200 dark:border-rose-800"
+                  className={`w-1.5 h-1.5 rounded-full shrink-0 ${
+                    store.is_open ? "bg-emerald-500" : "bg-rose-500"
                   }`}
-                >
-                  <span
-                    className={`w-1.5 h-1.5 rounded-full ${
-                      store.is_open ? "bg-emerald-500" : "bg-rose-500"
-                    }`}
-                  />
-                  {store.is_open ? "Toko Buka" : "Toko Tutup"}
-                </span>
-              </div>
-              {store.tagline && (
-                <p className="text-[11px] text-neutral-500 dark:text-slate-400 truncate leading-tight">
-                  {store.tagline}
-                </p>
-              )}
+                />
+                {store.is_open ? "Toko Buka" : "Toko Tutup"}
+              </span>
             </div>
           </div>
 
@@ -664,7 +657,7 @@ export function CustomerMenuClient({
             <button
               type="button"
               onClick={() => setSelectedCategoryId("all")}
-              className="flex flex-col items-center gap-1.5 shrink-0 w-16 sm:w-[72px] group"
+              className="flex flex-col items-center gap-1.5 shrink-0 min-w-[64px] sm:min-w-[72px] group"
             >
               <div
                 className={`w-13 h-13 sm:w-14 sm:h-14 rounded-full flex items-center justify-center bg-white dark:bg-[#111827] border transition ${
@@ -688,7 +681,7 @@ export function CustomerMenuClient({
                 />
               </div>
               <span
-                className={`text-[11px] sm:text-xs font-semibold text-center leading-tight line-clamp-2 ${
+                className={`text-[11px] sm:text-xs font-semibold text-center leading-tight whitespace-nowrap ${
                   selectedCategoryId === "all"
                     ? "text-slate-900 dark:text-slate-100"
                     : "text-neutral-500 dark:text-slate-400"
@@ -705,7 +698,7 @@ export function CustomerMenuClient({
                   key={cat.id}
                   type="button"
                   onClick={() => setSelectedCategoryId(cat.id)}
-                  className="flex flex-col items-center gap-1.5 shrink-0 w-16 sm:w-[72px] group"
+                  className="flex flex-col items-center gap-1.5 shrink-0 min-w-[64px] sm:min-w-[72px] group"
                 >
                   <div
                     className={`w-13 h-13 sm:w-14 sm:h-14 rounded-full overflow-hidden bg-white dark:bg-[#111827] border transition ${
@@ -734,7 +727,7 @@ export function CustomerMenuClient({
                     )}
                   </div>
                   <span
-                    className={`text-[11px] sm:text-xs font-semibold text-center leading-tight line-clamp-2 w-full ${
+                    className={`text-[11px] sm:text-xs font-semibold text-center leading-tight whitespace-nowrap ${
                       isSelected
                         ? "text-slate-900 dark:text-slate-100"
                         : "text-neutral-500 dark:text-slate-400"
