@@ -14,6 +14,8 @@ import {
   TicketPercent,
   Copy,
   Check,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import {
   CartItem,
@@ -49,6 +51,7 @@ export function CustomerMenuClient({
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isOrderStatusOpen, setIsOrderStatusOpen] = useState(false);
   const [copiedVoucherCode, setCopiedVoucherCode] = useState<string | null>(null);
+  const [promoIndex, setPromoIndex] = useState(0);
   const [nowMs] = useState(() => Date.now());
   const [recentOrder, setRecentOrder] = useState<{
     orderId: string;
@@ -59,20 +62,48 @@ export function CustomerMenuClient({
 
   const runningBarVouchers = useMemo(() => {
     return vouchers.filter((v) => {
-      if (!v.is_active || !v.show_in_customer_bar) return false;
+      if (!v.is_active || v.show_in_customer_bar === false) return false;
       if (v.valid_from && new Date(v.valid_from).getTime() > nowMs) return false;
       if (v.valid_until && new Date(v.valid_until).getTime() < nowMs) return false;
       return true;
     });
   }, [vouchers, nowMs]);
 
+  const activePromo =
+    runningBarVouchers.length > 0
+      ? runningBarVouchers[promoIndex % runningBarVouchers.length]
+      : null;
+
   const handleCopyVoucher = async (code: string) => {
+    let copied = false;
     try {
-      await navigator.clipboard.writeText(code);
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(code);
+        copied = true;
+      }
+    } catch {
+      copied = false;
+    }
+
+    if (!copied) {
+      try {
+        const textarea = document.createElement("textarea");
+        textarea.value = code;
+        textarea.setAttribute("readonly", "");
+        textarea.style.position = "fixed";
+        textarea.style.left = "-9999px";
+        document.body.appendChild(textarea);
+        textarea.select();
+        copied = document.execCommand("copy");
+        document.body.removeChild(textarea);
+      } catch {
+        copied = false;
+      }
+    }
+
+    if (copied) {
       setCopiedVoucherCode(code);
       setTimeout(() => setCopiedVoucherCode(null), 2000);
-    } catch {
-      // ignore clipboard error
     }
   };
 
@@ -161,64 +192,93 @@ export function CustomerMenuClient({
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] text-slate-900 flex flex-col">
-      {/* Promo Running Bar */}
-      {runningBarVouchers.length > 0 && (
+      {/* Promo Notification Bar */}
+      {activePromo && (
         <div
-          className="w-full text-white text-xs py-2 px-4 overflow-x-auto"
+          className="w-full text-white text-xs py-2 px-3 sm:px-4"
           style={{ backgroundColor: accentColor }}
         >
-          <div className="max-w-5xl mx-auto flex items-center gap-3 whitespace-nowrap">
-            <span className="inline-flex items-center gap-1 font-extrabold uppercase tracking-wider text-[10px] bg-white/20 px-2 py-0.5 rounded-full shrink-0">
-              <TicketPercent className="w-3 h-3" />
-              Promo Aktif
-            </span>
-            <div className="flex items-center gap-3 overflow-x-auto">
-              {runningBarVouchers.map((v) => {
-                const discLabel =
-                  v.discount_type === "percent"
-                    ? `Diskon ${v.discount_value}%`
-                    : `Potongan ${formatRupiah(Number(v.discount_value))}`;
-                const minLabel =
-                  Number(v.min_order || 0) > 0
-                    ? ` (Min. ${formatRupiah(Number(v.min_order))})`
-                    : "";
-                const untilLabel = v.valid_until
-                  ? ` • s/d ${new Date(v.valid_until).toLocaleString("id-ID", {
-                      day: "2-digit",
-                      month: "short",
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}`
-                  : "";
-                const isCopied = copiedVoucherCode === v.code;
+          <div className="max-w-5xl mx-auto flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2 min-w-0 flex-1">
+              <span className="inline-flex items-center gap-1 font-extrabold uppercase tracking-wider text-[10px] bg-white/20 px-2 py-0.5 rounded-full shrink-0">
+                <TicketPercent className="w-3 h-3" />
+                <span className="hidden sm:inline">Promo Aktif</span>
+              </span>
+              <p className="font-semibold truncate text-[11px] sm:text-xs">
+                {activePromo.discount_type === "percent"
+                  ? `Diskon ${activePromo.discount_value}%`
+                  : `Potongan ${formatRupiah(Number(activePromo.discount_value))}`}
+                {Number(activePromo.min_order || 0) > 0
+                  ? ` (Min. ${formatRupiah(Number(activePromo.min_order))})`
+                  : ""}
+                {activePromo.valid_until
+                  ? ` • s/d ${new Date(activePromo.valid_until).toLocaleString(
+                      "id-ID",
+                      {
+                        day: "2-digit",
+                        month: "short",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      }
+                    )}`
+                  : ""}
+              </p>
+            </div>
 
-                return (
+            <div className="flex items-center gap-1.5 shrink-0">
+              <span className="font-mono font-extrabold bg-white/20 px-2 py-0.5 rounded-md text-[11px] tracking-wide">
+                {activePromo.code}
+              </span>
+              <button
+                type="button"
+                onClick={() => handleCopyVoucher(activePromo.code)}
+                className="inline-flex items-center gap-1 bg-white text-slate-900 hover:bg-slate-100 px-2.5 py-1 rounded-full text-[10px] sm:text-[11px] font-extrabold transition shadow-xs"
+              >
+                {copiedVoucherCode === activePromo.code ? (
+                  <>
+                    <Check className="w-3 h-3 text-emerald-600" />
+                    <span className="text-emerald-700">Tersalin</span>
+                  </>
+                ) : (
+                  <>
+                    <Copy className="w-3 h-3" />
+                    <span>Salin Kode</span>
+                  </>
+                )}
+              </button>
+
+              {runningBarVouchers.length > 1 && (
+                <div className="inline-flex items-center gap-0.5 ml-1 bg-black/20 rounded-full px-1 py-0.5">
                   <button
-                    key={v.id}
                     type="button"
-                    onClick={() => handleCopyVoucher(v.code)}
-                    className="inline-flex items-center gap-2 bg-white/15 hover:bg-white/25 px-3 py-1 rounded-full transition shrink-0"
-                    title="Klik untuk salin kode voucher"
+                    onClick={() =>
+                      setPromoIndex(
+                        (i) =>
+                          (i - 1 + runningBarVouchers.length) %
+                          runningBarVouchers.length
+                      )
+                    }
+                    aria-label="Promo sebelumnya"
+                    className="p-0.5 rounded-full hover:bg-white/20 transition"
                   >
-                    <span className="font-semibold">
-                      {discLabel}
-                      {minLabel}
-                      {untilLabel}
-                    </span>
-                    <span className="font-mono font-extrabold bg-white text-slate-900 px-2 py-0.5 rounded-full text-[10px] inline-flex items-center gap-1">
-                      {v.code}
-                      {isCopied ? (
-                        <Check className="w-3 h-3 text-emerald-600" />
-                      ) : (
-                        <Copy className="w-3 h-3" />
-                      )}
-                    </span>
-                    {isCopied && (
-                      <span className="text-[10px] font-bold">Tersalin!</span>
-                    )}
+                    <ChevronLeft className="w-3.5 h-3.5" />
                   </button>
-                );
-              })}
+                  <span className="text-[10px] font-mono px-1">
+                    {(promoIndex % runningBarVouchers.length) + 1}/
+                    {runningBarVouchers.length}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setPromoIndex((i) => (i + 1) % runningBarVouchers.length)
+                    }
+                    aria-label="Promo berikutnya"
+                    className="p-0.5 rounded-full hover:bg-white/20 transition"
+                  >
+                    <ChevronRight className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -363,17 +423,17 @@ export function CustomerMenuClient({
 
         {/* Horizontal Circular Categories */}
         <section>
-          <div className="flex items-start gap-4 overflow-x-auto no-scrollbar py-1">
+          <div className="flex items-start gap-3 sm:gap-4 overflow-x-auto no-scrollbar py-2.5 px-2 -mx-2">
             {/* All Category */}
             <button
               type="button"
               onClick={() => setSelectedCategoryId("all")}
-              className="flex flex-col items-center gap-1.5 shrink-0 group"
+              className="flex flex-col items-center gap-1.5 shrink-0 w-16 sm:w-[72px] group"
             >
               <div
                 className={`w-14 h-14 rounded-full flex items-center justify-center bg-white border transition ${
                   selectedCategoryId === "all"
-                    ? "ring-2 ring-offset-2 ring-offset-[#F8FAFC] border-transparent"
+                    ? "ring-2 ring-offset-2 ring-offset-[#F8FAFC] border-transparent shadow-sm"
                     : "border-slate-200 group-hover:border-[#2563EB]/30"
                 }`}
                 style={
@@ -392,7 +452,7 @@ export function CustomerMenuClient({
                 />
               </div>
               <span
-                className={`text-xs font-semibold ${
+                className={`text-[11px] sm:text-xs font-semibold text-center leading-tight line-clamp-2 ${
                   selectedCategoryId === "all"
                     ? "text-slate-900"
                     : "text-neutral-500"
@@ -409,12 +469,12 @@ export function CustomerMenuClient({
                   key={cat.id}
                   type="button"
                   onClick={() => setSelectedCategoryId(cat.id)}
-                  className="flex flex-col items-center gap-1.5 shrink-0 group"
+                  className="flex flex-col items-center gap-1.5 shrink-0 w-16 sm:w-[72px] group"
                 >
                   <div
                     className={`w-14 h-14 rounded-full overflow-hidden bg-white border transition ${
                       isSelected
-                        ? "ring-2 ring-offset-2 ring-offset-[#F8FAFC] border-transparent"
+                        ? "ring-2 ring-offset-2 ring-offset-[#F8FAFC] border-transparent shadow-sm"
                         : "border-slate-200 group-hover:border-[#2563EB]/30"
                     }`}
                     style={
