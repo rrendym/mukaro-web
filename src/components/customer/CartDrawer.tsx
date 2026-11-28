@@ -161,6 +161,11 @@ export function CartDrawer({
       return;
     }
 
+    if (!store.is_open) {
+      setSubmitError("Toko sedang tutup. Pemesanan sementara dinonaktifkan.");
+      return;
+    }
+
     if (checkStoreSubscription(store).isExpired) {
       setSubmitError(
         "Menu digital outlet ini sedang tidak aktif. Silakan pesan langsung di kasir."
@@ -424,23 +429,23 @@ export function CartDrawer({
       onClick={onClose}
     >
       <div
-        className="w-full max-w-lg bg-white rounded-t-3xl sm:rounded-3xl border border-slate-200 max-h-[92vh] flex flex-col overflow-hidden shadow-2xl"
+        className="w-full max-w-lg bg-white dark:bg-[#111827] rounded-t-3xl sm:rounded-3xl border border-slate-200 dark:border-slate-800 max-h-[90dvh] flex flex-col overflow-hidden shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="px-5 py-4 border-b border-slate-200 flex items-center justify-between">
+        <div className="px-5 py-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between shrink-0">
           <div>
-            <h2 className="text-lg font-extrabold tracking-tight text-slate-900">
+            <h2 className="text-lg font-extrabold tracking-tight text-slate-900 dark:text-slate-100">
               Ringkasan Pesanan
             </h2>
-            <p className="text-xs text-neutral-500 font-mono tabular-nums">
+            <p className="text-xs text-neutral-500 dark:text-slate-400 font-mono tabular-nums">
               {tableLabel ? tableLabel : "Order Counter"} • {cart.length} item
             </p>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="w-8 h-8 rounded-full bg-[#F8FAFC] flex items-center justify-center text-neutral-600 hover:bg-slate-200 transition"
+            className="w-8 h-8 rounded-full bg-[#F8FAFC] dark:bg-[#090D16] flex items-center justify-center text-neutral-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-800 transition"
           >
             <X className="w-4 h-4" />
           </button>
@@ -734,19 +739,26 @@ export function CartDrawer({
 
         {/* Footer */}
         {cart.length > 0 && (
-          <div className="p-4 border-t border-slate-200 bg-white">
+          <div className="p-4 border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-[#111827] shrink-0 space-y-2">
+            {!store.is_open && (
+              <p className="text-center text-xs font-bold text-rose-600 dark:text-rose-400">
+                Toko sedang tutup. Checkout dinonaktifkan sementara.
+              </p>
+            )}
             <button
               type="submit"
               form="checkout-form"
-              disabled={submitting}
-              className="w-full py-3.5 px-5 rounded-full text-white font-bold text-sm flex items-center justify-center gap-2 shadow-md transition active:scale-[0.98] disabled:opacity-60"
+              disabled={submitting || !store.is_open}
+              className="w-full py-3.5 px-5 rounded-full text-white font-bold text-sm flex items-center justify-center gap-2 shadow-md transition active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
               style={{ backgroundColor: store.accent_color }}
             >
               {submitting && <Loader2 className="w-4 h-4 animate-spin" />}
               <span className="font-mono tabular-nums">
-                {paymentMethod === "qris"
-                  ? `Bayar QRIS • ${formatRupiah(grandTotal)}`
-                  : `Pesan & Bayar di Kasir • ${formatRupiah(grandTotal)}`}
+                {!store.is_open
+                  ? "Toko Sedang Tutup"
+                  : paymentMethod === "qris"
+                    ? `Bayar QRIS • ${formatRupiah(grandTotal)}`
+                    : `Pesan & Bayar di Kasir • ${formatRupiah(grandTotal)}`}
               </span>
             </button>
           </div>

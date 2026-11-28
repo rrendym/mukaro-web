@@ -42,3 +42,50 @@ export function mergeLandingPromo(raw: unknown): LandingPromoConfig {
       obj.affiliateCta?.trim() || DEFAULT_LANDING_PROMO.affiliateCta,
   };
 }
+
+/**
+ * Normalizes `stores.promo_posters` (jsonb) into a clean `string[]`.
+ * Falls back to `[fallbackBannerUrl]` when `promo_posters` is empty and a banner URL exists.
+ */
+export function normalizePromoPosters(
+  raw: unknown,
+  fallbackBannerUrl?: string | null
+): string[] {
+  let list: unknown[] = [];
+
+  if (Array.isArray(raw)) {
+    list = raw;
+  } else if (typeof raw === "string") {
+    const trimmed = raw.trim();
+    if (trimmed.startsWith("[")) {
+      try {
+        const parsed = JSON.parse(trimmed);
+        if (Array.isArray(parsed)) list = parsed;
+      } catch {
+        list = [];
+      }
+    } else if (trimmed.length > 0) {
+      list = [trimmed];
+    }
+  }
+
+  const seen = new Set<string>();
+  const normalized: string[] = [];
+
+  for (const item of list) {
+    if (typeof item !== "string") continue;
+    const url = item.trim();
+    if (!url || seen.has(url)) continue;
+    seen.add(url);
+    normalized.push(url);
+  }
+
+  if (normalized.length === 0 && typeof fallbackBannerUrl === "string") {
+    const fallback = fallbackBannerUrl.trim();
+    if (fallback) {
+      normalized.push(fallback);
+    }
+  }
+
+  return normalized;
+}

@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
 import {
   Search,
@@ -16,16 +17,21 @@ import {
   Check,
   ChevronLeft,
   ChevronRight,
+  Sparkles,
 } from "lucide-react";
 import {
   CartItem,
   Category,
   Menu,
+  OrderStatus,
   SelectedVariant,
   Store,
   Voucher,
 } from "@/types/database";
 import { buildWhatsAppUrl, formatRupiah } from "@/lib/format";
+import { normalizePromoPosters } from "@/lib/promo-settings";
+import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { MenuDetailModal } from "./MenuDetailModal";
 import { CartDrawer } from "./CartDrawer";
 
@@ -35,6 +41,70 @@ interface CustomerMenuClientProps {
   menus: Menu[];
   vouchers?: Voucher[];
   mejaParam?: string;
+}
+
+interface StoredCustomerOrder {
+  orderId: string;
+  orderNumber: string;
+  total: number;
+  createdAt: string;
+  orderStatus?: OrderStatus;
+}
+
+const IN_PROGRESS_STATUSES = new Set<OrderStatus>([
+  "pending_payment",
+  "queued",
+  "preparing",
+  "packing",
+  "ready",
+]);
+
+function getOrderStatusLabel(status?: OrderStatus): {
+  label: string;
+  tone: string;
+} {
+  switch (status) {
+    case "pending_payment":
+      return {
+        label: "Menunggu Bayar",
+        tone: "bg-amber-50 dark:bg-amber-950/50 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800",
+      };
+    case "queued":
+      return {
+        label: "Dalam Antrean",
+        tone: "bg-blue-50 dark:bg-blue-950/50 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800",
+      };
+    case "preparing":
+      return {
+        label: "Sedang Dibuat",
+        tone: "bg-indigo-50 dark:bg-indigo-950/50 text-indigo-700 dark:text-indigo-300 border-indigo-200 dark:border-indigo-800",
+      };
+    case "packing":
+      return {
+        label: "Dikemas",
+        tone: "bg-purple-50 dark:bg-purple-950/50 text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-800",
+      };
+    case "ready":
+      return {
+        label: "Siap Diambil",
+        tone: "bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800",
+      };
+    case "completed":
+      return {
+        label: "Selesai",
+        tone: "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700",
+      };
+    case "cancelled":
+      return {
+        label: "Dibatalkan",
+        tone: "bg-rose-50 dark:bg-rose-950/50 text-rose-700 dark:text-rose-300 border-rose-200 dark:border-rose-800",
+      };
+    default:
+      return {
+        label: "Diproses",
+        tone: "bg-blue-50 dark:bg-blue-950/50 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800",
+      };
+  }
 }
 
 export function CustomerMenuClient({
@@ -50,29 +120,161 @@ export function CustomerMenuClient({
   const [cart, setCart] = useState<CartItem[]>([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isOrderStatusOpen, setIsOrderStatusOpen] = useState(false);
-  const [copiedVoucherCode, setCopiedVoucherCode] = useState<string | null>(null);
-  const [promoIndex, setPromoIndex] = useState(0);
-  const [nowMs] = useState(() => Date.now());
-  const [recentOrder, setRecentOrder] = useState<{
-    orderId: string;
-    orderNumber: string;
-    total: number;
-    createdAt: string;
-  } | null>(null);
 
-  const runningBarVouchers = useMemo(() => {
+  // Promo modal & copy state
+  const [nowMs] = useState(() => Date.now());
+  const activeVouchers = useMemo(() => {
     return vouchers.filter((v) => {
-      if (!v.is_active || v.show_in_customer_bar === false) return false;
+      if (!v.is_active) return false;
       if (v.valid_from && new Date(v.valid_from).getTime() > nowMs) return false;
       if (v.valid_until && new Date(v.valid_until).getTime() < nowMs) return false;
       return true;
     });
   }, [vouchers, nowMs]);
 
+  const [isPromoModalOpen, setIsPromoModalOpen] = useState(
+    () => activeVouchers.length > 0
+  );
+  const [promoIndex, setPromoIndex] = useState(0);
+  const [copiedVoucherCode, setCopiedVoucherCode] = useState<string | null>(
+    null
+  );
+
+  // Hero Poster Carousel state
+  const posters = useMemo(
+    () => normalizePromoPosters(store.promo_posters, store.banner_url),
+    [store.promo_posters, store.banner_url]
+  );
+  const [posterIndex, setPosterIndex] = useState(0);
+  const [isCarouselPaused, setIsCarouselPaused] = useState(false);
+  const touchStartX = useRef<number | null>(null);
+
+  // Customer Orders ("Pesanan Saya") persisted in session/device
+  const ordersStorageKey = `mukaro_customer_orders_${store.id}`;
+  const [customerOrders, setCustomerOrders] = useState<StoredCustomerOrder[]>(
+    []
+  );
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const timer = window.setTimeout(() => {
+      try {
+        const raw = window.localStorage.getItem(ordersStorageKey);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (Array.isArray(parsed)) {
+            setCustomerOrders(parsed);
+          }
+        }
+      } catch {
+        // Ignore storage read errors
+      }
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, [ordersStorageKey]);
+
+  const orderIdsKey = useMemo(
+    () =>
+      customerOrders
+        .slice(0, 15)
+        .map((o) => o.orderId)
+        .join(","),
+    [customerOrders]
+  );
+
+  // Refresh live order statuses from Supabase
+  useEffect(() => {
+    if (!orderIdsKey || !isSupabaseConfigured()) return;
+    let active = true;
+    const ids = orderIdsKey.split(",").filter(Boolean);
+
+    const syncStatuses = async () => {
+      try {
+        const supabase = createClient();
+        const { data } = await supabase
+          .from("orders")
+          .select("id, order_status")
+          .in("id", ids);
+
+        if (!active || !data) return;
+        const statusMap = new Map<string, OrderStatus>();
+        for (const row of data) {
+          statusMap.set(row.id, row.order_status as OrderStatus);
+        }
+        setCustomerOrders((prev) => {
+          let changed = false;
+          const next = prev.map((item) => {
+            const live = statusMap.get(item.orderId);
+            if (live && live !== item.orderStatus) {
+              changed = true;
+              return { ...item, orderStatus: live };
+            }
+            return item;
+          });
+          if (changed && typeof window !== "undefined") {
+            try {
+              window.localStorage.setItem(
+                ordersStorageKey,
+                JSON.stringify(next)
+              );
+            } catch {
+              // Ignore
+            }
+          }
+          return changed ? next : prev;
+        });
+      } catch {
+        // Ignore network errors
+      }
+    };
+
+    syncStatuses();
+    const timer = setInterval(syncStatuses, 15000);
+    return () => {
+      active = false;
+      clearInterval(timer);
+    };
+  }, [orderIdsKey, ordersStorageKey, isOrderStatusOpen]);
+
+  // Auto-slide Hero Poster Carousel
+  useEffect(() => {
+    if (posters.length <= 1 || isCarouselPaused) return;
+    const timer = setInterval(() => {
+      setPosterIndex((prev) => (prev + 1) % posters.length);
+    }, 4500);
+    return () => clearInterval(timer);
+  }, [posters.length, isCarouselPaused]);
+
+  // Lock body scroll for Promo Modal or Pesanan Saya Modal
+  useEffect(() => {
+    if (!isPromoModalOpen && !isOrderStatusOpen) return;
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setIsPromoModalOpen(false);
+        setIsOrderStatusOpen(false);
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.body.style.overflow = prevOverflow;
+      window.removeEventListener("keydown", onKeyDown);
+    };
+  }, [isPromoModalOpen, isOrderStatusOpen]);
+
   const activePromo =
-    runningBarVouchers.length > 0
-      ? runningBarVouchers[promoIndex % runningBarVouchers.length]
+    activeVouchers.length > 0
+      ? activeVouchers[promoIndex % activeVouchers.length]
       : null;
+
+  const hasInProgressOrder = useMemo(
+    () =>
+      customerOrders.some(
+        (o) => !o.orderStatus || IN_PROGRESS_STATUSES.has(o.orderStatus)
+      ),
+    [customerOrders]
+  );
 
   const handleCopyVoucher = async (code: string) => {
     let copied = false;
@@ -109,7 +311,6 @@ export function CustomerMenuClient({
 
   const accentColor = store.accent_color || "#C8102E";
 
-  // Determine left header badge
   const tableBadgeText = useMemo(() => {
     if (store.order_mode === "table") {
       return mejaParam ? `Meja ${mejaParam}` : "Dine-in";
@@ -117,7 +318,6 @@ export function CustomerMenuClient({
     return "Order Counter";
   }, [store.order_mode, mejaParam]);
 
-  // Filter menus
   const filteredMenus = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
     return menus.filter((menu) => {
@@ -137,6 +337,7 @@ export function CustomerMenuClient({
     selectedVariants: SelectedVariant[],
     notes: string
   ) => {
+    if (!store.is_open) return;
     const variantKey = selectedVariants
       .map((v) => `${v.group}:${v.optionName}`)
       .sort()
@@ -178,6 +379,32 @@ export function CustomerMenuClient({
     setCart((prev) => prev.filter((item) => item.cartKey !== cartKey));
   };
 
+  const handleOrderConfirmed = (summary: {
+    orderId: string;
+    orderNumber: string;
+    total: number;
+    createdAt: string;
+  }) => {
+    const newEntry: StoredCustomerOrder = {
+      ...summary,
+      orderStatus: "pending_payment",
+    };
+    setCustomerOrders((prev) => {
+      const next = [
+        newEntry,
+        ...prev.filter((o) => o.orderId !== summary.orderId),
+      ].slice(0, 15);
+      if (typeof window !== "undefined") {
+        try {
+          window.localStorage.setItem(ordersStorageKey, JSON.stringify(next));
+        } catch {
+          // Ignore
+        }
+      }
+      return next;
+    });
+  };
+
   const totalItems = cart.reduce((sum, item) => sum + item.qty, 0);
   const totalPrice = cart.reduce(
     (sum, item) => sum + item.unitPrice * item.qty,
@@ -190,143 +417,79 @@ export function CustomerMenuClient({
     return false;
   };
 
+  const safePosterIndex =
+    posters.length > 0 ? posterIndex % posters.length : 0;
+
   return (
-    <div className="min-h-screen bg-[#F8FAFC] text-slate-900 flex flex-col">
-      {/* Promo Notification Bar */}
-      {activePromo && (
-        <div
-          className="w-full text-white text-xs py-2 px-3 sm:px-4"
-          style={{ backgroundColor: accentColor }}
-        >
-          <div className="max-w-5xl mx-auto flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2 min-w-0 flex-1">
-              <span className="inline-flex items-center gap-1 font-extrabold uppercase tracking-wider text-[10px] bg-white/20 px-2 py-0.5 rounded-full shrink-0">
-                <TicketPercent className="w-3 h-3" />
-                <span className="hidden sm:inline">Promo Aktif</span>
-              </span>
-              <p className="font-semibold truncate text-[11px] sm:text-xs">
-                {activePromo.discount_type === "percent"
-                  ? `Diskon ${activePromo.discount_value}%`
-                  : `Potongan ${formatRupiah(Number(activePromo.discount_value))}`}
-                {Number(activePromo.min_order || 0) > 0
-                  ? ` (Min. ${formatRupiah(Number(activePromo.min_order))})`
-                  : ""}
-                {activePromo.valid_until
-                  ? ` • s/d ${new Date(activePromo.valid_until).toLocaleString(
-                      "id-ID",
-                      {
-                        day: "2-digit",
-                        month: "short",
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      }
-                    )}`
-                  : ""}
-              </p>
-            </div>
-
-            <div className="flex items-center gap-1.5 shrink-0">
-              <span className="font-mono font-extrabold bg-white/20 px-2 py-0.5 rounded-md text-[11px] tracking-wide">
-                {activePromo.code}
-              </span>
-              <button
-                type="button"
-                onClick={() => handleCopyVoucher(activePromo.code)}
-                className="inline-flex items-center gap-1 bg-white text-slate-900 hover:bg-slate-100 px-2.5 py-1 rounded-full text-[10px] sm:text-[11px] font-extrabold transition shadow-xs"
-              >
-                {copiedVoucherCode === activePromo.code ? (
-                  <>
-                    <Check className="w-3 h-3 text-emerald-600" />
-                    <span className="text-emerald-700">Tersalin</span>
-                  </>
-                ) : (
-                  <>
-                    <Copy className="w-3 h-3" />
-                    <span>Salin Kode</span>
-                  </>
-                )}
-              </button>
-
-              {runningBarVouchers.length > 1 && (
-                <div className="inline-flex items-center gap-0.5 ml-1 bg-black/20 rounded-full px-1 py-0.5">
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setPromoIndex(
-                        (i) =>
-                          (i - 1 + runningBarVouchers.length) %
-                          runningBarVouchers.length
-                      )
-                    }
-                    aria-label="Promo sebelumnya"
-                    className="p-0.5 rounded-full hover:bg-white/20 transition"
-                  >
-                    <ChevronLeft className="w-3.5 h-3.5" />
-                  </button>
-                  <span className="text-[10px] font-mono px-1">
-                    {(promoIndex % runningBarVouchers.length) + 1}/
-                    {runningBarVouchers.length}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setPromoIndex((i) => (i + 1) % runningBarVouchers.length)
-                    }
-                    aria-label="Promo berikutnya"
-                    className="p-0.5 rounded-full hover:bg-white/20 transition"
-                  >
-                    <ChevronRight className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Minimalist Sticky Header */}
-      <header className="sticky top-0 z-30 bg-white/85 backdrop-blur-md border-b border-slate-200">
-        <div className="customer-sticky-header-inner max-w-5xl mx-auto px-3 sm:px-4 h-14 sm:h-16 flex items-center justify-between gap-2 sm:gap-3">
-          {/* Left: Table / Counter Badge */}
-          <div className="flex items-center shrink-0">
-            <span
-              className="px-2.5 sm:px-3 py-1 rounded-full text-[11px] sm:text-xs font-bold text-white shadow-xs"
-              style={{ backgroundColor: accentColor }}
-            >
-              {tableBadgeText}
-            </span>
-          </div>
-
-          {/* Center: Store Logo, Name & Tagline */}
-          <div className="flex items-center gap-2.5 min-w-0 justify-center">
+    <div className="min-h-screen bg-[#F8FAFC] dark:bg-[#090D16] text-slate-900 dark:text-slate-100 flex flex-col transition-colors">
+      {/* Compact Sticky Header */}
+      <header className="sticky top-0 z-30 bg-white/90 dark:bg-[#111827]/90 backdrop-blur-md border-b border-slate-200 dark:border-slate-800">
+        <div className="customer-sticky-header-inner max-w-5xl mx-auto px-3 sm:px-5 h-14 sm:h-16 flex items-center justify-between gap-2 sm:gap-3">
+          {/* Left: Store Identity */}
+          <div className="flex items-center gap-2.5 min-w-0">
             {store.logo_url ? (
               <img
                 src={store.logo_url}
                 alt={store.name}
-                className="w-9 h-9 rounded-full object-cover border border-slate-200 shrink-0"
+                className="w-9 h-9 sm:w-10 sm:h-10 rounded-full object-cover border border-slate-200 dark:border-slate-700 shrink-0"
               />
             ) : (
               <div
-                className="w-9 h-9 rounded-full flex items-center justify-center text-white font-bold text-sm shrink-0"
+                className="w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-white font-extrabold text-sm shrink-0 shadow-xs"
                 style={{ backgroundColor: accentColor }}
               >
                 {store.name.charAt(0).toUpperCase()}
               </div>
             )}
-            <div className="min-w-0 text-left">
-              <h1 className="text-sm font-extrabold text-slate-900 truncate leading-tight tracking-tight">
-                {store.name}
-              </h1>
+            <div className="min-w-0">
+              <div className="flex items-center gap-1.5">
+                <h1 className="text-sm sm:text-base font-extrabold text-slate-900 dark:text-slate-100 truncate leading-tight tracking-tight">
+                  {store.name}
+                </h1>
+                <span
+                  className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold shrink-0 border ${
+                    store.is_open
+                      ? "bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800"
+                      : "bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border-rose-200 dark:border-rose-800"
+                  }`}
+                >
+                  <span
+                    className={`w-1.5 h-1.5 rounded-full ${
+                      store.is_open ? "bg-emerald-500" : "bg-rose-500"
+                    }`}
+                  />
+                  {store.is_open ? "Toko Buka" : "Toko Tutup"}
+                </span>
+              </div>
               {store.tagline && (
-                <p className="text-[11px] text-neutral-500 truncate leading-tight">
+                <p className="text-[11px] text-neutral-500 dark:text-slate-400 truncate leading-tight">
                   {store.tagline}
                 </p>
               )}
             </div>
           </div>
 
-          {/* Right: WA, Order Status, Cart */}
+          {/* Right: Table Badge, Promo Chip, WA, Theme, Cart */}
           <div className="flex items-center gap-1.5 shrink-0">
+            <span
+              className="hidden sm:inline-flex px-2.5 py-1 rounded-full text-[11px] font-bold text-white shadow-xs"
+              style={{ backgroundColor: accentColor }}
+            >
+              {tableBadgeText}
+            </span>
+
+            {activeVouchers.length > 0 && (
+              <button
+                type="button"
+                onClick={() => setIsPromoModalOpen(true)}
+                aria-label="Lihat Promo Aktif"
+                className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-full bg-amber-50 dark:bg-amber-950/50 border border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-300 text-[11px] font-extrabold hover:bg-amber-100 dark:hover:bg-amber-900/50 transition"
+              >
+                <TicketPercent className="w-3.5 h-3.5" />
+                <span className="hidden xs:inline">Promo</span>
+              </button>
+            )}
+
             {store.show_wa && store.wa_number && (
               <a
                 href={buildWhatsAppUrl(
@@ -337,24 +500,19 @@ export function CustomerMenuClient({
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label="Hubungi WhatsApp Resto"
-                className="w-9 h-9 rounded-full bg-white border border-slate-200 flex items-center justify-center text-emerald-700 hover:bg-emerald-50 transition"
+                className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-white dark:bg-[#090D16] border border-slate-200 dark:border-slate-700 flex items-center justify-center text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 transition"
               >
                 <MessageCircle className="w-4 h-4" />
               </a>
             )}
-            <button
-              type="button"
-              onClick={() => setIsOrderStatusOpen(true)}
-              aria-label="Status Pesanan"
-              className="w-9 h-9 rounded-full bg-white border border-slate-200 flex items-center justify-center text-slate-900 hover:bg-[#F8FAFC] transition"
-            >
-              <ClipboardList className="w-4 h-4" />
-            </button>
+
+            <ThemeToggle />
+
             <button
               type="button"
               onClick={() => setIsCartOpen(true)}
               aria-label="Keranjang"
-              className="relative w-9 h-9 rounded-full bg-white border border-slate-200 flex items-center justify-center text-slate-900 hover:bg-[#F8FAFC] transition"
+              className="relative w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-white dark:bg-[#090D16] border border-slate-200 dark:border-slate-700 flex items-center justify-center text-slate-900 dark:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-800 transition"
             >
               <ShoppingBag className="w-4 h-4" />
               {totalItems > 0 && (
@@ -371,59 +529,137 @@ export function CustomerMenuClient({
       </header>
 
       {/* Main Content */}
-      <main className="flex-1 max-w-5xl w-full mx-auto px-4 pt-4 pb-28 space-y-5">
-        {/* Store Closed Banner */}
+      <main className="flex-1 max-w-5xl w-full mx-auto px-3 sm:px-5 pt-4 pb-28 space-y-4 sm:space-y-5">
+        {/* Store Closed Guard Banner */}
         {!store.is_open && (
-          <div className="bg-rose-50 border border-rose-200/20 rounded-2xl p-3.5 flex items-center gap-3 text-rose-700">
+          <div className="bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/60 rounded-2xl p-3.5 flex items-center gap-3 text-rose-700 dark:text-rose-300">
             <AlertCircle className="w-5 h-5 shrink-0" />
-            <div className="text-xs sm:text-sm">
-              <span className="font-bold">Toko sedang tutup.</span> Pemesanan
-              sementara dinonaktifkan, namun Anda tetap dapat melihat daftar menu.
+            <div className="text-xs sm:text-sm leading-snug">
+              <span className="font-extrabold">Toko sedang tutup.</span>{" "}
+              Anda tetap dapat melihat daftar menu, namun tombol tambah dan
+              checkout sementara dinonaktifkan.
             </div>
           </div>
         )}
 
         {/* Pill Search Bar */}
         <div className="relative">
-          <Search className="w-4 h-4 text-neutral-400 absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none" />
+          <Search className="w-4 h-4 text-neutral-400 dark:text-slate-500 absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none" />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder={`Cari menu di ${store.name}...`}
-            className="w-full pl-11 pr-4 py-3 rounded-full bg-white border border-slate-200 text-sm text-slate-900 placeholder:text-neutral-400 focus:outline-none focus:border-[#2563EB] transition"
+            placeholder={`Cari menu favorit di ${store.name}...`}
+            className="w-full pl-11 pr-10 py-2.5 sm:py-3 rounded-full bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 text-sm text-slate-900 dark:text-slate-100 placeholder:text-neutral-400 dark:placeholder:text-slate-500 focus:outline-none focus:border-[#2563EB] shadow-xs transition"
           />
+          {searchQuery && (
+            <button
+              type="button"
+              onClick={() => setSearchQuery("")}
+              aria-label="Hapus pencarian"
+              className="absolute right-3.5 top-1/2 -translate-y-1/2 p-1 rounded-full text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          )}
         </div>
 
-        {/* Hero Promo Banner */}
-        {store.show_banner && (store.banner_url || store.banner_title) && (
-          <div className="relative rounded-3xl overflow-hidden bg-[#2563EB] text-white shadow-sm min-h-[150px] sm:min-h-[180px] flex items-end">
-            {store.banner_url && (
-              <img
-                src={store.banner_url}
-                alt={store.banner_title || "Promo"}
-                className="absolute inset-0 w-full h-full object-cover opacity-75"
-              />
-            )}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/35 to-transparent" />
-            <div className="relative z-10 p-5 sm:p-6 max-w-xl">
-              {store.banner_title && (
-                <h2 className="text-lg sm:text-2xl font-extrabold leading-tight tracking-tight">
-                  {store.banner_title}
-                </h2>
-              )}
-              {store.banner_subtitle && (
-                <p className="text-xs sm:text-sm text-white/90 mt-1 line-clamp-2">
-                  {store.banner_subtitle}
-                </p>
-              )}
+        {/* Auto-Sliding Hero Promo Poster Carousel (no voucher text overlaid) */}
+        {posters.length > 0 && (
+          <section
+            aria-label="Poster Promo"
+            onMouseEnter={() => setIsCarouselPaused(true)}
+            onMouseLeave={() => setIsCarouselPaused(false)}
+            onTouchStart={(e) => {
+              setIsCarouselPaused(true);
+              touchStartX.current = e.touches[0]?.clientX ?? null;
+            }}
+            onTouchEnd={(e) => {
+              const startX = touchStartX.current;
+              const endX = e.changedTouches[0]?.clientX ?? null;
+              if (startX !== null && endX !== null && posters.length > 1) {
+                const diff = startX - endX;
+                if (Math.abs(diff) > 40) {
+                  setPosterIndex((prev) =>
+                    diff > 0
+                      ? (prev + 1) % posters.length
+                      : (prev - 1 + posters.length) % posters.length
+                  );
+                }
+              }
+              touchStartX.current = null;
+              setIsCarouselPaused(false);
+            }}
+            className="relative rounded-2xl sm:rounded-3xl overflow-hidden bg-slate-200 dark:bg-slate-800 border border-slate-200/80 dark:border-slate-800 shadow-sm group"
+          >
+            <div
+              className="flex transition-transform duration-500 ease-out"
+              style={{
+                transform: `translateX(-${safePosterIndex * 100}%)`,
+              }}
+            >
+              {posters.map((posterUrl, idx) => (
+                <div
+                  key={`${posterUrl}-${idx}`}
+                  className="w-full shrink-0 aspect-[16/7] sm:aspect-[16/6] max-h-[260px] bg-slate-100 dark:bg-[#111827]"
+                >
+                  <img
+                    src={posterUrl}
+                    alt={`Poster Promo ${idx + 1}`}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+              ))}
             </div>
-          </div>
+
+            {posters.length > 1 && (
+              <>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setPosterIndex(
+                      (prev) => (prev - 1 + posters.length) % posters.length
+                    )
+                  }
+                  aria-label="Poster sebelumnya"
+                  className="hidden sm:flex absolute left-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/45 hover:bg-black/65 text-white items-center justify-center opacity-0 group-hover:opacity-100 transition"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setPosterIndex((prev) => (prev + 1) % posters.length)
+                  }
+                  aria-label="Poster berikutnya"
+                  className="hidden sm:flex absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/45 hover:bg-black/65 text-white items-center justify-center opacity-0 group-hover:opacity-100 transition"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+
+                <div className="absolute bottom-2.5 left-1/2 -translate-x-1/2 flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/35 backdrop-blur-xs">
+                  {posters.map((_, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => setPosterIndex(idx)}
+                      aria-label={`Slide ${idx + 1}`}
+                      className={`h-1.5 rounded-full transition-all ${
+                        idx === safePosterIndex
+                          ? "w-5 bg-white"
+                          : "w-1.5 bg-white/55 hover:bg-white/80"
+                      }`}
+                    />
+                  ))}
+                </div>
+              </>
+            )}
+          </section>
         )}
 
-        {/* Horizontal Circular Categories */}
+        {/* Horizontal Circular Categories with Generous Padding (No Ring Clipping) */}
         <section>
-          <div className="flex items-start gap-3 sm:gap-4 overflow-x-auto no-scrollbar py-2.5 px-2 -mx-2">
+          <div className="flex items-start gap-2.5 sm:gap-3.5 overflow-x-auto no-scrollbar py-2.5 px-2 -mx-2">
             {/* All Category */}
             <button
               type="button"
@@ -431,10 +667,10 @@ export function CustomerMenuClient({
               className="flex flex-col items-center gap-1.5 shrink-0 w-16 sm:w-[72px] group"
             >
               <div
-                className={`w-14 h-14 rounded-full flex items-center justify-center bg-white border transition ${
+                className={`w-13 h-13 sm:w-14 sm:h-14 rounded-full flex items-center justify-center bg-white dark:bg-[#111827] border transition ${
                   selectedCategoryId === "all"
-                    ? "ring-2 ring-offset-2 ring-offset-[#F8FAFC] border-transparent shadow-sm"
-                    : "border-slate-200 group-hover:border-[#2563EB]/30"
+                    ? "ring-2 ring-offset-2 ring-offset-[#F8FAFC] dark:ring-offset-[#090D16] border-transparent shadow-sm"
+                    : "border-slate-200 dark:border-slate-800 group-hover:border-[#2563EB]/40"
                 }`}
                 style={
                   selectedCategoryId === "all"
@@ -443,19 +679,19 @@ export function CustomerMenuClient({
                 }
               >
                 <StoreIcon
-                  className="w-6 h-6"
+                  className="w-5 h-5 sm:w-6 sm:h-6"
                   style={
                     selectedCategoryId === "all"
                       ? { color: accentColor }
-                      : { color: "#525252" }
+                      : undefined
                   }
                 />
               </div>
               <span
                 className={`text-[11px] sm:text-xs font-semibold text-center leading-tight line-clamp-2 ${
                   selectedCategoryId === "all"
-                    ? "text-slate-900"
-                    : "text-neutral-500"
+                    ? "text-slate-900 dark:text-slate-100"
+                    : "text-neutral-500 dark:text-slate-400"
                 }`}
               >
                 Semua
@@ -472,10 +708,10 @@ export function CustomerMenuClient({
                   className="flex flex-col items-center gap-1.5 shrink-0 w-16 sm:w-[72px] group"
                 >
                   <div
-                    className={`w-14 h-14 rounded-full overflow-hidden bg-white border transition ${
+                    className={`w-13 h-13 sm:w-14 sm:h-14 rounded-full overflow-hidden bg-white dark:bg-[#111827] border transition ${
                       isSelected
-                        ? "ring-2 ring-offset-2 ring-offset-[#F8FAFC] border-transparent shadow-sm"
-                        : "border-slate-200 group-hover:border-[#2563EB]/30"
+                        ? "ring-2 ring-offset-2 ring-offset-[#F8FAFC] dark:ring-offset-[#090D16] border-transparent shadow-sm"
+                        : "border-slate-200 dark:border-slate-800 group-hover:border-[#2563EB]/40"
                     }`}
                     style={
                       isSelected
@@ -492,14 +728,16 @@ export function CustomerMenuClient({
                         className="w-full h-full object-cover"
                       />
                     ) : (
-                      <div className="w-full h-full flex items-center justify-center text-xs font-bold text-neutral-500">
+                      <div className="w-full h-full flex items-center justify-center text-xs font-bold text-neutral-500 dark:text-slate-400">
                         {cat.name.slice(0, 2).toUpperCase()}
                       </div>
                     )}
                   </div>
                   <span
-                    className={`text-xs font-semibold max-w-[70px] truncate ${
-                      isSelected ? "text-slate-900" : "text-neutral-500"
+                    className={`text-[11px] sm:text-xs font-semibold text-center leading-tight line-clamp-2 w-full ${
+                      isSelected
+                        ? "text-slate-900 dark:text-slate-100"
+                        : "text-neutral-500 dark:text-slate-400"
                     }`}
                   >
                     {cat.name}
@@ -510,16 +748,16 @@ export function CustomerMenuClient({
           </div>
         </section>
 
-        {/* Menu Grid */}
+        {/* Responsive Menu Grid */}
         <section>
           {filteredMenus.length === 0 ? (
-            <div className="bg-white rounded-2xl p-10 text-center border border-slate-200">
-              <p className="text-sm font-semibold text-neutral-500">
+            <div className="bg-white dark:bg-[#111827] rounded-2xl p-10 text-center border border-slate-200 dark:border-slate-800">
+              <p className="text-sm font-semibold text-neutral-500 dark:text-slate-400">
                 Menu tidak ditemukan.
               </p>
             </div>
           ) : (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3.5 sm:gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
               {filteredMenus.map((menu) => {
                 const outOfStock = isMenuOutOfStock(menu);
                 const disabled = outOfStock || !store.is_open;
@@ -529,27 +767,26 @@ export function CustomerMenuClient({
                     onClick={() => {
                       if (!outOfStock) setActiveMenu(menu);
                     }}
-                    className={`bg-white rounded-2xl overflow-hidden border border-slate-200 flex flex-col transition ${
+                    className={`bg-white dark:bg-[#111827] rounded-2xl overflow-hidden border border-slate-200/90 dark:border-slate-800 flex flex-col shadow-xs transition ${
                       outOfStock
-                        ? "opacity-55 cursor-not-allowed"
-                        : "cursor-pointer hover:border-[#2563EB]"
+                        ? "opacity-60 cursor-not-allowed"
+                        : "cursor-pointer hover:border-[#2563EB] hover:shadow-md"
                     }`}
                   >
                     {/* 1:1 Photo */}
-                    <div className="relative aspect-square bg-[#F8FAFC] overflow-hidden">
+                    <div className="relative aspect-square bg-slate-100 dark:bg-[#090D16] overflow-hidden">
                       {menu.image_url ? (
                         <img
                           src={menu.image_url}
                           alt={menu.name}
-                          className="w-full h-full object-cover"
+                          className="w-full h-full object-cover transition-transform duration-300 hover:scale-[1.03]"
                         />
                       ) : (
-                        <div className="w-full h-full flex items-center justify-center text-xs text-neutral-400">
+                        <div className="w-full h-full flex items-center justify-center text-xs text-neutral-400 dark:text-slate-600">
                           No Image
                         </div>
                       )}
 
-                      {/* Badge */}
                       {menu.badge && (
                         <span
                           className="absolute top-2 left-2 px-2 py-0.5 rounded-full text-[10px] font-extrabold tracking-wide text-white shadow-xs"
@@ -559,10 +796,9 @@ export function CustomerMenuClient({
                         </span>
                       )}
 
-                      {/* Out of stock overlay */}
                       {outOfStock && (
-                        <div className="absolute inset-0 bg-black/35 flex items-center justify-center">
-                          <span className="px-3 py-1 rounded-full bg-white/95 text-slate-900 text-xs font-extrabold shadow-sm">
+                        <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                          <span className="px-3 py-1 rounded-full bg-white/95 dark:bg-[#111827]/95 text-slate-900 dark:text-slate-100 text-xs font-extrabold shadow-sm">
                             Habis
                           </span>
                         </div>
@@ -570,39 +806,46 @@ export function CustomerMenuClient({
                     </div>
 
                     {/* Card Details */}
-                    <div className="p-3 flex-1 flex flex-col justify-between gap-2.5">
+                    <div className="p-3 flex-1 flex flex-col justify-between gap-2">
                       <div>
-                        <h3 className="text-sm font-bold text-slate-900 leading-snug line-clamp-1">
+                        <h3 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-slate-100 leading-snug line-clamp-1">
                           {menu.name}
                         </h3>
                         {menu.description && (
-                          <p className="text-xs text-neutral-500 mt-1 line-clamp-2 leading-relaxed">
+                          <p className="text-[11px] sm:text-xs text-neutral-500 dark:text-slate-400 mt-1 line-clamp-2 leading-relaxed">
                             {menu.description}
                           </p>
                         )}
                       </div>
 
-                      <div className="flex items-center justify-between pt-1">
-                        <span className="text-sm font-extrabold text-slate-900 font-mono tabular-nums">
-                          {formatRupiah(Number(menu.price))}
-                        </span>
-                        <button
-                          type="button"
-                          disabled={disabled}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            if (!disabled) setActiveMenu(menu);
-                          }}
-                          aria-label={`Tambah ${menu.name}`}
-                          className="w-8 h-8 rounded-full text-white flex items-center justify-center transition active:scale-90 disabled:bg-neutral-300 disabled:cursor-not-allowed"
-                          style={
-                            !disabled
-                              ? { backgroundColor: accentColor }
-                              : undefined
-                          }
-                        >
-                          <Plus className="w-4 h-4" />
-                        </button>
+                      <div className="space-y-1 pt-1">
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="text-xs sm:text-sm font-extrabold text-slate-900 dark:text-slate-100 font-mono tabular-nums">
+                            {formatRupiah(Number(menu.price))}
+                          </span>
+                          <button
+                            type="button"
+                            disabled={disabled}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (!disabled) setActiveMenu(menu);
+                            }}
+                            aria-label={`Tambah ${menu.name}`}
+                            className="w-8 h-8 rounded-full text-white flex items-center justify-center transition active:scale-90 disabled:bg-neutral-300 dark:disabled:bg-slate-700 disabled:text-neutral-500 dark:disabled:text-slate-400 disabled:cursor-not-allowed shrink-0"
+                            style={
+                              !disabled
+                                ? { backgroundColor: accentColor }
+                                : undefined
+                            }
+                          >
+                            <Plus className="w-4 h-4" />
+                          </button>
+                        </div>
+                        {!store.is_open && (
+                          <p className="text-[10px] font-semibold text-rose-600 dark:text-rose-400">
+                            Toko sedang tutup
+                          </p>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -613,12 +856,12 @@ export function CustomerMenuClient({
         </section>
 
         {/* Subtle Powered by Mukaro Footer */}
-        <footer className="pt-8 pb-4 text-center">
-          <p className="text-xs text-neutral-400 font-medium">
+        <footer className="pt-6 pb-4 text-center">
+          <p className="text-xs text-neutral-400 dark:text-slate-500 font-medium">
             Powered by{" "}
             <Link
               href="/"
-              className="text-neutral-500 hover:text-slate-900 font-semibold transition"
+              className="text-neutral-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 font-semibold transition"
             >
               Mukaro
             </Link>
@@ -626,30 +869,54 @@ export function CustomerMenuClient({
         </footer>
       </main>
 
-      {/* Floating Checkout Bar */}
-      {totalItems > 0 && (
-        <div className="fixed bottom-4 left-4 right-4 z-40 max-w-xl mx-auto">
+      {/* Persistent Bottom Bar: "Pesanan Saya" + Cart / Checkout */}
+      <div className="fixed bottom-0 inset-x-0 z-30 bg-white/95 dark:bg-[#111827]/95 backdrop-blur-md border-t border-slate-200 dark:border-slate-800 shadow-[0_-4px_20px_rgba(0,0,0,0.06)]">
+        <div className="max-w-5xl mx-auto px-3 sm:px-5 py-2.5 flex items-center justify-between gap-2.5">
+          {/* Pesanan Saya Button with Small Processing Dot (no count number) */}
+          <button
+            type="button"
+            onClick={() => setIsOrderStatusOpen(true)}
+            className="relative inline-flex items-center gap-2 px-3.5 py-2.5 rounded-full bg-[#F8FAFC] dark:bg-[#090D16] border border-slate-200 dark:border-slate-700 text-xs sm:text-sm font-bold text-slate-900 dark:text-slate-100 hover:border-[#2563EB] transition shrink-0"
+          >
+            <span className="relative inline-flex">
+              <ClipboardList className="w-4 h-4 text-[#2563EB]" />
+              {hasInProgressOrder && (
+                <span
+                  className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-rose-500 ring-2 ring-white dark:ring-[#090D16] animate-pulse"
+                  aria-label="Ada pesanan sedang diproses"
+                />
+              )}
+            </span>
+            <span>Pesanan Saya</span>
+          </button>
+
+          {/* Checkout / Cart Button */}
           <button
             type="button"
             onClick={() => setIsCartOpen(true)}
-            className="w-full py-3.5 px-5 rounded-full text-white shadow-xl flex items-center justify-between transition active:scale-[0.99]"
-            style={{ backgroundColor: accentColor }}
+            disabled={totalItems === 0 || !store.is_open}
+            className="flex-1 sm:flex-none sm:min-w-[240px] py-2.5 px-4 rounded-full text-white shadow-md flex items-center justify-between gap-3 transition active:scale-[0.99] disabled:opacity-55 disabled:cursor-not-allowed"
+            style={{
+              backgroundColor:
+                totalItems > 0 && store.is_open ? accentColor : "#64748B",
+            }}
           >
-            <div className="flex items-center gap-2.5">
-              <ShoppingBag className="w-5 h-5" />
-              <span className="text-sm font-bold font-mono tabular-nums">{totalItems} Item</span>
-            </div>
             <div className="flex items-center gap-2">
-              <span className="text-sm font-extrabold font-mono tabular-nums">
-                {formatRupiah(totalPrice)}
-              </span>
-              <span className="text-xs bg-white/20 px-2.5 py-1 rounded-full font-bold">
-                Checkout
+              <ShoppingBag className="w-4 h-4 shrink-0" />
+              <span className="text-xs sm:text-sm font-bold font-mono tabular-nums">
+                {!store.is_open
+                  ? "Toko Tutup"
+                  : totalItems > 0
+                    ? `${totalItems} Item`
+                    : "Keranjang"}
               </span>
             </div>
+            <span className="text-xs sm:text-sm font-extrabold font-mono tabular-nums">
+              {totalItems > 0 ? formatRupiah(totalPrice) : "Pilih Menu"}
+            </span>
           </button>
         </div>
-      )}
+      </div>
 
       {/* Menu Detail Modal */}
       {activeMenu && (
@@ -673,57 +940,215 @@ export function CustomerMenuClient({
           onUpdateQty={handleUpdateQty}
           onRemoveItem={handleRemoveItem}
           onClearCart={() => setCart([])}
-          onOrderConfirmed={(summary) => setRecentOrder(summary)}
+          onOrderConfirmed={handleOrderConfirmed}
         />
       )}
 
-      {/* Order Status Modal */}
-      {isOrderStatusOpen && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-[2px] p-4"
-          onClick={() => setIsOrderStatusOpen(false)}
-        >
+      {/* Floating Promo Modal with Backdrop Blur */}
+      {isPromoModalOpen &&
+        activePromo &&
+        typeof document !== "undefined" &&
+        createPortal(
           <div
-            className="w-full max-w-sm bg-white rounded-2xl border border-slate-200 p-5 space-y-4 shadow-xl"
-            onClick={(e) => e.stopPropagation()}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/65 backdrop-blur-sm"
+            onClick={() => setIsPromoModalOpen(false)}
+            role="dialog"
+            aria-modal="true"
+            aria-label="Promo Spesial"
           >
-            <div className="flex items-center justify-between">
-              <h3 className="text-base font-bold text-slate-900 tracking-tight">
-                Status Pesanan
-              </h3>
-              <button
-                type="button"
-                onClick={() => setIsOrderStatusOpen(false)}
-                className="w-8 h-8 rounded-full bg-[#F8FAFC] flex items-center justify-center hover:bg-slate-200 transition"
+            <div
+              className="w-full max-w-sm max-h-[88dvh] flex flex-col overflow-hidden bg-white dark:bg-[#111827] rounded-3xl border border-slate-200 dark:border-slate-800 shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Promo Accent Header */}
+              <div
+                className="px-5 py-4 text-white flex items-center justify-between shrink-0"
+                style={{ backgroundColor: accentColor }}
               >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-            {recentOrder ? (
-              <div className="p-4 rounded-2xl bg-[#F8FAFC] space-y-2">
-                <p className="text-xs text-neutral-500">Pesanan Terakhir</p>
-                <p className="text-base font-extrabold text-slate-900 font-mono tabular-nums tracking-tight">
-                  {recentOrder.orderNumber}
-                </p>
-                <p className="text-sm font-semibold text-neutral-700 font-mono tabular-nums">
-                  Total: {formatRupiah(recentOrder.total)}
-                </p>
-                <Link
-                  href={`/${store.slug}/order/${recentOrder.orderId}`}
-                  className="inline-block mt-1 px-4 py-2 rounded-full text-xs font-bold text-white"
-                  style={{ backgroundColor: accentColor }}
+                <div className="flex items-center gap-2">
+                  <Sparkles className="w-4 h-4" />
+                  <span className="text-xs font-extrabold uppercase tracking-wider">
+                    Promo Spesial {store.name}
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsPromoModalOpen(false)}
+                  aria-label="Tutup modal promo"
+                  className="w-7 h-7 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center transition"
                 >
-                  Lacak Status Live &rarr;
-                </Link>
+                  <X className="w-4 h-4" />
+                </button>
               </div>
-            ) : (
-              <p className="text-sm text-neutral-500 py-4 text-center">
-                Belum ada pesanan aktif pada sesi ini.
-              </p>
-            )}
-          </div>
-        </div>
-      )}
+
+              {/* Promo Body */}
+              <div className="flex-1 min-h-0 overflow-y-auto p-5 space-y-4">
+                <div className="text-center space-y-1.5">
+                  <p className="text-2xl font-extrabold text-slate-900 dark:text-slate-100 tracking-tight">
+                    {activePromo.discount_type === "percent"
+                      ? `Diskon ${activePromo.discount_value}%`
+                      : `Potongan ${formatRupiah(
+                          Number(activePromo.discount_value)
+                        )}`}
+                  </p>
+                  <p className="text-xs text-neutral-500 dark:text-slate-400">
+                    {Number(activePromo.min_order || 0) > 0
+                      ? `Minimal belanja ${formatRupiah(
+                          Number(activePromo.min_order)
+                        )}`
+                      : "Tanpa minimal belanja"}
+                  </p>
+                  {activePromo.valid_until && (
+                    <p className="text-[11px] font-medium text-slate-500 dark:text-slate-400">
+                      Berlaku s/d{" "}
+                      {new Date(activePromo.valid_until).toLocaleString(
+                        "id-ID",
+                        {
+                          day: "2-digit",
+                          month: "short",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        }
+                      )}
+                    </p>
+                  )}
+                </div>
+
+                {/* Code & 1-Tap Copy */}
+                <div className="p-3.5 rounded-2xl bg-[#F8FAFC] dark:bg-[#090D16] border border-dashed border-slate-300 dark:border-slate-700 flex items-center justify-between gap-2">
+                  <span className="font-mono text-base font-extrabold tracking-widest text-slate-900 dark:text-slate-100">
+                    {activePromo.code}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => handleCopyVoucher(activePromo.code)}
+                    className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-extrabold text-white transition shadow-xs shrink-0"
+                    style={{ backgroundColor: accentColor }}
+                  >
+                    {copiedVoucherCode === activePromo.code ? (
+                      <>
+                        <Check className="w-3.5 h-3.5" />
+                        <span>Tersalin</span>
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="w-3.5 h-3.5" />
+                        <span>Salin Kode</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+
+                {/* Multi-promo switcher */}
+                {activeVouchers.length > 1 && (
+                  <div className="flex items-center justify-between pt-1">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setPromoIndex(
+                          (i) =>
+                            (i - 1 + activeVouchers.length) %
+                            activeVouchers.length
+                        )
+                      }
+                      className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+                    >
+                      <ChevronLeft className="w-3.5 h-3.5" />
+                      <span>Sebelumnya</span>
+                    </button>
+                    <span className="text-xs font-mono text-neutral-500 dark:text-slate-400">
+                      {(promoIndex % activeVouchers.length) + 1}/
+                      {activeVouchers.length}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setPromoIndex((i) => (i + 1) % activeVouchers.length)
+                      }
+                      className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+                    >
+                      <span>Berikutnya</span>
+                      <ChevronRight className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>,
+          document.body
+        )}
+
+      {/* Pesanan Saya Modal */}
+      {isOrderStatusOpen &&
+        typeof document !== "undefined" &&
+        createPortal(
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/65 backdrop-blur-xs p-4"
+            onClick={() => setIsOrderStatusOpen(false)}
+            role="dialog"
+            aria-modal="true"
+            aria-label="Pesanan Saya"
+          >
+            <div
+              className="w-full max-w-md max-h-[85dvh] flex flex-col overflow-hidden bg-white dark:bg-[#111827] rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="px-5 py-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between shrink-0">
+                <h3 className="text-base font-extrabold text-slate-900 dark:text-slate-100 tracking-tight">
+                  Pesanan Saya
+                </h3>
+                <button
+                  type="button"
+                  onClick={() => setIsOrderStatusOpen(false)}
+                  aria-label="Tutup Pesanan Saya"
+                  className="w-8 h-8 rounded-full bg-[#F8FAFC] dark:bg-[#090D16] flex items-center justify-center text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-800 transition"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              <div className="flex-1 min-h-0 overflow-y-auto p-5 space-y-3">
+                {customerOrders.length === 0 ? (
+                  <p className="text-sm text-neutral-500 dark:text-slate-400 py-8 text-center">
+                    Belum ada pesanan pada sesi ini.
+                  </p>
+                ) : (
+                  customerOrders.map((order) => {
+                    const statusBadge = getOrderStatusLabel(order.orderStatus);
+                    return (
+                      <div
+                        key={order.orderId}
+                        className="p-4 rounded-2xl bg-[#F8FAFC] dark:bg-[#090D16] border border-slate-200 dark:border-slate-800 space-y-2"
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="text-sm font-extrabold text-slate-900 dark:text-slate-100 font-mono tabular-nums">
+                            {order.orderNumber}
+                          </span>
+                          <span
+                            className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${statusBadge.tone}`}
+                          >
+                            {statusBadge.label}
+                          </span>
+                        </div>
+                        <p className="text-xs font-semibold text-neutral-600 dark:text-slate-300 font-mono tabular-nums">
+                          Total: {formatRupiah(order.total)}
+                        </p>
+                        <Link
+                          href={`/${store.slug}/order/${order.orderId}`}
+                          className="inline-block mt-1 px-4 py-2 rounded-full text-xs font-bold text-white"
+                          style={{ backgroundColor: accentColor }}
+                        >
+                          Lacak Status Live &rarr;
+                        </Link>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            </div>
+          </div>,
+          document.body
+        )}
     </div>
   );
 }

@@ -42,6 +42,7 @@ export interface Store {
   logo_url: string | null;
   accent_color: string;
   banner_url: string | null;
+  promo_posters?: string[] | null;
   banner_title: string | null;
   banner_subtitle: string | null;
   show_banner: boolean;
