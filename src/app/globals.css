@@ -220,13 +220,20 @@ body {
   }
 }
 
-/* Compact spacing on short landscape mobile viewports */
-@media (max-height: 500px) and (orientation: landscape) {
+/* Compact spacing & full-drawer scroll on short landscape mobile viewports */
+@media (max-height: 520px) and (orientation: landscape) {
   .admin-sticky-header {
     padding-top: 0.375rem !important;
     padding-bottom: 0.375rem !important;
   }
   .customer-sticky-header-inner {
     height: 3rem !important;
+  }
+  .admin-sidebar-shell {
+    overflow-y: auto !important;
+  }
+  .admin-sidebar-nav {
+    flex: none !important;
+    overflow: visible !important;
   }
 }

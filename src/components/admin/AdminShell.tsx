@@ -81,8 +81,8 @@ function SidebarContent({
   onSignOut,
 }: SidebarContentProps) {
   return (
-    <div className="flex flex-col h-full p-4 bg-white dark:bg-[#111827] border-r border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100 overflow-hidden">
-      <div className="shrink-0 space-y-4">
+    <div className="admin-sidebar-shell flex flex-col h-full p-3 sm:p-4 bg-white dark:bg-[#111827] border-r border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100 overflow-hidden">
+      <div className="shrink-0 space-y-2.5 sm:space-y-4">
         {/* Top Brand: Blue Geometric Mukaro Logo */}
         <div className="px-2 pt-1 flex items-center justify-between">
           <Link
@@ -135,7 +135,7 @@ function SidebarContent({
       </div>
 
       {/* Navigation Menu (scrollable middle) */}
-      <nav className="flex-1 overflow-y-auto min-h-0 space-y-1 my-4 pr-1">
+      <nav className="admin-sidebar-nav flex-1 overflow-y-auto min-h-0 space-y-1 my-2.5 sm:my-4 pr-1">
         {navItems.map((item) => {
           const Icon = item.icon;
           const active = item.exact
@@ -171,7 +171,7 @@ function SidebarContent({
       </nav>
 
       {/* Bottom Sidebar: Store Status Card + Profile */}
-      <div className="shrink-0 mt-auto space-y-3 pt-3 border-t border-slate-200 dark:border-slate-800">
+      <div className="shrink-0 mt-auto space-y-2 sm:space-y-2.5 pt-2.5 sm:pt-3 border-t border-slate-200 dark:border-slate-800">
         {isSuperadmin && (
           <Link
             href="/superadmin"
@@ -193,7 +193,7 @@ function SidebarContent({
         </Link>
 
         {/* Store Status Card */}
-        <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-800 space-y-3">
+        <div className="p-2.5 sm:p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-800 space-y-2 sm:space-y-2.5">
           <div className="flex items-center gap-2.5">
             {store.logo_url ? (
               <img
@@ -510,7 +510,7 @@ export function AdminShell({
               role="dialog"
               aria-modal="true"
               aria-label="Navigasi Admin"
-              className="animate-drawer-left fixed inset-y-0 left-0 z-50 lg:hidden w-80 max-w-[85vw] h-[100dvh] flex flex-col bg-white dark:bg-[#111827] border-r border-slate-200 dark:border-slate-800 shadow-2xl"
+              className="animate-drawer-left fixed inset-y-0 left-0 z-50 lg:hidden w-80 max-w-[85vw] h-[100dvh] max-h-[100dvh] flex flex-col overflow-hidden bg-white dark:bg-[#111827] border-r border-slate-200 dark:border-slate-800 shadow-2xl"
               onClick={(e) => e.stopPropagation()}
             >
               <SidebarContent
