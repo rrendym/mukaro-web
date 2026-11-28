@@ -540,19 +540,19 @@ export function AdminShell({
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Top Header Bar */}
-        <header className="animate-nav-enter sticky top-0 z-30 bg-white dark:bg-[#111827] border-b border-slate-200 dark:border-slate-800 px-4 sm:px-6 py-3.5 flex items-center justify-between gap-4 print:hidden">
+        <header className="admin-sticky-header animate-nav-enter sticky top-0 z-30 bg-white dark:bg-[#111827] border-b border-slate-200 dark:border-slate-800 px-3 sm:px-6 py-2.5 sm:py-3.5 flex items-center justify-between gap-2 sm:gap-4 print:hidden">
           {/* Left: Mobile Menu Toggle + Greeting */}
-          <div className="flex items-center gap-3 min-w-0">
+          <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
             <button
               type="button"
               onClick={() => setMobileNavOpen(true)}
               aria-label="Buka navigasi"
-              className="lg:hidden p-2 rounded-xl border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:bg-slate-800/60"
+              className="lg:hidden p-1.5 sm:p-2 rounded-xl border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/60"
             >
               <MenuIcon className="w-5 h-5" />
             </button>
             <div className="min-w-0">
-              <h2 className="text-base sm:text-lg font-bold tracking-[-0.02em] text-slate-900 dark:text-slate-100 truncate">
+              <h2 className="text-sm sm:text-lg font-bold tracking-[-0.02em] text-slate-900 dark:text-slate-100 truncate">
                 Halo, {initialStore.name}
               </h2>
               <p className="text-xs text-slate-500 dark:text-slate-400 hidden sm:block truncate">
@@ -562,7 +562,7 @@ export function AdminShell({
           </div>
 
           {/* Right: Quick Search Pill + Notification Bell + Store Shortcut */}
-          <div className="flex items-center gap-2.5 shrink-0">
+          <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
             <form
               onSubmit={handleQuickSearchSubmit}
               className="hidden md:flex items-center relative"
@@ -600,7 +600,7 @@ export function AdminShell({
           </div>
         </header>
 
-        <main className="flex-1 p-4 sm:p-6 max-w-7xl w-full mx-auto">
+        <main className="flex-1 p-3 sm:p-5 lg:p-6 max-w-7xl w-full mx-auto min-w-0">
           {children}
         </main>
       </div>

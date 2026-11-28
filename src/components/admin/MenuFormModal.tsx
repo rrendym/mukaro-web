@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useId, useState } from "react";
+import { createPortal } from "react-dom";
 import {
   X,
   Plus,
@@ -68,6 +69,20 @@ export function MenuFormModal({
   const [compressionInfo, setCompressionInfo] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const formId = useId();
+
+  useEffect(() => {
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.body.style.overflow = prevOverflow;
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [onClose]);
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -265,29 +280,39 @@ export function MenuFormModal({
     }
   };
 
-  return (
+  if (typeof document === "undefined") return null;
+
+  return createPortal(
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-[2px] p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-[2px] p-3 sm:p-4"
       onClick={onClose}
+      role="dialog"
+      aria-modal="true"
+      aria-label={initialMenu ? "Edit Menu" : "Tambah Menu Baru"}
     >
       <div
-        className="w-full max-w-2xl bg-white dark:bg-[#111827] rounded-2xl border border-slate-200 dark:border-slate-800 max-h-[90vh] flex flex-col overflow-hidden shadow-2xl"
+        className="w-full max-w-lg bg-white dark:bg-[#111827] rounded-2xl border border-slate-200 dark:border-slate-800 max-h-[88dvh] sm:max-h-[88vh] flex flex-col overflow-hidden shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
-          <h2 className="text-lg font-extrabold tracking-tight text-slate-900 dark:text-slate-100">
+        <div className="px-4 sm:px-6 py-3.5 sm:py-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between shrink-0">
+          <h2 className="text-base sm:text-lg font-extrabold tracking-tight text-slate-900 dark:text-slate-100">
             {initialMenu ? "Edit Menu" : "Tambah Menu Baru"}
           </h2>
           <button
             type="button"
             onClick={onClose}
-            className="w-8 h-8 rounded-full bg-[#F8FAFC] dark:bg-[#090D16] flex items-center justify-center hover:bg-slate-200 transition"
+            aria-label="Tutup modal menu"
+            className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 flex items-center justify-center hover:bg-slate-200 dark:hover:bg-slate-700 transition"
           >
             <X className="w-4 h-4" />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-5">
+        <form
+          id={formId}
+          onSubmit={handleSubmit}
+          className="flex-1 overflow-y-auto min-h-0 p-4 sm:p-6 space-y-4"
+        >
           {error && (
             <div className="p-3 rounded-xl bg-rose-50 dark:bg-rose-950/50 border border-rose-200/20 text-xs text-rose-700 font-medium">
               {error}
@@ -595,25 +620,28 @@ export function MenuFormModal({
             ))}
           </div>
 
-          <div className="pt-3 border-t border-slate-200 dark:border-slate-800 flex items-center justify-end gap-2.5">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 text-xs font-bold text-neutral-600 hover:border-[#2563EB] transition"
-            >
-              Batal
-            </button>
-            <button
-              type="submit"
-              disabled={saving || uploadingImage}
-              className="px-6 py-2.5 rounded-xl bg-[#2563EB] text-white text-xs font-extrabold hover:bg-[#1D4ED8] flex items-center gap-2 disabled:opacity-60 transition"
-            >
-              {saving && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-              <span>{initialMenu ? "Simpan Perubahan" : "Simpan Menu"}</span>
-            </button>
-          </div>
         </form>
+
+        <div className="shrink-0 px-4 sm:px-6 py-3.5 border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-[#111827] flex items-center justify-end gap-2.5">
+          <button
+            type="button"
+            onClick={onClose}
+            className="px-4 sm:px-5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-700 dark:text-slate-200 hover:border-[#2563EB] transition"
+          >
+            Batal
+          </button>
+          <button
+            type="submit"
+            form={formId}
+            disabled={saving || uploadingImage}
+            className="px-5 sm:px-6 py-2.5 rounded-xl bg-[#2563EB] text-white text-xs font-extrabold hover:bg-[#1D4ED8] flex items-center gap-2 disabled:opacity-60 transition"
+          >
+            {saving && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+            <span>{initialMenu ? "Simpan Perubahan" : "Simpan Menu"}</span>
+          </button>
+        </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

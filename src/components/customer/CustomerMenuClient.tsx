@@ -226,11 +226,11 @@ export function CustomerMenuClient({
 
       {/* Minimalist Sticky Header */}
       <header className="sticky top-0 z-30 bg-white/85 backdrop-blur-md border-b border-slate-200">
-        <div className="max-w-5xl mx-auto px-4 h-16 flex items-center justify-between gap-3">
+        <div className="customer-sticky-header-inner max-w-5xl mx-auto px-3 sm:px-4 h-14 sm:h-16 flex items-center justify-between gap-2 sm:gap-3">
           {/* Left: Table / Counter Badge */}
           <div className="flex items-center shrink-0">
             <span
-              className="px-3 py-1 rounded-full text-xs font-bold text-white shadow-xs"
+              className="px-2.5 sm:px-3 py-1 rounded-full text-[11px] sm:text-xs font-bold text-white shadow-xs"
               style={{ backgroundColor: accentColor }}
             >
               {tableBadgeText}
