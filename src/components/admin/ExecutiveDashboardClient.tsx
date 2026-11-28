@@ -611,7 +611,25 @@ export function ExecutiveDashboardClient({
                   }
                 />
                 <Tooltip
-                  cursor={{ fill: "#F8FAFC" }}
+                  cursor={{ fill: "rgba(37, 99, 235, 0.08)" }}
+                  contentStyle={{
+                    backgroundColor: "#FFFFFF",
+                    borderColor: "#E2E8F0",
+                    borderRadius: "12px",
+                    boxShadow: "0 10px 25px -5px rgba(15, 23, 42, 0.12)",
+                    padding: "8px 12px",
+                  }}
+                  labelStyle={{
+                    color: "#0F172A",
+                    fontWeight: 700,
+                    fontSize: "12px",
+                    marginBottom: "4px",
+                  }}
+                  itemStyle={{
+                    color: "#2563EB",
+                    fontWeight: 700,
+                    fontSize: "12px",
+                  }}
                   formatter={(value) => [
                     formatRupiah(Number(value || 0)),
                     "Omzet",

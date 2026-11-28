@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
@@ -170,7 +171,7 @@ function SidebarContent({
       </nav>
 
       {/* Bottom Sidebar: Store Status Card + Profile */}
-      <div className="shrink-0 space-y-3 pt-3 border-t border-slate-200 dark:border-slate-800">
+      <div className="shrink-0 mt-auto space-y-3 pt-3 border-t border-slate-200 dark:border-slate-800">
         {isSuperadmin && (
           <Link
             href="/superadmin"
@@ -275,6 +276,20 @@ export function AdminShell({
   const [branchSlug, setBranchSlug] = useState("");
   const [creatingBranch, setCreatingBranch] = useState(false);
   const [branchError, setBranchError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!mobileNavOpen) return;
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setMobileNavOpen(false);
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.body.style.overflow = prevOverflow;
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [mobileNavOpen]);
 
   // Ritual Buka Toko Modal State
   const [showOpenRitual, setShowOpenRitual] = useState(false);
@@ -481,38 +496,46 @@ export function AdminShell({
         />
       </aside>
 
-      {/* Mobile & Tablet Slide-Over Drawer */}
-      {mobileNavOpen && (
-        <div
-          className="animate-backdrop-enter fixed inset-0 z-50 lg:hidden bg-slate-900/40 backdrop-blur-[1px]"
-          onClick={() => setMobileNavOpen(false)}
-        >
-          <div
-            className="animate-drawer-left w-72 h-[100dvh] flex flex-col bg-white dark:bg-[#111827] shadow-2xl"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <SidebarContent
-              store={initialStore}
-              ownerStores={ownerStores}
-              canAddBranch={canAddBranch}
-              userEmail={userEmail}
-              isOpen={isOpen}
-              togglingOpen={togglingOpen}
-              pathname={pathname}
-              isSuperadmin={isSuperadmin}
-              navItems={navItems}
-              onCloseMobile={() => setMobileNavOpen(false)}
-              onSwitchStore={handleSwitchStore}
-              onOpenAddBranch={() => {
-                setMobileNavOpen(false);
-                setShowAddBranch(true);
-              }}
-              onToggleStoreOpen={handleToggleStoreOpen}
-              onSignOut={handleSignOut}
+      {/* Mobile & Tablet Slide-Over Drawer (Portal) */}
+      {mobileNavOpen &&
+        typeof document !== "undefined" &&
+        createPortal(
+          <>
+            <div
+              className="animate-backdrop-enter fixed inset-0 z-40 lg:hidden bg-slate-950/70 backdrop-blur-[2px]"
+              onClick={() => setMobileNavOpen(false)}
+              aria-hidden="true"
             />
-          </div>
-        </div>
-      )}
+            <div
+              role="dialog"
+              aria-modal="true"
+              aria-label="Navigasi Admin"
+              className="animate-drawer-left fixed inset-y-0 left-0 z-50 lg:hidden w-80 max-w-[85vw] h-[100dvh] flex flex-col bg-white dark:bg-[#111827] border-r border-slate-200 dark:border-slate-800 shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <SidebarContent
+                store={initialStore}
+                ownerStores={ownerStores}
+                canAddBranch={canAddBranch}
+                userEmail={userEmail}
+                isOpen={isOpen}
+                togglingOpen={togglingOpen}
+                pathname={pathname}
+                isSuperadmin={isSuperadmin}
+                navItems={navItems}
+                onCloseMobile={() => setMobileNavOpen(false)}
+                onSwitchStore={handleSwitchStore}
+                onOpenAddBranch={() => {
+                  setMobileNavOpen(false);
+                  setShowAddBranch(true);
+                }}
+                onToggleStoreOpen={handleToggleStoreOpen}
+                onSignOut={handleSignOut}
+              />
+            </div>
+          </>,
+          document.body
+        )}
 
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0">
