@@ -777,14 +777,21 @@ function ThermalReceiptPortal({
     >
       <style media="print">{`
         @page { size: ${pageSizeRule}; margin: ${pageMargin}; }
+        body > *:not(#thermal-receipt-portal) {
+          display: none !important;
+        }
         #thermal-receipt-portal {
           position: static !important;
           display: block !important;
+          width: 100% !important;
+          height: auto !important;
           background: #ffffff !important;
           padding: 0 !important;
+          margin: 0 !important;
         }
         #thermal-receipt-dialog {
           position: static !important;
+          transform: none !important;
           max-height: none !important;
           overflow: visible !important;
           border: none !important;
@@ -792,11 +799,20 @@ function ThermalReceiptPortal({
           background: #ffffff !important;
           width: 100% !important;
           max-width: ${paperSize === "A4" ? "100%" : paperSize} !important;
+          margin: 0 auto !important;
         }
         #thermal-receipt-scroll {
           max-height: none !important;
           overflow: visible !important;
           padding: 0 !important;
+        }
+        #thermal-receipt {
+          position: static !important;
+          transform: none !important;
+          max-height: none !important;
+          overflow: visible !important;
+          margin: 0 auto !important;
+          border: none !important;
         }
       `}</style>
       <div

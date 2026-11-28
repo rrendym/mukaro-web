@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import {
   Search,
@@ -818,116 +819,260 @@ export function PosCashierClient({
         />
       )}
 
-      {/* 58mm Thermal Receipt Modal */}
+      {/* 58mm/80mm/A4 Thermal Receipt Modal */}
       {showReceiptModal && lastReceipt && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-[2px] p-4"
-          onClick={() => setShowReceiptModal(false)}
-        >
-          <div
-            className="w-full max-w-sm bg-white dark:bg-[#111827] rounded-2xl border border-slate-200 dark:border-slate-800 p-5 space-y-4 shadow-2xl"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center justify-between">
-              <h3 className="text-sm font-extrabold text-slate-900 dark:text-slate-100">
-                Pratinjau Struk 58mm
-              </h3>
-              <button
-                type="button"
-                onClick={() => setShowReceiptModal(false)}
-                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
+        <PosThermalReceiptPortal
+          store={store}
+          receipt={lastReceipt}
+          onClose={() => setShowReceiptModal(false)}
+        />
+      )}
+    </div>
+  );
+}
 
-            <div
-              id="thermal-receipt"
-              className="p-3.5 border border-dashed border-neutral-300 rounded-xl font-mono text-[11px] leading-snug text-black bg-white space-y-2"
-            >
-              <div className="text-center border-b border-dashed border-neutral-400 pb-2">
-                {store.company_name && (
-                  <p className="text-[9px] font-semibold uppercase text-neutral-700">
-                    {store.company_name}
-                  </p>
-                )}
-                <p className="font-bold text-xs uppercase">{store.name}</p>
-                {store.tagline && <p className="text-[10px]">{store.tagline}</p>}
-                {store.npwp && (
-                  <p className="text-[9px] text-neutral-600">
-                    NPWP: {store.npwp}
-                  </p>
-                )}
-              </div>
-              <div className="space-y-0.5 text-[10px]">
-                <p>No: {lastReceipt.orderNumber}</p>
-                <p>
-                  Tgl: {new Date(lastReceipt.createdAt).toLocaleString("id-ID")}
-                </p>
-                <p>Kasir: {lastReceipt.cashierName}</p>
-                <p>
-                  Pemesan: {lastReceipt.customerName}
-                  {lastReceipt.tableNumber
-                    ? ` (Meja ${lastReceipt.tableNumber})`
-                    : ""}
-                </p>
-                <p>Channel: {lastReceipt.orderSource}</p>
-              </div>
-              <div className="border-t border-b border-dashed border-neutral-400 py-2 space-y-1.5">
-                {lastReceipt.items.map((item, idx) => (
-                  <div key={idx}>
-                    <div className="flex justify-between">
-                      <span>
-                        {item.qty}x {item.name}
-                      </span>
-                      <span>{formatRupiah(item.subtotal)}</span>
-                    </div>
-                    {item.variants && (
-                      <p className="text-[9px] text-neutral-600 pl-2">
-                        + {item.variants}
-                      </p>
-                    )}
-                  </div>
-                ))}
-              </div>
-              <div className="space-y-0.5 text-[10px]">
-                <div className="flex justify-between">
-                  <span>Subtotal</span>
-                  <span>{formatRupiah(lastReceipt.subtotal)}</span>
-                </div>
-                {lastReceipt.taxAmount > 0 && (
-                  <div className="flex justify-between">
-                    <span>Pajak</span>
-                    <span>{formatRupiah(lastReceipt.taxAmount)}</span>
-                  </div>
-                )}
-                {lastReceipt.serviceAmount > 0 && (
-                  <div className="flex justify-between">
-                    <span>Service</span>
-                    <span>{formatRupiah(lastReceipt.serviceAmount)}</span>
-                  </div>
-                )}
-                <div className="flex justify-between font-bold text-xs pt-1 border-t border-dashed border-neutral-400">
-                  <span>TOTAL ({lastReceipt.paymentMethod})</span>
-                  <span>{formatRupiah(lastReceipt.grandTotal)}</span>
-                </div>
-              </div>
-              <p className="text-center text-[10px] pt-1">
-                Terima kasih telah berkunjung!
-              </p>
-            </div>
+function PosThermalReceiptPortal({
+  store,
+  receipt,
+  onClose,
+}: {
+  store: Store;
+  receipt: {
+    orderNumber: string;
+    createdAt: string;
+    customerName: string;
+    tableNumber: string | null;
+    orderSource: string;
+    paymentMethod: string;
+    cashierName: string;
+    items: Array<{
+      name: string;
+      qty: number;
+      subtotal: number;
+      variants: string;
+    }>;
+    subtotal: number;
+    taxAmount: number;
+    serviceAmount: number;
+    grandTotal: number;
+  };
+  onClose: () => void;
+}) {
+  const [paperSize, setPaperSize] = useState<"58mm" | "80mm" | "A4">("58mm");
 
+  useEffect(() => {
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.body.style.overflow = prevOverflow;
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [onClose]);
+
+  if (typeof document === "undefined") return null;
+
+  const pageSizeRule =
+    paperSize === "58mm"
+      ? "58mm auto"
+      : paperSize === "80mm"
+        ? "80mm auto"
+        : "A4";
+  const pageMargin = paperSize === "A4" ? "12mm" : "2mm";
+  const paperWidthClass =
+    paperSize === "58mm"
+      ? "max-w-[230px]"
+      : paperSize === "80mm"
+        ? "max-w-[310px]"
+        : "max-w-full";
+
+  return createPortal(
+    <div
+      id="thermal-receipt-portal"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-[2px] p-4"
+      onClick={onClose}
+      role="dialog"
+      aria-modal="true"
+      aria-label="Pratinjau Struk"
+    >
+      <style media="print">{`
+        @page { size: ${pageSizeRule}; margin: ${pageMargin}; }
+        body > *:not(#thermal-receipt-portal) {
+          display: none !important;
+        }
+        #thermal-receipt-portal {
+          position: static !important;
+          display: block !important;
+          width: 100% !important;
+          height: auto !important;
+          background: #ffffff !important;
+          padding: 0 !important;
+          margin: 0 !important;
+        }
+        #thermal-receipt-dialog {
+          position: static !important;
+          transform: none !important;
+          max-height: none !important;
+          overflow: visible !important;
+          border: none !important;
+          box-shadow: none !important;
+          background: #ffffff !important;
+          width: 100% !important;
+          max-width: ${paperSize === "A4" ? "100%" : paperSize} !important;
+          margin: 0 auto !important;
+        }
+        #thermal-receipt-scroll {
+          max-height: none !important;
+          overflow: visible !important;
+          padding: 0 !important;
+        }
+        #thermal-receipt {
+          position: static !important;
+          transform: none !important;
+          max-height: none !important;
+          overflow: visible !important;
+          margin: 0 auto !important;
+          border: none !important;
+        }
+      `}</style>
+      <div
+        id="thermal-receipt-dialog"
+        className="w-full max-w-md bg-white dark:bg-[#111827] rounded-2xl border border-slate-200 dark:border-slate-800 max-h-[88vh] flex flex-col overflow-hidden shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="px-5 pt-4 pb-3 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between gap-2 shrink-0 no-print">
+          <h3 className="text-sm font-extrabold text-slate-900 dark:text-slate-100">
+            Pratinjau Resi ({paperSize})
+          </h3>
+          <div className="flex items-center gap-2">
+            <div className="inline-flex p-0.5 rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+              {(["58mm", "80mm", "A4"] as const).map((sz) => (
+                <button
+                  key={sz}
+                  type="button"
+                  onClick={() => setPaperSize(sz)}
+                  className={`px-2 py-1 rounded-md text-[10px] font-bold transition ${
+                    paperSize === sz
+                      ? "bg-[#2563EB] text-white"
+                      : "text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white"
+                  }`}
+                >
+                  {sz}
+                </button>
+              ))}
+            </div>
             <button
               type="button"
-              onClick={() => window.print()}
-              className="w-full py-2.5 rounded-xl bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-xs font-bold inline-flex items-center justify-center gap-2 transition"
+              onClick={onClose}
+              aria-label="Tutup pratinjau resi"
+              className="w-7 h-7 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 flex items-center justify-center hover:bg-slate-200 dark:hover:bg-slate-700 transition"
             >
-              <Printer className="w-4 h-4" />
-              <span>Print Struk</span>
+              <X className="w-4 h-4" />
             </button>
           </div>
         </div>
-      )}
-    </div>
+
+        <div
+          id="thermal-receipt-scroll"
+          className="flex-1 min-h-0 max-h-[85vh] overflow-y-auto px-5 py-4"
+        >
+          <div
+            id="thermal-receipt"
+            className={`mx-auto w-full ${paperWidthClass} p-3.5 border border-dashed border-slate-300 rounded-xl font-mono text-[11px] leading-snug text-slate-950 bg-white space-y-2`}
+          >
+            <div className="text-center border-b border-dashed border-slate-400 pb-2">
+              {store.company_name && (
+                <p className="text-[9px] font-semibold uppercase text-slate-700">
+                  {store.company_name}
+                </p>
+              )}
+              <p className="font-bold text-xs uppercase text-slate-950">
+                {store.name}
+              </p>
+              {store.tagline && (
+                <p className="text-[10px] text-slate-700">{store.tagline}</p>
+              )}
+              {store.npwp && (
+                <p className="text-[9px] text-slate-600">NPWP: {store.npwp}</p>
+              )}
+            </div>
+            <div className="space-y-0.5 text-[10px] text-slate-900">
+              <p>No: {receipt.orderNumber}</p>
+              <p>Tgl: {new Date(receipt.createdAt).toLocaleString("id-ID")}</p>
+              <p>Kasir: {receipt.cashierName}</p>
+              <p>
+                Pemesan: {receipt.customerName}
+                {receipt.tableNumber ? ` (Meja ${receipt.tableNumber})` : ""}
+              </p>
+              <p>Channel: {receipt.orderSource}</p>
+            </div>
+            <div className="border-t border-b border-dashed border-slate-400 py-2 space-y-1.5 text-slate-950">
+              {receipt.items.map((item, idx) => (
+                <div key={idx}>
+                  <div className="flex justify-between gap-2">
+                    <span>
+                      {item.qty}x {item.name}
+                    </span>
+                    <span className="shrink-0">{formatRupiah(item.subtotal)}</span>
+                  </div>
+                  {item.variants && (
+                    <p className="text-[9px] text-slate-600 pl-2">
+                      + {item.variants}
+                    </p>
+                  )}
+                </div>
+              ))}
+            </div>
+            <div className="space-y-0.5 text-[10px] text-slate-900">
+              <div className="flex justify-between">
+                <span>Subtotal</span>
+                <span>{formatRupiah(receipt.subtotal)}</span>
+              </div>
+              {receipt.taxAmount > 0 && (
+                <div className="flex justify-between">
+                  <span>Pajak</span>
+                  <span>{formatRupiah(receipt.taxAmount)}</span>
+                </div>
+              )}
+              {receipt.serviceAmount > 0 && (
+                <div className="flex justify-between">
+                  <span>Service</span>
+                  <span>{formatRupiah(receipt.serviceAmount)}</span>
+                </div>
+              )}
+              <div className="flex justify-between font-bold text-xs text-slate-950 pt-1 border-t border-dashed border-slate-400">
+                <span>TOTAL ({receipt.paymentMethod})</span>
+                <span>{formatRupiah(receipt.grandTotal)}</span>
+              </div>
+            </div>
+            <p className="text-center text-[10px] text-slate-700 pt-1">
+              Terima kasih telah berkunjung!
+            </p>
+          </div>
+        </div>
+
+        <div className="px-5 pb-4 pt-3 border-t border-slate-200 dark:border-slate-800 flex items-center gap-2 shrink-0 no-print">
+          <button
+            type="button"
+            onClick={onClose}
+            className="px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 transition"
+          >
+            Tutup
+          </button>
+          <button
+            type="button"
+            onClick={() => window.print()}
+            className="flex-1 py-2.5 rounded-xl bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-xs font-bold inline-flex items-center justify-center gap-2 transition"
+          >
+            <Printer className="w-4 h-4" />
+            <span>Cetak Sekarang</span>
+          </button>
+        </div>
+      </div>
+    </div>,
+    document.body
   );
 }

@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import { X, Minus, Plus, Check } from "lucide-react";
 import { Menu, SelectedVariant } from "@/types/database";
 import { formatRupiah } from "@/lib/format";
@@ -102,22 +103,40 @@ export function MenuDetailModal({
     onClose();
   };
 
-  return (
+  useEffect(() => {
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.body.style.overflow = prevOverflow;
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [onClose]);
+
+  if (typeof document === "undefined") return null;
+
+  return createPortal(
     <div
-      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-[2px] p-0 sm:p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-[2px] p-3 sm:p-4"
       onClick={onClose}
+      role="dialog"
+      aria-modal="true"
+      aria-label={menu.name}
     >
       <div
-        className="w-full max-w-lg bg-white dark:bg-[#111827] rounded-t-3xl sm:rounded-3xl border border-slate-200 dark:border-slate-800 max-h-[88vh] flex flex-col overflow-hidden shadow-2xl animate-in slide-in-from-bottom-4 duration-200"
+        className="w-full max-w-md bg-white dark:bg-[#111827] rounded-2xl sm:rounded-3xl border border-slate-200 dark:border-slate-800 max-h-[85dvh] sm:max-h-[88vh] flex flex-col overflow-hidden shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Top Image */}
-        <div className="relative w-full h-36 sm:h-40 bg-[#F8FAFC] dark:bg-[#090D16] overflow-hidden shrink-0">
+        <div className="relative w-full h-32 sm:h-40 bg-[#F8FAFC] dark:bg-[#090D16] overflow-hidden shrink-0">
           {menu.image_url ? (
             <img
               src={menu.image_url}
               alt={menu.name}
-              className="w-full h-full object-cover"
+              className="w-full h-full object-contain rounded-xl p-2"
             />
           ) : (
             <div className="w-full h-full flex items-center justify-center text-neutral-400 dark:text-slate-500 text-sm">
@@ -290,6 +309,7 @@ export function MenuDetailModal({
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

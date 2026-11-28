@@ -419,7 +419,7 @@ export function InventoryManagerClient({
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 min-w-0 max-w-full">
       <div>
         <h1 className="text-2xl font-extrabold tracking-tight text-slate-900 dark:text-slate-100">
           Manajemen Stok, Resep &amp; Opname
@@ -566,16 +566,16 @@ export function InventoryManagerClient({
       </div>
 
       {activeTab === "ingredients" && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 min-w-0 max-w-full">
           {/* Bahan Baku CRUD */}
-          <div className="bg-white dark:bg-[#111827] rounded-2xl p-5 border border-slate-200 dark:border-slate-800 space-y-4">
+          <div className="bg-white dark:bg-[#111827] rounded-2xl p-4 sm:p-5 border border-slate-200 dark:border-slate-800 space-y-4 min-w-0 max-w-full overflow-hidden">
             <h2 className="text-sm font-extrabold tracking-tight text-slate-900 dark:text-slate-100">
               Daftar Bahan Baku
             </h2>
 
             <form
               onSubmit={handleAddIngredient}
-              className="grid grid-cols-12 gap-2"
+              className="grid grid-cols-2 sm:grid-cols-12 gap-2"
             >
               <input
                 type="text"
@@ -583,12 +583,12 @@ export function InventoryManagerClient({
                 value={ingName}
                 onChange={(e) => setIngName(e.target.value)}
                 placeholder="Nama bahan (mis: Susu UHT)"
-                className="col-span-5 px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 text-xs focus:outline-none focus:border-[#2563EB]"
+                className="col-span-2 sm:col-span-5 min-w-0 px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#090D16] text-xs text-slate-900 dark:text-slate-100 focus:outline-none focus:border-[#2563EB]"
               />
               <select
                 value={ingUnit}
                 onChange={(e) => setIngUnit(e.target.value)}
-                className="col-span-2 px-2 py-2 rounded-xl border border-slate-200 dark:border-slate-800 text-xs bg-white dark:bg-[#111827] focus:outline-none focus:border-[#2563EB]"
+                className="col-span-1 sm:col-span-2 min-w-0 px-2 py-2 rounded-xl border border-slate-200 dark:border-slate-800 text-xs bg-white dark:bg-[#090D16] text-slate-900 dark:text-slate-100 focus:outline-none focus:border-[#2563EB]"
               >
                 <option value="gr">gr</option>
                 <option value="ml">ml</option>
@@ -599,40 +599,42 @@ export function InventoryManagerClient({
                 value={ingQty}
                 onChange={(e) => setIngQty(e.target.value)}
                 placeholder="Stok"
-                className="col-span-2 px-2.5 py-2 rounded-xl border border-slate-200 dark:border-slate-800 text-xs font-mono tabular-nums focus:outline-none focus:border-[#2563EB]"
+                className="col-span-1 sm:col-span-2 min-w-0 px-2.5 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#090D16] text-xs font-mono tabular-nums text-slate-900 dark:text-slate-100 focus:outline-none focus:border-[#2563EB]"
               />
               <input
                 type="number"
                 value={ingMin}
                 onChange={(e) => setIngMin(e.target.value)}
                 placeholder="Min"
-                className="col-span-2 px-2.5 py-2 rounded-xl border border-slate-200 dark:border-slate-800 text-xs font-mono tabular-nums focus:outline-none focus:border-[#2563EB]"
+                className="col-span-1 sm:col-span-2 min-w-0 px-2.5 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#090D16] text-xs font-mono tabular-nums text-slate-900 dark:text-slate-100 focus:outline-none focus:border-[#2563EB]"
               />
               <button
                 type="submit"
                 disabled={savingIng}
-                className="col-span-1 rounded-xl bg-[#2563EB] text-white flex items-center justify-center hover:bg-[#1D4ED8] transition"
+                aria-label="Tambah bahan baku"
+                className="col-span-1 sm:col-span-1 py-2 rounded-xl bg-[#2563EB] text-white text-xs font-bold flex items-center justify-center gap-1 hover:bg-[#1D4ED8] transition"
               >
-                <Plus className="w-4 h-4" />
+                <Plus className="w-4 h-4 shrink-0" />
+                <span className="sm:hidden">Tambah</span>
               </button>
             </form>
 
             <div className="space-y-2 max-h-80 overflow-y-auto">
               {ingredients.length === 0 ? (
-                <p className="text-xs text-neutral-400 text-center py-6">
+                <p className="text-xs text-slate-400 text-center py-6">
                   Belum ada bahan baku.
                 </p>
               ) : (
                 ingredients.map((ing) => (
                   <div
                     key={ing.id}
-                    className="flex items-center justify-between p-3 rounded-xl bg-[#F8FAFC] dark:bg-[#090D16]"
+                    className="flex items-center justify-between gap-2 p-3 rounded-xl bg-[#F8FAFC] dark:bg-[#090D16] min-w-0"
                   >
-                    <div>
-                      <p className="text-xs font-bold text-slate-900 dark:text-slate-100">
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs font-bold text-slate-900 dark:text-slate-100 truncate">
                         {ing.name}
                       </p>
-                      <p className="text-[11px] text-neutral-500 font-mono tabular-nums">
+                      <p className="text-[11px] text-slate-500 dark:text-slate-400 font-mono tabular-nums">
                         Stok: <strong>{ing.stock_qty}</strong> {ing.unit} • Min:{" "}
                         {ing.min_stock} {ing.unit}
                       </p>
@@ -640,7 +642,8 @@ export function InventoryManagerClient({
                     <button
                       type="button"
                       onClick={() => handleDeleteIngredient(ing.id)}
-                      className="p-1.5 rounded-lg text-neutral-400 hover:text-rose-700"
+                      aria-label={`Hapus ${ing.name}`}
+                      className="p-1.5 rounded-lg text-slate-400 hover:text-rose-700 dark:hover:text-rose-400 shrink-0"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
@@ -651,12 +654,12 @@ export function InventoryManagerClient({
           </div>
 
           {/* Menu Recipe Builder */}
-          <div className="bg-white dark:bg-[#111827] rounded-2xl p-5 border border-slate-200 dark:border-slate-800 space-y-4">
+          <div className="bg-white dark:bg-[#111827] rounded-2xl p-4 sm:p-5 border border-slate-200 dark:border-slate-800 space-y-4 min-w-0 max-w-full overflow-hidden">
             <div>
               <h2 className="text-sm font-extrabold tracking-tight text-slate-900 dark:text-slate-100">
                 Komposisi Resep per Menu
               </h2>
-              <p className="text-[11px] text-neutral-500">
+              <p className="text-[11px] text-slate-500 dark:text-slate-400">
                 Menambahkan resep otomatis mengaktifkan mode stok resep pada
                 menu.
               </p>
@@ -665,7 +668,7 @@ export function InventoryManagerClient({
             <select
               value={selectedMenuId}
               onChange={(e) => setSelectedMenuId(e.target.value)}
-              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 text-xs font-bold bg-white dark:bg-[#111827] focus:outline-none focus:border-[#2563EB]"
+              className="w-full min-w-0 px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 text-xs font-bold bg-white dark:bg-[#090D16] text-slate-900 dark:text-slate-100 focus:outline-none focus:border-[#2563EB]"
             >
               {menus.map((m) => (
                 <option key={m.id} value={m.id}>
@@ -677,12 +680,12 @@ export function InventoryManagerClient({
             {ingredients.length > 0 && selectedMenuId && (
               <form
                 onSubmit={handleAddRecipeItem}
-                className="flex items-center gap-2"
+                className="flex flex-col sm:flex-row sm:items-center gap-2 min-w-0"
               >
                 <select
                   value={recipeIngId}
                   onChange={(e) => setRecipeIngId(e.target.value)}
-                  className="flex-1 px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 text-xs bg-white dark:bg-[#111827] focus:outline-none focus:border-[#2563EB]"
+                  className="w-full sm:flex-1 min-w-0 px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 text-xs bg-white dark:bg-[#090D16] text-slate-900 dark:text-slate-100 focus:outline-none focus:border-[#2563EB]"
                 >
                   {ingredients.map((i) => (
                     <option key={i.id} value={i.id}>
@@ -690,28 +693,30 @@ export function InventoryManagerClient({
                     </option>
                   ))}
                 </select>
-                <input
-                  type="number"
-                  step="0.1"
-                  min="0.1"
-                  value={recipeQty}
-                  onChange={(e) => setRecipeQty(e.target.value)}
-                  placeholder="Takaran"
-                  className="w-24 px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 text-xs font-mono tabular-nums focus:outline-none focus:border-[#2563EB]"
-                />
-                <button
-                  type="submit"
-                  disabled={savingRecipe}
-                  className="px-4 py-2 rounded-xl bg-[#2563EB] text-white text-xs font-extrabold hover:bg-[#1D4ED8] transition"
-                >
-                  Tambah
-                </button>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="number"
+                    step="0.1"
+                    min="0.1"
+                    value={recipeQty}
+                    onChange={(e) => setRecipeQty(e.target.value)}
+                    placeholder="Takaran"
+                    className="flex-1 sm:w-24 min-w-0 px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#090D16] text-xs font-mono tabular-nums text-slate-900 dark:text-slate-100 focus:outline-none focus:border-[#2563EB]"
+                  />
+                  <button
+                    type="submit"
+                    disabled={savingRecipe}
+                    className="px-4 py-2 rounded-xl bg-[#2563EB] text-white text-xs font-extrabold hover:bg-[#1D4ED8] transition shrink-0"
+                  >
+                    Tambah
+                  </button>
+                </div>
               </form>
             )}
 
             <div className="space-y-2">
               {selectedMenuRecipes.length === 0 ? (
-                <p className="text-xs text-neutral-400 text-center py-6">
+                <p className="text-xs text-slate-400 text-center py-6">
                   Belum ada resep untuk menu ini.
                 </p>
               ) : (
@@ -720,15 +725,16 @@ export function InventoryManagerClient({
                   return (
                     <div
                       key={r.id}
-                      className="flex items-center justify-between p-3 rounded-xl bg-[#F8FAFC] dark:bg-[#090D16]"
+                      className="flex items-center justify-between gap-2 p-3 rounded-xl bg-[#F8FAFC] dark:bg-[#090D16] min-w-0"
                     >
-                      <span className="text-xs font-bold text-slate-900 dark:text-slate-100 font-mono tabular-nums">
+                      <span className="text-xs font-bold text-slate-900 dark:text-slate-100 font-mono tabular-nums truncate">
                         {ing?.name || "Bahan"} — {r.qty_needed} {ing?.unit}
                       </span>
                       <button
                         type="button"
                         onClick={() => handleDeleteRecipe(r.id)}
-                        className="p-1.5 text-neutral-400 hover:text-rose-700"
+                        aria-label="Hapus resep"
+                        className="p-1.5 text-slate-400 hover:text-rose-700 dark:hover:text-rose-400 shrink-0"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
