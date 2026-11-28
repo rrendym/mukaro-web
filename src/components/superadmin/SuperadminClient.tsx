@@ -457,8 +457,8 @@ export function SuperadminClient({
   };
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] dark:bg-[#090D16] text-[#0F172A] dark:text-slate-100">
-      <header className="animate-nav-enter bg-white dark:bg-[#111827] border-b border-slate-200 dark:border-slate-800 sticky top-0 z-20">
+    <div className="min-h-screen bg-[linear-gradient(180deg,#E0F2FE_0%,#F0F9FF_38%,#FFFFFF_100%)] dark:bg-none dark:bg-[#090D16] text-[#0F172A] dark:text-slate-100">
+      <header className="animate-nav-enter bg-white/85 dark:bg-[#111827]/90 backdrop-blur-md border-b border-sky-200/70 dark:border-slate-800 sticky top-0 z-20">
         <div className="max-w-6xl mx-auto px-5 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <MukaroLogo size="sm" showDomain />

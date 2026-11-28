@@ -472,7 +472,7 @@ export function AdminShell({
   };
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] dark:bg-[#090D16] text-[#0F172A] dark:text-slate-100 flex">
+    <div className="min-h-screen bg-[linear-gradient(180deg,#E0F2FE_0%,#F0F9FF_38%,#FFFFFF_100%)] dark:bg-none dark:bg-[#090D16] text-[#0F172A] dark:text-slate-100 flex">
       {/* Desktop Sidebar */}
       <aside className="hidden lg:block w-64 bg-white dark:bg-[#111827] sticky top-0 h-screen shrink-0 print:hidden">
         <SidebarContent

@@ -827,8 +827,8 @@ export function CustomerMenuClient({
         </footer>
       </main>
 
-      {/* Persistent Bottom Bar: WA, Voucher, "Pesanan Saya" + Cart / Checkout */}
-      <div className="fixed bottom-0 inset-x-0 z-40 bg-white/95 dark:bg-[#111827]/95 backdrop-blur-md border-t border-slate-200 dark:border-slate-800 shadow-[0_-4px_20px_rgba(0,0,0,0.06)]">
+      {/* Floating Bottom Bar Glass/Blur: Pesanan Saya, Voucher, WA, Keranjang */}
+      <div className="fixed bottom-0 inset-x-0 z-40 bg-white/80 dark:bg-[#111827]/85 backdrop-blur-md border-t border-sky-200/70 dark:border-slate-800 shadow-[0_-4px_24px_rgba(15,23,42,0.08)]">
         <div className="max-w-5xl mx-auto px-3 sm:px-5 py-2.5 flex items-center justify-between gap-2">
           <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
             {/* Pesanan Saya Button with Small Processing Dot (no count number) */}
@@ -881,29 +881,26 @@ export function CustomerMenuClient({
             )}
           </div>
 
-          {/* Checkout / Cart Button */}
+          {/* Checkout / Cart Button (Always Visible) */}
           <button
             type="button"
             onClick={() => setIsCartOpen(true)}
-            disabled={totalItems === 0 || !store.is_open}
-            className="flex-1 sm:flex-none sm:min-w-[240px] py-2.5 px-4 rounded-full text-white shadow-md flex items-center justify-between gap-3 transition active:scale-[0.99] disabled:opacity-55 disabled:cursor-not-allowed"
+            className="flex-1 sm:flex-none sm:min-w-[240px] py-2.5 px-4 rounded-full text-white shadow-md flex items-center justify-between gap-3 transition active:scale-[0.99]"
             style={{
               backgroundColor:
-                totalItems > 0 && store.is_open ? accentColor : "#64748B",
+                totalItems > 0 && store.is_open ? accentColor : "#475569",
             }}
           >
             <div className="flex items-center gap-2">
               <ShoppingBag className="w-4 h-4 shrink-0" />
               <span className="text-xs sm:text-sm font-bold font-mono tabular-nums">
                 {!store.is_open
-                  ? "Toko Tutup"
-                  : totalItems > 0
-                    ? `${totalItems} Item`
-                    : "Keranjang"}
+                  ? `Tutup • ${totalItems} Item`
+                  : `${totalItems} Item`}
               </span>
             </div>
             <span className="text-xs sm:text-sm font-extrabold font-mono tabular-nums">
-              {totalItems > 0 ? formatRupiah(totalPrice) : "Pilih Menu"}
+              {formatRupiah(totalPrice)}
             </span>
           </button>
         </div>

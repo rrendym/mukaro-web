@@ -234,7 +234,7 @@ export default function LandingPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#FFFFFF] dark:bg-[#090D16] text-slate-900 dark:text-slate-100 flex flex-col">
+    <div className="min-h-screen bg-[linear-gradient(180deg,#E0F2FE_0%,#F0F9FF_38%,#FFFFFF_100%)] dark:bg-none dark:bg-[#090D16] text-slate-900 dark:text-slate-100 flex flex-col">
       {/* 1. Minimalist Sticky Navbar */}
       <header
         ref={headerRef}
